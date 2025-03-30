@@ -14,19 +14,6 @@ const logger = new Logger('GeminiAI');
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey as string);
 
-/**
- * Job position structure
- */
-interface JobPosition {
-	title: string;
-	url: string;
-}
-
-interface CompanyJobData {
-	companyName: string;
-	openPositions: JobPosition[];
-}
-
 const schema: FunctionDeclaration = {
 	name: 'extractJobData',
 	description: 'Extract job data from content',
@@ -75,12 +62,12 @@ logger.info('Gemini model initialized successfully');
 
 export async function getStructuredJobData(
 	content: string,
-	userContext: string,
 	companyName?: string,
-): Promise<CompanyJobData> {
-	logger.info(
-		`Processing job data extraction request with context: ${userContext}`,
-	);
+): Promise<{
+	companyName: string;
+	openPositions: {title: string; url: string}[];
+}> {
+	logger.info(`Processing job data extraction request.`);
 	logger.debug(`Content length: ${content.length} characters`);
 
 	// Include company name in the prompt if provided
@@ -89,16 +76,12 @@ export async function getStructuredJobData(
 		: '';
 
 	const prompt = `
-You are a helpful assistant that extracts job data from text.
-
-Context: ${userContext}
-${companyNameInfo}
+You are a helpful assistant that extracts job data from job board of the company ${companyNameInfo}.
 
 Content:
 ${content}
 
-Extract all job positions from the content. If no job positions are found, return an empty array.
-Make sure to use the exact company name provided and include all job positions with their titles and URLs.
+Extract all job positions from the content. Make sure to use the exact company name provided and include all matching job positions with their titles and URLs.
 `;
 
 	try {
@@ -107,82 +90,18 @@ Make sure to use the exact company name provided and include all job positions w
 
 		const result = await model.generateContent({
 			contents: [{role: 'user', parts: [{text: prompt}]}],
-			generationConfig: {temperature: 0.2},
+			generationConfig: {temperature: 0.5},
 		});
 
 		const endTime = Date.now();
 		logger.debug(`Gemini API response received in ${endTime - startTime}ms`);
 
-		// Check for function calls
-		const functionCalls = result.response.functionCalls();
-		const call = functionCalls && functionCalls[0];
-
-		if (call && call.name === 'extractJobData') {
-			logger.info('Function call detected in Gemini response');
-			logger.debug(`Function name: ${call.name}`);
-
-			try {
-				// Fix: Get the actual args object instead of converting to string
-				const args = call.args as CompanyJobData;
-				logger.debug(`Function arguments: ${JSON.stringify(args)}`);
-
-				// No need to parse, args is already an object
-				const parsedData = args;
-				logger.success(
-					`Successfully extracted job data with ${
-						parsedData.openPositions?.length || 0
-					} positions`,
-				);
-				return parsedData;
-			} catch (parseError) {
-				logger.error('Failed to parse function call arguments', parseError);
-				throw new Error('Invalid function call response format');
-			}
-		} else {
-			logger.warn(
-				'No function call detected in Gemini response, falling back to text parsing',
-			);
-		}
-
-		// Fallback if no functionCall
-		try {
-			const fallbackText = result.response.text();
-			logger.debug(
-				`Fallback text response: ${fallbackText.substring(0, 100)}...`,
-			);
-
-			const parsedData = JSON.parse(fallbackText) as CompanyJobData;
-			logger.success(
-				`Successfully parsed fallback text as JSON with ${
-					parsedData.openPositions?.length || 0
-				} positions`,
-			);
-			return parsedData;
-		} catch (parseError) {
-			logger.warn(
-				'Failed to parse Gemini text response as JSON, returning default structure',
-				parseError,
-			);
-
-			// Create default structure
-			const defaultData = {
-				companyName:
-					companyName || userContext.split(' ')[0] || 'Unknown Company',
-				openPositions: [],
-			};
-
-			logger.info(
-				`Returning default structure with company name: ${defaultData.companyName}`,
-			);
-			return defaultData;
-		}
+		return result;
 	} catch (err) {
 		logger.error('Gemini job extraction error', err);
 
-		// Create default structure for error case
 		const errorFallbackData = {
-			companyName:
-				companyName || userContext.split(' ')[0] || 'Unknown Company',
+			companyName: companyName || 'Unknown Company',
 			openPositions: [],
 		};
 
