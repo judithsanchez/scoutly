@@ -2,7 +2,6 @@ import {NextRequest, NextResponse} from 'next/server';
 import {scrapeWebsite, ScrapeOptions} from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
 
-// Create a logger for the API route
 const logger = new Logger('ScrapeAPI');
 
 export async function POST(request: NextRequest) {
@@ -11,7 +10,6 @@ export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
 
-		// Validate input
 		if (!body || !body.url) {
 			logger.warn('Missing URL in request body');
 			return NextResponse.json({error: 'URL is required'}, {status: 400});
@@ -20,24 +18,22 @@ export async function POST(request: NextRequest) {
 		const url = body.url;
 		logger.info(`Processing scrape request for URL: ${url}`);
 
-		// Extract scrape options
 		const options: ScrapeOptions = {
 			cleanHtml: body.cleanHtml === true,
 			textOnly: body.textOnly === true,
 			includeMetadata: body.includeMetadata === true,
 			selector: body.selector || undefined,
 			autoDetectContent: body.autoDetectContent === true,
+			includeLinks: body.includeLinks === true,
 		};
 
-		// Validate URL format
 		try {
-			new URL(url); // Will throw if URL is invalid
+			new URL(url);
 		} catch (error) {
 			logger.warn(`Invalid URL format: ${url}`, error);
 			return NextResponse.json({error: 'Invalid URL format'}, {status: 400});
 		}
 
-		// Scrape the website
 		logger.info(`Starting scrape operation for: ${url} with options:`, options);
 		const result = await scrapeWebsite(url, options);
 
@@ -46,7 +42,6 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({error: result.error}, {status: 500});
 		}
 
-		// Log success with content length
 		logger.success(
 			`Scrape operation successful, content length: ${result.content.length} characters`,
 		);

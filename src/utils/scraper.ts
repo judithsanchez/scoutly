@@ -1,12 +1,8 @@
 import playwright from 'playwright';
 import {Logger} from '@/utils/logger';
 
-// Create a logger for the scraper
 const logger = new Logger('Scraper');
 
-/**
- * Options for the scraper
- */
 export interface ScrapeOptions {
 	/** Whether to clean the HTML (remove scripts, styles, etc.) */
 	cleanHtml?: boolean;
@@ -18,38 +14,25 @@ export interface ScrapeOptions {
 	selector?: string;
 	/** Whether to automatically detect and extract main content */
 	autoDetectContent?: boolean;
+	/** Whether to extract links along with text content */
+	includeLinks?: boolean;
 }
-
-/**
- * Result from scraping a website
- */
 export interface ScrapeResult {
-	/** The scraped content */
 	content: string;
-	/** Any error that occurred */
 	error?: string;
-	/** Metadata from the page (if requested) */
 	metadata?: {
 		title?: string;
 		description?: string;
 		ogImage?: string;
 		url?: string;
+		characterCount?: number; // Add this new field
 	};
-	/** Pagination information */
 	pagination?: {
 		pagesScraped: number;
 		infiniteScrollCycles: number;
 	};
 }
 
-/**
- * Scrapes a website using Playwright, scrolls to the end, and returns the content.
- * Includes measures to bypass common scraping protections.
- *
- * @param url The URL of the website to scrape
- * @param options Options to customize the scraping behavior
- * @returns The scraped content and optional metadata
- */
 export async function scrapeWebsite(
 	url: string,
 	options: ScrapeOptions = {},
@@ -59,13 +42,11 @@ export async function scrapeWebsite(
 	logger.info(`Starting to scrape website: ${url}`);
 
 	try {
-		// Launch a browser
 		logger.debug('Launching browser');
 		browser = await playwright.chromium.launch({
-			headless: true, // Run in headless mode
+			headless: true,
 		});
 
-		// Create a new context with a realistic user agent
 		logger.debug('Creating browser context');
 		const context = await browser.newContext({
 			userAgent:
@@ -73,7 +54,6 @@ export async function scrapeWebsite(
 			viewport: {width: 1280, height: 800},
 		});
 
-		// Create a new page
 		logger.debug('Creating new page');
 		const page = await context.newPage();
 
@@ -85,49 +65,40 @@ export async function scrapeWebsite(
 			DNT: '1',
 		});
 
-		// Navigate to the URL
 		logger.info(`Navigating to ${url}`);
 		await page.goto(url, {waitUntil: 'networkidle'});
 		logger.success('Page loaded successfully');
 
-		// Initialize the result object
 		const result: ScrapeResult = {
 			content: '',
 			pagination: {
-				pagesScraped: 1, // Start with 1 for the initial page
+				pagesScraped: 1,
 				infiniteScrollCycles: 0,
 			},
 		};
 
-		// Extract metadata if requested (only from the first page)
 		if (options.includeMetadata) {
 			logger.debug('Extracting metadata');
 			result.metadata = await extractMetadata(page);
 		}
 
-		// Perform initial scroll to load any lazy content
 		logger.info('Performing initial scroll to load lazy content');
 		await autoScroll(page);
 
-		// Determine if the page has pagination or infinite scroll
 		const paginationType = await detectPaginationType(page);
 		logger.info(`Pagination type detected: ${paginationType}`);
 
-		// Collect content from all pages
 		let allContent: string[] = [];
 
-		// Process the first page
 		const firstPageContent = await extractContentBasedOnOptions(page, options);
 		allContent.push(firstPageContent);
 
-		// Handle different pagination types
 		if (paginationType === 'standard' || paginationType === 'angular') {
 			logger.info(`Processing ${paginationType} pagination`);
-			const maxPages = 5; // Maximum number of pages to scrape
+			const maxPages = 5;
 			let currentPage = 1;
 
 			while (currentPage < maxPages) {
-				// Try to click the next page button based on pagination type
 				const nextPageClicked =
 					paginationType === 'angular'
 						? await clickAngularNextPage(page)
@@ -140,40 +111,32 @@ export async function scrapeWebsite(
 					break;
 				}
 
-				// Wait for the page to load
 				await page.waitForLoadState('networkidle');
 
-				// Additional wait for Angular sites
 				if (paginationType === 'angular') {
-					await page.waitForTimeout(1000); // Give Angular time to render
+					await page.waitForTimeout(1000);
 				}
 
 				currentPage++;
 				result.pagination!.pagesScraped = currentPage;
 				logger.info(`Navigated to page ${currentPage}`);
 
-				// Extract content from this page
 				const pageContent = await extractContentBasedOnOptions(page, options);
 				allContent.push(pageContent);
 			}
-		}
-		// Handle infinite scroll
-		else if (paginationType === 'infinite') {
+		} else if (paginationType === 'infinite') {
 			logger.info('Processing infinite scroll');
-			const maxScrollCycles = 3; // Maximum number of scroll cycles
+			const maxScrollCycles = 3;
 			let scrollCycles = 0;
 
 			while (scrollCycles < maxScrollCycles) {
-				// Get current content length to check if more content is loaded
 				const currentContentLength = await page.evaluate(
 					() => document.body.innerHTML.length,
 				);
 
-				// Check for "Load More" buttons and click them if present
 				const loadMoreClicked = await clickLoadMoreButton(page);
 
 				if (!loadMoreClicked) {
-					// If no load more button, perform auto-scroll
 					await autoScroll(page);
 				}
 
@@ -181,22 +144,18 @@ export async function scrapeWebsite(
 				result.pagination!.infiniteScrollCycles = scrollCycles;
 				logger.info(`Completed scroll/load more cycle ${scrollCycles}`);
 
-				// Wait for content to load
 				await page.waitForTimeout(2000);
 
-				// Check if new content was loaded
 				const newContentLength = await page.evaluate(
 					() => document.body.innerHTML.length,
 				);
 				if (newContentLength <= currentContentLength * 1.05) {
-					// Less than 5% increase in content
 					logger.info(
 						'No significant new content loaded after scrolling/loading more',
 					);
 					break;
 				}
 
-				// Extract content after scrolling if this is the last cycle or no new content
 				if (
 					scrollCycles === maxScrollCycles ||
 					newContentLength <= currentContentLength * 1.05
@@ -205,30 +164,27 @@ export async function scrapeWebsite(
 						page,
 						options,
 					);
-					allContent = [scrollContent]; // Replace with the final content that includes everything
+					allContent = [scrollContent];
 				}
 			}
-		}
-		// If no pagination detected, just use the content from the first page
-		else {
+		} else {
 			logger.info('No pagination detected');
-			// We already have the first page content in allContent
 		}
 
-		// Combine all content
 		result.content = allContent.join('\n\n');
 
-		// Log content size
 		logger.info(
 			`Extracted content size: ${result.content.length} characters from ${
 				result.pagination!.pagesScraped
 			} pages`,
 		);
 
-		// Close the browser
 		logger.debug('Closing browser');
 		await browser.close();
 		browser = null;
+
+		result.metadata = result.metadata || {};
+		result.metadata.characterCount = result.content.length;
 
 		logger.success(`Successfully scraped website: ${url}`);
 		return result;
@@ -245,7 +201,6 @@ export async function scrapeWebsite(
 			},
 		};
 	} finally {
-		// Ensure browser is closed even if an error occurs
 		if (browser) {
 			logger.debug('Closing browser in finally block');
 			await browser.close();
@@ -253,20 +208,13 @@ export async function scrapeWebsite(
 	}
 }
 
-/**
- * Detects the type of pagination on the page
- * @param page Playwright page object
- * @returns The type of pagination: 'standard', 'angular', 'infinite', or 'none'
- */
 async function detectPaginationType(page: playwright.Page): Promise<string> {
 	return await page.evaluate(() => {
-		// Check for Angular Material paginator
 		const hasAngularPaginator = !!document.querySelector(
 			'mat-paginator, .mat-paginator',
 		);
 		if (hasAngularPaginator) return 'angular';
 
-		// Check for standard pagination
 		const standardPaginationSelectors = [
 			'.pagination',
 			'.pager',
@@ -276,14 +224,12 @@ async function detectPaginationType(page: playwright.Page): Promise<string> {
 			'.page-navigation',
 			'.page-links',
 			'.wp-pagenavi',
-			// Add more common pagination selectors
 		];
 
 		for (const selector of standardPaginationSelectors) {
 			if (document.querySelector(selector)) return 'standard';
 		}
 
-		// Check for next page links
 		const nextPageSelectors = [
 			'a[rel="next"]',
 			'a.next',
@@ -294,19 +240,16 @@ async function detectPaginationType(page: playwright.Page): Promise<string> {
 			'a:contains("»")',
 			'a.pagination-next',
 			'button:contains("Next")',
-			// Add more next page selectors
 		];
 
 		for (const selector of nextPageSelectors) {
 			try {
 				if (document.querySelector(selector)) return 'standard';
 			} catch (e) {
-				// Some complex selectors might not be supported
 				continue;
 			}
 		}
 
-		// Check for infinite scroll indicators
 		const infiniteScrollIndicators = [
 			'.infinite-scroll',
 			'.infinite-content',
@@ -322,23 +265,20 @@ async function detectPaginationType(page: playwright.Page): Promise<string> {
 			'.show-more-button',
 			'[data-load-more]',
 			'.read-more-button',
-			// Add more infinite scroll indicators
 		];
 
 		for (const selector of infiniteScrollIndicators) {
 			try {
 				if (document.querySelector(selector)) return 'infinite';
 			} catch (e) {
-				// Some complex selectors might not be supported
 				continue;
 			}
 		}
 
-		// Check for common infinite scroll libraries
 		const infiniteScrollLibraries = [
 			'infinite-scroll',
 			'infScroll',
-			'ias', // Infinite Ajax Scroll
+			'ias',
 			'jscroll',
 			'waypoints',
 		];
@@ -358,13 +298,8 @@ async function detectPaginationType(page: playwright.Page): Promise<string> {
 	});
 }
 
-/**
- * Clicks the next page button for standard pagination
- * @param page Playwright page object
- */
 async function clickStandardNextPage(page: playwright.Page): Promise<boolean> {
 	return await page.evaluate(() => {
-		// Common next page selectors in order of preference
 		const nextPageSelectors = [
 			'a[rel="next"]',
 			'a.next',
@@ -432,30 +367,22 @@ async function clickStandardNextPage(page: playwright.Page): Promise<boolean> {
 	});
 }
 
-/**
- * Clicks the next page button for Angular Material paginator
- * @param page Playwright page object
- */
 async function clickAngularNextPage(page: playwright.Page): Promise<boolean> {
-	// First try to click the next button directly
 	try {
-		// Look for the next button in Angular Material paginator
 		const nextButtonSelector =
 			'button.mat-paginator-navigation-next:not([disabled]), .mat-paginator-navigation-next:not(.mat-button-disabled)';
 		const nextButtonExists = await page.$(nextButtonSelector);
 
 		if (nextButtonExists) {
 			await page.click(nextButtonSelector);
-			await page.waitForTimeout(1000); // Wait for Angular to update
+			await page.waitForTimeout(1000);
 			return true;
 		}
 	} catch (error) {
 		logger.warn('Error clicking Angular next button', error);
 	}
 
-	// If direct click fails, try using evaluate
 	return await page.evaluate(() => {
-		// Try to find and click the next button in Angular Material paginator
 		const nextButton = document.querySelector(
 			'button.mat-paginator-navigation-next:not([disabled]), .mat-paginator-navigation-next:not(.mat-button-disabled)',
 		) as HTMLElement;
@@ -465,7 +392,6 @@ async function clickAngularNextPage(page: playwright.Page): Promise<boolean> {
 			return true;
 		}
 
-		// Try to find and click page number buttons
 		const pageButtons = document.querySelectorAll(
 			'.mat-paginator-page-number, .mat-paginator-range-actions button',
 		);
@@ -474,8 +400,6 @@ async function clickAngularNextPage(page: playwright.Page): Promise<boolean> {
 		for (let i = 0; i < pageButtons.length; i++) {
 			const button = pageButtons[i] as HTMLElement;
 
-			// If this is a selected/active button, mark that we foun
-			// If this is a selected/active button, mark that we found the current page
 			if (
 				button.classList.contains('mat-button-disabled') ||
 				button.classList.contains('active') ||
@@ -485,27 +409,21 @@ async function clickAngularNextPage(page: playwright.Page): Promise<boolean> {
 				continue;
 			}
 
-			// If we already found the current page, this must be the next page
 			if (currentPageFound) {
 				button.click();
 				return true;
 			}
 		}
 
-		// If we couldn't find the next button or page, try clicking on the page size selector
-		// and selecting a different option to trigger a page change
 		const pageSizeSelect = document.querySelector(
 			'.mat-paginator-page-size-select',
 		) as HTMLElement;
 		if (pageSizeSelect) {
 			pageSizeSelect.click();
 
-			// Wait a bit for the dropdown to open
 			setTimeout(() => {
-				// Try to click a different page size option
 				const pageSizeOptions = document.querySelectorAll('.mat-option');
 				if (pageSizeOptions.length > 1) {
-					// Click the second option (different from current)
 					(pageSizeOptions[1] as HTMLElement).click();
 					return true;
 				}
@@ -516,13 +434,8 @@ async function clickAngularNextPage(page: playwright.Page): Promise<boolean> {
 	});
 }
 
-/**
- * Tries to click a "Load More" button if present
- * @param page Playwright page object
- */
 async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
 	try {
-		// Common load more button selectors
 		const loadMoreSelectors = [
 			'button:text("Load More")',
 			'a:text("Load More")',
@@ -534,21 +447,18 @@ async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
 			'.read-more-button',
 			'button:text("View More")',
 			'a:text("View More")',
-			// Add more selectors as needed
 		];
 
 		for (const selector of loadMoreSelectors) {
 			const buttonExists = await page.$(selector);
 			if (buttonExists) {
 				await page.click(selector);
-				await page.waitForTimeout(2000); // Wait for content to load
+				await page.waitForTimeout(2000);
 				return true;
 			}
 		}
 
-		// If direct selectors fail, try using evaluate for more complex detection
 		return await page.evaluate(() => {
-			// Common text patterns for load more buttons
 			const loadMoreTextPatterns = [
 				'load more',
 				'show more',
@@ -560,7 +470,6 @@ async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
 				'continue reading',
 			];
 
-			// Find buttons or links containing these texts
 			const allButtons = Array.from(
 				document.querySelectorAll('button, a, .button, [role="button"]'),
 			);
@@ -568,11 +477,9 @@ async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
 			for (const button of allButtons) {
 				const buttonText = button.textContent?.toLowerCase() || '';
 
-				// Check if the button text matches any of our patterns
 				if (
 					loadMoreTextPatterns.some(pattern => buttonText.includes(pattern))
 				) {
-					// Make sure the button is visible
 					const style = window.getComputedStyle(button);
 					if (
 						style.display !== 'none' &&
@@ -593,10 +500,6 @@ async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
 	}
 }
 
-/**
- * Auto-scrolls a page to the bottom to load lazy-loaded content
- * @param page Playwright page object
- */
 async function autoScroll(page: playwright.Page): Promise<void> {
 	const scrollLogger = new Logger('AutoScroll');
 
@@ -614,7 +517,6 @@ async function autoScroll(page: playwright.Page): Promise<void> {
 				window.scrollBy(0, distance);
 				totalHeight += distance;
 
-				// Check if we've made progress in scrolling
 				if (scrollHeight === lastHeight) {
 					unchangedCount++;
 				} else {
@@ -622,7 +524,6 @@ async function autoScroll(page: playwright.Page): Promise<void> {
 					lastHeight = scrollHeight;
 				}
 
-				// If we've scrolled past the document height or haven't made progress in scrolling
 				if (totalHeight >= scrollHeight || unchangedCount > 10) {
 					clearInterval(timer);
 					resolve();
@@ -632,22 +533,21 @@ async function autoScroll(page: playwright.Page): Promise<void> {
 	});
 
 	scrollLogger.debug('Waiting after scroll to ensure content loads');
-	await page.waitForTimeout(2000); // Increased wait time to ensure content loads
+	await page.waitForTimeout(2000);
 	scrollLogger.success('Auto-scroll completed successfully');
 }
 
-/**
- * Extracts content based on the provided options
- * @param page Playwright page object
- * @param options Scrape options
- */
 async function extractContentBasedOnOptions(
 	page: playwright.Page,
 	options: ScrapeOptions,
 ): Promise<string> {
 	if (options.selector) {
 		if (options.textOnly) {
-			return await extractTextContentWithSelector(page, options.selector);
+			return await extractTextContentWithSelector(
+				page,
+				options.selector,
+				options.includeLinks === true,
+			);
 		} else if (options.cleanHtml) {
 			return await extractCleanHtmlWithSelector(page, options.selector);
 		} else {
@@ -664,73 +564,52 @@ async function extractContentBasedOnOptions(
 	} else if (options.cleanHtml) {
 		return await extractCleanHtml(page);
 	} else {
-		// Default: extract body HTML
 		return await page.evaluate(() => {
 			return document.body.innerHTML;
 		});
 	}
 }
 
-/**
- * Extracts metadata from the page
- * @param page Playwright page object
- */
 async function extractMetadata(
 	page: playwright.Page,
 ): Promise<ScrapeResult['metadata']> {
 	return await page.evaluate(() => {
 		const metadata: ScrapeResult['metadata'] = {};
 
-		// Extract title
 		const titleElement = document.querySelector('title');
 		if (titleElement) metadata.title = titleElement.textContent || undefined;
 
-		// Extract description
 		const descElement = document.querySelector('meta[name="description"]');
 		if (descElement)
 			metadata.description = descElement.getAttribute('content') || undefined;
 
-		// Extract Open Graph image
 		const ogImageElement = document.querySelector('meta[property="og:image"]');
 		if (ogImageElement)
 			metadata.ogImage = ogImageElement.getAttribute('content') || undefined;
 
-		// Include the URL
 		metadata.url = window.location.href;
 
 		return metadata;
 	});
 }
 
-/**
- * Extracts text content from the page (no HTML)
- * @param page Playwright page object
- */
 async function extractTextContent(page: playwright.Page): Promise<string> {
 	return await page.evaluate(() => {
 		return document.body.textContent || '';
 	});
 }
 
-/**
- * Extracts clean HTML content (removes scripts, styles, etc.)
- * @param page Playwright page object
- */
 async function extractCleanHtml(page: playwright.Page): Promise<string> {
 	return await page.evaluate(() => {
-		// Clone the body to avoid modifying the actual page
 		const clone = document.body.cloneNode(true) as HTMLElement;
 
-		// Remove scripts, styles, and other non-content elements
 		const elementsToRemove = clone.querySelectorAll(
 			'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
 		);
 		elementsToRemove.forEach(el => el.remove());
 
-		// Remove event handlers and inline styles
 		const allElements = clone.querySelectorAll('*');
 		allElements.forEach(el => {
-			// Remove all attributes except for a few essential ones
 			const attributes = Array.from(el.attributes);
 			attributes.forEach(attr => {
 				if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
@@ -743,11 +622,6 @@ async function extractCleanHtml(page: playwright.Page): Promise<string> {
 	});
 }
 
-/**
- * Extracts HTML content from elements matching the selector
- * @param page Playwright page object
- * @param selector CSS selector to target specific elements
- */
 async function extractHtmlWithSelector(
 	page: playwright.Page,
 	selector: string,
@@ -756,7 +630,6 @@ async function extractHtmlWithSelector(
 		const elements = document.querySelectorAll(sel);
 		if (elements.length === 0) return '';
 
-		// If multiple elements match, combine their HTML
 		let result = '';
 		elements.forEach(el => {
 			result += el.outerHTML;
@@ -765,33 +638,81 @@ async function extractHtmlWithSelector(
 	}, selector);
 }
 
-/**
- * Extracts text content from elements matching the selector
- * @param page Playwright page object
- * @param selector CSS selector to target specific elements
- */
 async function extractTextContentWithSelector(
 	page: playwright.Page,
 	selector: string,
+	includeLinks: boolean = false,
 ): Promise<string> {
-	return await page.evaluate(sel => {
-		const elements = document.querySelectorAll(sel);
-		if (elements.length === 0) return '';
+	// Pass parameters as an array after the function
+	return await page.evaluate(
+		params => {
+			const sel = params.selector;
+			const extractLinks = params.includeLinks;
 
-		// If multiple elements match, combine their text content
-		let result = '';
-		elements.forEach(el => {
-			result += (el.textContent || '') + '\n';
-		});
-		return result.trim();
-	}, selector);
+			const elements = document.querySelectorAll(sel);
+			if (elements.length === 0) return '';
+
+			let result = '';
+			elements.forEach(el => {
+				if (extractLinks) {
+					// Extract text with links
+					const links = el.querySelectorAll('a');
+					const linkMap = new Map();
+
+					// Collect all links first
+					links.forEach(link => {
+						const url = link.href;
+						const text = link.textContent?.trim() || '';
+						if (url && text) {
+							linkMap.set(text, url);
+						}
+					});
+
+					// Get the text content
+					let textContent = (el.textContent || '').trim();
+
+					// Append links at the end of each job listing
+					if (linkMap.size > 0) {
+						// Try to identify job listings by common patterns
+						const jobTitles = el.querySelectorAll(
+							'h2, h3, .job-title, [class*="title"]',
+						);
+
+						if (jobTitles.length > 0) {
+							// If we can identify job titles, append links after each job section
+							let processedText = textContent;
+							jobTitles.forEach(title => {
+								const titleText = title.textContent?.trim() || '';
+								if (titleText && linkMap.has(titleText)) {
+									const linkUrl = linkMap.get(titleText);
+									processedText = processedText.replace(
+										titleText,
+										`${titleText} [URL: ${linkUrl}]`,
+									);
+								}
+							});
+							textContent = processedText;
+						} else {
+							// If we can't identify job titles, just append all links at the end
+							textContent += '\n\nLinks:\n';
+							linkMap.forEach((url, text) => {
+								textContent += `${text}: ${url}\n`;
+							});
+						}
+					}
+
+					result += textContent + '\n\n';
+				} else {
+					// Original behavior
+					result += (el.textContent || '') + '\n';
+				}
+			});
+			return result.trim();
+		},
+		{selector, includeLinks}, // Pass parameters as a single object
+	);
 }
 
-/**
- * Extracts clean HTML content from elements matching the selector
- * @param page Playwright page object
- * @param selector CSS selector to target specific elements
- */
 async function extractCleanHtmlWithSelector(
 	page: playwright.Page,
 	selector: string,
@@ -800,22 +721,17 @@ async function extractCleanHtmlWithSelector(
 		const elements = document.querySelectorAll(sel);
 		if (elements.length === 0) return '';
 
-		// If multiple elements match, combine their cleaned HTML
 		let result = '';
 		elements.forEach(el => {
-			// Clone the element to avoid modifying the actual page
 			const clone = el.cloneNode(true) as HTMLElement;
 
-			// Remove scripts, styles, and other non-content elements
 			const elementsToRemove = clone.querySelectorAll(
 				'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
 			);
 			elementsToRemove.forEach(el => el.remove());
 
-			// Remove event handlers and inline styles
 			const allElements = clone.querySelectorAll('*');
 			allElements.forEach(el => {
-				// Remove all attributes except for a few essential ones
 				const attributes = Array.from(el.attributes);
 				attributes.forEach(attr => {
 					if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
@@ -830,19 +746,11 @@ async function extractCleanHtmlWithSelector(
 	}, selector);
 }
 
-/**
- * Automatically detects and extracts the main content HTML from a page
- * Uses heuristics to identify the most content-rich area of the page
- *
- * @param page Playwright page object
- * @param clean Whether to clean the HTML (remove scripts, styles, etc.)
- */
 async function extractAutoDetectedHtml(
 	page: playwright.Page,
 	clean: boolean = false,
 ): Promise<string> {
 	return await page.evaluate(shouldClean => {
-		// Common content container selectors
 		const possibleContentSelectors = [
 			'article',
 			'main',
@@ -859,7 +767,6 @@ async function extractAutoDetectedHtml(
 			'.page-content',
 		];
 
-		// Try to find content using common selectors
 		for (const selector of possibleContentSelectors) {
 			const element = document.querySelector(selector);
 			if (
@@ -867,24 +774,19 @@ async function extractAutoDetectedHtml(
 				element.textContent &&
 				element.textContent.trim().length > 100
 			) {
-				// Found a good candidate
 				if (!shouldClean) {
 					return element.outerHTML;
 				}
 
-				// Clean the HTML if requested
 				const clone = element.cloneNode(true) as HTMLElement;
 
-				// Remove scripts, styles, and other non-content elements
 				const elementsToRemove = clone.querySelectorAll(
 					'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
 				);
 				elementsToRemove.forEach(el => el.remove());
 
-				// Remove event handlers and inline styles
 				const allElements = clone.querySelectorAll('*');
 				allElements.forEach(el => {
-					// Remove all attributes except for a few essential ones
 					const attributes = Array.from(el.attributes);
 					attributes.forEach(attr => {
 						if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
@@ -897,24 +799,18 @@ async function extractAutoDetectedHtml(
 			}
 		}
 
-		// If no common selectors found, use content density analysis
-		// Find the element with the highest content-to-markup ratio
 		const allElements = document.querySelectorAll('body *');
 		let bestElement = document.body;
 		let bestRatio = 0;
 		let bestTextLength = 0;
 
 		allElements.forEach(el => {
-			// Skip tiny elements and hidden elements
 			if (el.textContent && el.textContent.trim().length > 50) {
 				const textLength = el.textContent.trim().length;
 				const markupLength = el.outerHTML.length;
 				const ratio = textLength / markupLength;
 
-				// Prioritize elements with more text and better ratio
 				if (textLength > bestTextLength * 0.8 && ratio > bestRatio * 0.8) {
-					// Check if this element contains most of the text from the best element so far
-					// This helps us move up the DOM tree to find container elements
 					if (
 						bestElement.textContent &&
 						el.textContent.includes(bestElement.textContent.substring(0, 100))
@@ -927,25 +823,20 @@ async function extractAutoDetectedHtml(
 			}
 		});
 
-		// If we found a good element with content
 		if (bestElement !== document.body && bestTextLength > 200) {
 			if (!shouldClean) {
 				return bestElement.outerHTML;
 			}
 
-			// Clean the HTML if requested
 			const clone = bestElement.cloneNode(true) as HTMLElement;
 
-			// Remove scripts, styles, and other non-content elements
 			const elementsToRemove = clone.querySelectorAll(
 				'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
 			);
 			elementsToRemove.forEach(el => el.remove());
 
-			// Remove event handlers and inline styles
 			const allElements = clone.querySelectorAll('*');
 			allElements.forEach(el => {
-				// Remove all attributes except for a few essential ones
 				const attributes = Array.from(el.attributes);
 				attributes.forEach(attr => {
 					if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
@@ -957,20 +848,16 @@ async function extractAutoDetectedHtml(
 			return clone.outerHTML;
 		}
 
-		// Fallback: return cleaned body if requested, or empty string
 		if (shouldClean) {
 			const clone = document.body.cloneNode(true) as HTMLElement;
 
-			// Remove scripts, styles, and other non-content elements
 			const elementsToRemove = clone.querySelectorAll(
 				'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
 			);
 			elementsToRemove.forEach(el => el.remove());
 
-			// Remove event handlers and inline styles
 			const allElements = clone.querySelectorAll('*');
 			allElements.forEach(el => {
-				// Remove all attributes except for a few essential ones
 				const attributes = Array.from(el.attributes);
 				attributes.forEach(attr => {
 					if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
@@ -986,17 +873,10 @@ async function extractAutoDetectedHtml(
 	}, clean);
 }
 
-/**
- * Automatically detects and extracts the main content text from a page
- * Uses heuristics to identify the most content-rich area of the page
- *
- * @param page Playwright page object
- */
 async function extractAutoDetectedTextContent(
 	page: playwright.Page,
 ): Promise<string> {
 	return await page.evaluate(() => {
-		// Common content container selectors
 		const possibleContentSelectors = [
 			'article',
 			'main',
@@ -1013,7 +893,6 @@ async function extractAutoDetectedTextContent(
 			'.page-content',
 		];
 
-		// Try to find content using common selectors
 		for (const selector of possibleContentSelectors) {
 			const element = document.querySelector(selector);
 			if (
@@ -1021,29 +900,22 @@ async function extractAutoDetectedTextContent(
 				element.textContent &&
 				element.textContent.trim().length > 100
 			) {
-				// Found a good candidate
 				return element.textContent.trim();
 			}
 		}
 
-		// If no common selectors found, use content density analysis
-		// Find the element with the highest content-to-markup ratio
 		const allElements = document.querySelectorAll('body *');
 		let bestElement = document.body;
 		let bestRatio = 0;
 		let bestTextLength = 0;
 
 		allElements.forEach(el => {
-			// Skip tiny elements and hidden elements
 			if (el.textContent && el.textContent.trim().length > 50) {
 				const textLength = el.textContent.trim().length;
 				const markupLength = el.outerHTML.length;
 				const ratio = textLength / markupLength;
 
-				// Prioritize elements with more text and better ratio
 				if (textLength > bestTextLength * 0.8 && ratio > bestRatio * 0.8) {
-					// Check if this element contains most of the text from the best element so far
-					// This helps us move up the DOM tree to find container elements
 					if (
 						bestElement.textContent &&
 						el.textContent.includes(bestElement.textContent.substring(0, 100))
@@ -1056,12 +928,10 @@ async function extractAutoDetectedTextContent(
 			}
 		});
 
-		// If we found a good element with content
 		if (bestElement !== document.body && bestTextLength > 200) {
 			return bestElement.textContent?.trim() || '';
 		}
 
-		// Fallback: return body text
 		return document.body.textContent?.trim() || '';
 	});
 }

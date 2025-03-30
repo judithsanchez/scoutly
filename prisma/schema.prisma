@@ -18,7 +18,8 @@ model Company {
   jobPostings   JobPosting[]
   companySize   CompanySize?
   industry      Industry[]
-  jobSources    JobSource[]   
+  jobSources    JobSource[]
+  htmlSelector  String?   
 }
 
 // NEW: Model to track different job posting sources for a company
