@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
 		try {
 			const jobData = await getStructuredJobData(
 				scrapeResult.content,
-				companyContext,
 				companyName,
 			);
 
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
 			// Return both the raw scrape result and the structured job data
 			return NextResponse.json({
 				scrapeResult: {
-					content: scrapeResult.content.substring(0, 1000) + '...', // Truncate for response
+					content: scrapeResult.content,
 					metadata: scrapeResult.metadata,
 					pagination: scrapeResult.pagination,
 				},

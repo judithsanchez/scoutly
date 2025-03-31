@@ -1,43 +1,36 @@
 import playwright from 'playwright';
 import {Logger} from '@/utils/logger';
+import * as cheerio from 'cheerio';
 
 const logger = new Logger('Scraper');
 
-export interface ScrapeOptions {
-	/** Whether to clean the HTML (remove scripts, styles, etc.) */
-	cleanHtml?: boolean;
-	/** Whether to extract text only (no HTML) */
-	textOnly?: boolean;
-	/** Whether to include metadata (title, description, etc.) */
-	includeMetadata?: boolean;
-	/** CSS selector to target specific elements */
+export interface ScrapeRequest {
+	/** URL to scrape */
+	url: string;
+	/** Optional CSS selector to target specific elements */
 	selector?: string;
-	/** Whether to automatically detect and extract main content */
-	autoDetectContent?: boolean;
-	/** Whether to extract links along with text content */
-	includeLinks?: boolean;
 }
+
 export interface ScrapeResult {
 	content: string;
 	error?: string;
 	metadata?: {
 		title?: string;
-		description?: string;
-		ogImage?: string;
 		url?: string;
-		characterCount?: number; // Add this new field
+		characterCount?: number;
 	};
-	pagination?: {
+	stats?: {
 		pagesScraped: number;
-		infiniteScrollCycles: number;
+		scrollCycles: number;
 	};
 }
 
 export async function scrapeWebsite(
-	url: string,
-	options: ScrapeOptions = {},
+	request: ScrapeRequest,
 ): Promise<ScrapeResult> {
 	let browser = null;
+	const url = request.url;
+	const selector = request.selector;
 
 	logger.info(`Starting to scrape website: ${url}`);
 
@@ -71,16 +64,15 @@ export async function scrapeWebsite(
 
 		const result: ScrapeResult = {
 			content: '',
-			pagination: {
+			stats: {
 				pagesScraped: 1,
-				infiniteScrollCycles: 0,
+				scrollCycles: 0,
 			},
 		};
 
-		if (options.includeMetadata) {
-			logger.debug('Extracting metadata');
-			result.metadata = await extractMetadata(page);
-		}
+		// Always extract basic metadata
+		logger.debug('Extracting metadata');
+		result.metadata = await extractBasicMetadata(page);
 
 		logger.info('Performing initial scroll to load lazy content');
 		await autoScroll(page);
@@ -90,7 +82,8 @@ export async function scrapeWebsite(
 
 		let allContent: string[] = [];
 
-		const firstPageContent = await extractContentBasedOnOptions(page, options);
+		// Extract content from the first page
+		const firstPageContent = await extractCleanContent(page, selector);
 		allContent.push(firstPageContent);
 
 		if (paginationType === 'standard' || paginationType === 'angular') {
@@ -118,10 +111,10 @@ export async function scrapeWebsite(
 				}
 
 				currentPage++;
-				result.pagination!.pagesScraped = currentPage;
+				result.stats!.pagesScraped = currentPage;
 				logger.info(`Navigated to page ${currentPage}`);
 
-				const pageContent = await extractContentBasedOnOptions(page, options);
+				const pageContent = await extractCleanContent(page, selector);
 				allContent.push(pageContent);
 			}
 		} else if (paginationType === 'infinite') {
@@ -141,7 +134,7 @@ export async function scrapeWebsite(
 				}
 
 				scrollCycles++;
-				result.pagination!.infiniteScrollCycles = scrollCycles;
+				result.stats!.scrollCycles = scrollCycles;
 				logger.info(`Completed scroll/load more cycle ${scrollCycles}`);
 
 				await page.waitForTimeout(2000);
@@ -149,6 +142,8 @@ export async function scrapeWebsite(
 				const newContentLength = await page.evaluate(
 					() => document.body.innerHTML.length,
 				);
+
+				// Check if we've loaded significant new content
 				if (newContentLength <= currentContentLength * 1.05) {
 					logger.info(
 						'No significant new content loaded after scrolling/loading more',
@@ -160,11 +155,8 @@ export async function scrapeWebsite(
 					scrollCycles === maxScrollCycles ||
 					newContentLength <= currentContentLength * 1.05
 				) {
-					const scrollContent = await extractContentBasedOnOptions(
-						page,
-						options,
-					);
-					allContent = [scrollContent];
+					const scrollContent = await extractCleanContent(page, selector);
+					allContent = [scrollContent]; // Replace with the complete content
 				}
 			}
 		} else {
@@ -175,7 +167,7 @@ export async function scrapeWebsite(
 
 		logger.info(
 			`Extracted content size: ${result.content.length} characters from ${
-				result.pagination!.pagesScraped
+				result.stats!.pagesScraped
 			} pages`,
 		);
 
@@ -195,9 +187,9 @@ export async function scrapeWebsite(
 			error: `Error scraping website: ${
 				error instanceof Error ? error.message : String(error)
 			}`,
-			pagination: {
+			stats: {
 				pagesScraped: 0,
-				infiniteScrollCycles: 0,
+				scrollCycles: 0,
 			},
 		};
 	} finally {
@@ -206,6 +198,61 @@ export async function scrapeWebsite(
 			await browser.close();
 		}
 	}
+}
+
+async function extractCleanContent(
+	page: playwright.Page,
+	selector?: string,
+): Promise<string> {
+	// Get the raw HTML first
+	const html = selector
+		? await page.evaluate(sel => {
+				const elements = document.querySelectorAll(sel);
+				return Array.from(elements)
+					.map(el => el.outerHTML)
+					.join('');
+		  }, selector)
+		: await page.content();
+
+	// Use cheerio to parse and extract content
+	const $ = cheerio.load(html);
+
+	// Remove unwanted elements
+	$('script, style, iframe, noscript, svg').remove();
+	$('[style*="display:none"], [style*="display: none"]').remove();
+
+	// Extract all links and ensure they're properly formatted
+	$('a').each((_, el) => {
+		const href = $(el).attr('href');
+		if (href) {
+			// Preserve the href attribute
+			$(el).attr('data-original-href', href);
+
+			// Convert relative URLs to absolute
+			if (href.startsWith('/')) {
+				const baseUrl = new URL(page.url());
+				$(el).attr('href', `${baseUrl.origin}${href}`);
+			}
+		}
+	});
+
+	// Return the cleaned HTML
+	return selector ? $.html(selector) : $.html('body');
+}
+
+async function extractBasicMetadata(
+	page: playwright.Page,
+): Promise<ScrapeResult['metadata']> {
+	return await page.evaluate(() => {
+		const metadata: any = {};
+
+		const titleElement = document.querySelector('title');
+		if (titleElement) metadata.title = titleElement.textContent || undefined;
+
+		metadata.url = window.location.href;
+
+		return metadata;
+	});
 }
 
 async function detectPaginationType(page: playwright.Page): Promise<string> {
@@ -310,7 +357,6 @@ async function clickStandardNextPage(page: playwright.Page): Promise<boolean> {
 			'a:contains("»")',
 			'a.pagination-next',
 			'button:contains("Next")',
-			// Add more selectors as needed
 		];
 
 		for (const selector of nextPageSelectors) {
@@ -367,71 +413,59 @@ async function clickStandardNextPage(page: playwright.Page): Promise<boolean> {
 	});
 }
 
+// Enhance the clickAngularNextPage function
 async function clickAngularNextPage(page: playwright.Page): Promise<boolean> {
 	try {
-		const nextButtonSelector =
-			'button.mat-paginator-navigation-next:not([disabled]), .mat-paginator-navigation-next:not(.mat-button-disabled)';
-		const nextButtonExists = await page.$(nextButtonSelector);
+		// Log all clickable elements for debugging
+		await page.evaluate(() => {
+			console.log('Potential Angular pagination elements:');
+			document.querySelectorAll('button, a, [role="button"]').forEach(el => {
+				if (
+					el.textContent?.includes('Next') ||
+					el.getAttribute('aria-label')?.includes('Next')
+				) {
+					console.log(el.outerHTML);
+				}
+			});
+		});
 
-		if (nextButtonExists) {
-			await page.click(nextButtonSelector);
-			await page.waitForTimeout(1000);
-			return true;
-		}
-	} catch (error) {
-		logger.warn('Error clicking Angular next button', error);
-	}
+		// Try to find and click any visible next button with common Angular patterns
+		const clicked = await page.evaluate(() => {
+			// More comprehensive selector for Angular pagination
+			const nextButtons = document.querySelectorAll(
+				'button.mat-paginator-navigation-next, .mat-mdc-paginator-navigation-next, ' +
+					'[aria-label*="Next"], [aria-label*="next"], button:has(.mat-paginator-icon), ' +
+					'a[href*="page="], .pagination a[rel="next"], a.next, button:has(span:contains("Next"))',
+			);
 
-	return await page.evaluate(() => {
-		const nextButton = document.querySelector(
-			'button.mat-paginator-navigation-next:not([disabled]), .mat-paginator-navigation-next:not(.mat-button-disabled)',
-		) as HTMLElement;
+			for (const btn of Array.from(nextButtons)) {
+				const button = btn as HTMLElement;
+				const isDisabled =
+					button.hasAttribute('disabled') ||
+					button.classList.contains('mat-button-disabled') ||
+					button.getAttribute('aria-disabled') === 'true';
 
-		if (nextButton) {
-			nextButton.click();
-			return true;
-		}
-
-		const pageButtons = document.querySelectorAll(
-			'.mat-paginator-page-number, .mat-paginator-range-actions button',
-		);
-		let currentPageFound = false;
-
-		for (let i = 0; i < pageButtons.length; i++) {
-			const button = pageButtons[i] as HTMLElement;
-
-			if (
-				button.classList.contains('mat-button-disabled') ||
-				button.classList.contains('active') ||
-				button.getAttribute('aria-current') === 'true'
-			) {
-				currentPageFound = true;
-				continue;
-			}
-
-			if (currentPageFound) {
-				button.click();
-				return true;
-			}
-		}
-
-		const pageSizeSelect = document.querySelector(
-			'.mat-paginator-page-size-select',
-		) as HTMLElement;
-		if (pageSizeSelect) {
-			pageSizeSelect.click();
-
-			setTimeout(() => {
-				const pageSizeOptions = document.querySelectorAll('.mat-option');
-				if (pageSizeOptions.length > 1) {
-					(pageSizeOptions[1] as HTMLElement).click();
+				if (!isDisabled && button.offsetParent !== null) {
+					button.click();
 					return true;
 				}
-			}, 500);
+			}
+			return false;
+		});
+
+		if (clicked) {
+			// Wait longer for Angular to update the DOM
+			await page.waitForTimeout(2000);
+			// Wait for network activity to settle
+			await page.waitForLoadState('networkidle');
+			return true;
 		}
 
 		return false;
-	});
+	} catch (error) {
+		logger.warn('Error clicking Angular next button', error);
+		return false;
+	}
 }
 
 async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
@@ -441,6 +475,8 @@ async function clickLoadMoreButton(page: playwright.Page): Promise<boolean> {
 			'a:text("Load More")',
 			'button:text("Show More")',
 			'a:text("Show More")',
+			'.load-more-button',
+			'.show-more',
 			'.load-more-button',
 			'.show-more-button',
 			'[data-load-more]',
@@ -535,403 +571,4 @@ async function autoScroll(page: playwright.Page): Promise<void> {
 	scrollLogger.debug('Waiting after scroll to ensure content loads');
 	await page.waitForTimeout(2000);
 	scrollLogger.success('Auto-scroll completed successfully');
-}
-
-async function extractContentBasedOnOptions(
-	page: playwright.Page,
-	options: ScrapeOptions,
-): Promise<string> {
-	if (options.selector) {
-		if (options.textOnly) {
-			return await extractTextContentWithSelector(
-				page,
-				options.selector,
-				options.includeLinks === true,
-			);
-		} else if (options.cleanHtml) {
-			return await extractCleanHtmlWithSelector(page, options.selector);
-		} else {
-			return await extractHtmlWithSelector(page, options.selector);
-		}
-	} else if (options.autoDetectContent) {
-		if (options.textOnly) {
-			return await extractAutoDetectedTextContent(page);
-		} else {
-			return await extractAutoDetectedHtml(page, options.cleanHtml === true);
-		}
-	} else if (options.textOnly) {
-		return await extractTextContent(page);
-	} else if (options.cleanHtml) {
-		return await extractCleanHtml(page);
-	} else {
-		return await page.evaluate(() => {
-			return document.body.innerHTML;
-		});
-	}
-}
-
-async function extractMetadata(
-	page: playwright.Page,
-): Promise<ScrapeResult['metadata']> {
-	return await page.evaluate(() => {
-		const metadata: ScrapeResult['metadata'] = {};
-
-		const titleElement = document.querySelector('title');
-		if (titleElement) metadata.title = titleElement.textContent || undefined;
-
-		const descElement = document.querySelector('meta[name="description"]');
-		if (descElement)
-			metadata.description = descElement.getAttribute('content') || undefined;
-
-		const ogImageElement = document.querySelector('meta[property="og:image"]');
-		if (ogImageElement)
-			metadata.ogImage = ogImageElement.getAttribute('content') || undefined;
-
-		metadata.url = window.location.href;
-
-		return metadata;
-	});
-}
-
-async function extractTextContent(page: playwright.Page): Promise<string> {
-	return await page.evaluate(() => {
-		return document.body.textContent || '';
-	});
-}
-
-async function extractCleanHtml(page: playwright.Page): Promise<string> {
-	return await page.evaluate(() => {
-		const clone = document.body.cloneNode(true) as HTMLElement;
-
-		const elementsToRemove = clone.querySelectorAll(
-			'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
-		);
-		elementsToRemove.forEach(el => el.remove());
-
-		const allElements = clone.querySelectorAll('*');
-		allElements.forEach(el => {
-			const attributes = Array.from(el.attributes);
-			attributes.forEach(attr => {
-				if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
-					el.removeAttribute(attr.name);
-				}
-			});
-		});
-
-		return clone.innerHTML;
-	});
-}
-
-async function extractHtmlWithSelector(
-	page: playwright.Page,
-	selector: string,
-): Promise<string> {
-	return await page.evaluate(sel => {
-		const elements = document.querySelectorAll(sel);
-		if (elements.length === 0) return '';
-
-		let result = '';
-		elements.forEach(el => {
-			result += el.outerHTML;
-		});
-		return result;
-	}, selector);
-}
-
-async function extractTextContentWithSelector(
-	page: playwright.Page,
-	selector: string,
-	includeLinks: boolean = false,
-): Promise<string> {
-	// Pass parameters as an array after the function
-	return await page.evaluate(
-		params => {
-			const sel = params.selector;
-			const extractLinks = params.includeLinks;
-
-			const elements = document.querySelectorAll(sel);
-			if (elements.length === 0) return '';
-
-			let result = '';
-			elements.forEach(el => {
-				if (extractLinks) {
-					// Extract text with links
-					const links = el.querySelectorAll('a');
-					const linkMap = new Map();
-
-					// Collect all links first
-					links.forEach(link => {
-						const url = link.href;
-						const text = link.textContent?.trim() || '';
-						if (url && text) {
-							linkMap.set(text, url);
-						}
-					});
-
-					// Get the text content
-					let textContent = (el.textContent || '').trim();
-
-					// Append links at the end of each job listing
-					if (linkMap.size > 0) {
-						// Try to identify job listings by common patterns
-						const jobTitles = el.querySelectorAll(
-							'h2, h3, .job-title, [class*="title"]',
-						);
-
-						if (jobTitles.length > 0) {
-							// If we can identify job titles, append links after each job section
-							let processedText = textContent;
-							jobTitles.forEach(title => {
-								const titleText = title.textContent?.trim() || '';
-								if (titleText && linkMap.has(titleText)) {
-									const linkUrl = linkMap.get(titleText);
-									processedText = processedText.replace(
-										titleText,
-										`${titleText} [URL: ${linkUrl}]`,
-									);
-								}
-							});
-							textContent = processedText;
-						} else {
-							// If we can't identify job titles, just append all links at the end
-							textContent += '\n\nLinks:\n';
-							linkMap.forEach((url, text) => {
-								textContent += `${text}: ${url}\n`;
-							});
-						}
-					}
-
-					result += textContent + '\n\n';
-				} else {
-					// Original behavior
-					result += (el.textContent || '') + '\n';
-				}
-			});
-			return result.trim();
-		},
-		{selector, includeLinks}, // Pass parameters as a single object
-	);
-}
-
-async function extractCleanHtmlWithSelector(
-	page: playwright.Page,
-	selector: string,
-): Promise<string> {
-	return await page.evaluate(sel => {
-		const elements = document.querySelectorAll(sel);
-		if (elements.length === 0) return '';
-
-		let result = '';
-		elements.forEach(el => {
-			const clone = el.cloneNode(true) as HTMLElement;
-
-			const elementsToRemove = clone.querySelectorAll(
-				'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
-			);
-			elementsToRemove.forEach(el => el.remove());
-
-			const allElements = clone.querySelectorAll('*');
-			allElements.forEach(el => {
-				const attributes = Array.from(el.attributes);
-				attributes.forEach(attr => {
-					if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
-						el.removeAttribute(attr.name);
-					}
-				});
-			});
-
-			result += clone.outerHTML;
-		});
-		return result;
-	}, selector);
-}
-
-async function extractAutoDetectedHtml(
-	page: playwright.Page,
-	clean: boolean = false,
-): Promise<string> {
-	return await page.evaluate(shouldClean => {
-		const possibleContentSelectors = [
-			'article',
-			'main',
-			'.content',
-			'#content',
-			'.main',
-			'#main',
-			'.post',
-			'.article',
-			'.post-content',
-			'.entry-content',
-			'[role="main"]',
-			'.main-content',
-			'.page-content',
-		];
-
-		for (const selector of possibleContentSelectors) {
-			const element = document.querySelector(selector);
-			if (
-				element &&
-				element.textContent &&
-				element.textContent.trim().length > 100
-			) {
-				if (!shouldClean) {
-					return element.outerHTML;
-				}
-
-				const clone = element.cloneNode(true) as HTMLElement;
-
-				const elementsToRemove = clone.querySelectorAll(
-					'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
-				);
-				elementsToRemove.forEach(el => el.remove());
-
-				const allElements = clone.querySelectorAll('*');
-				allElements.forEach(el => {
-					const attributes = Array.from(el.attributes);
-					attributes.forEach(attr => {
-						if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
-							el.removeAttribute(attr.name);
-						}
-					});
-				});
-
-				return clone.outerHTML;
-			}
-		}
-
-		const allElements = document.querySelectorAll('body *');
-		let bestElement = document.body;
-		let bestRatio = 0;
-		let bestTextLength = 0;
-
-		allElements.forEach(el => {
-			if (el.textContent && el.textContent.trim().length > 50) {
-				const textLength = el.textContent.trim().length;
-				const markupLength = el.outerHTML.length;
-				const ratio = textLength / markupLength;
-
-				if (textLength > bestTextLength * 0.8 && ratio > bestRatio * 0.8) {
-					if (
-						bestElement.textContent &&
-						el.textContent.includes(bestElement.textContent.substring(0, 100))
-					) {
-						bestElement = el as HTMLElement;
-						bestRatio = ratio;
-						bestTextLength = textLength;
-					}
-				}
-			}
-		});
-
-		if (bestElement !== document.body && bestTextLength > 200) {
-			if (!shouldClean) {
-				return bestElement.outerHTML;
-			}
-
-			const clone = bestElement.cloneNode(true) as HTMLElement;
-
-			const elementsToRemove = clone.querySelectorAll(
-				'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
-			);
-			elementsToRemove.forEach(el => el.remove());
-
-			const allElements = clone.querySelectorAll('*');
-			allElements.forEach(el => {
-				const attributes = Array.from(el.attributes);
-				attributes.forEach(attr => {
-					if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
-						el.removeAttribute(attr.name);
-					}
-				});
-			});
-
-			return clone.outerHTML;
-		}
-
-		if (shouldClean) {
-			const clone = document.body.cloneNode(true) as HTMLElement;
-
-			const elementsToRemove = clone.querySelectorAll(
-				'script, style, iframe, noscript, svg, [style*="display:none"], [style*="display: none"]',
-			);
-			elementsToRemove.forEach(el => el.remove());
-
-			const allElements = clone.querySelectorAll('*');
-			allElements.forEach(el => {
-				const attributes = Array.from(el.attributes);
-				attributes.forEach(attr => {
-					if (!['href', 'src', 'alt', 'title', 'class'].includes(attr.name)) {
-						el.removeAttribute(attr.name);
-					}
-				});
-			});
-
-			return clone.innerHTML;
-		}
-
-		return document.body.innerHTML;
-	}, clean);
-}
-
-async function extractAutoDetectedTextContent(
-	page: playwright.Page,
-): Promise<string> {
-	return await page.evaluate(() => {
-		const possibleContentSelectors = [
-			'article',
-			'main',
-			'.content',
-			'#content',
-			'.main',
-			'#main',
-			'.post',
-			'.article',
-			'.post-content',
-			'.entry-content',
-			'[role="main"]',
-			'.main-content',
-			'.page-content',
-		];
-
-		for (const selector of possibleContentSelectors) {
-			const element = document.querySelector(selector);
-			if (
-				element &&
-				element.textContent &&
-				element.textContent.trim().length > 100
-			) {
-				return element.textContent.trim();
-			}
-		}
-
-		const allElements = document.querySelectorAll('body *');
-		let bestElement = document.body;
-		let bestRatio = 0;
-		let bestTextLength = 0;
-
-		allElements.forEach(el => {
-			if (el.textContent && el.textContent.trim().length > 50) {
-				const textLength = el.textContent.trim().length;
-				const markupLength = el.outerHTML.length;
-				const ratio = textLength / markupLength;
-
-				if (textLength > bestTextLength * 0.8 && ratio > bestRatio * 0.8) {
-					if (
-						bestElement.textContent &&
-						el.textContent.includes(bestElement.textContent.substring(0, 100))
-					) {
-						bestElement = el as HTMLElement;
-						bestRatio = ratio;
-						bestTextLength = textLength;
-					}
-				}
-			}
-		});
-
-		if (bestElement !== document.body && bestTextLength > 200) {
-			return bestElement.textContent?.trim() || '';
-		}
-
-		return document.body.textContent?.trim() || '';
-	});
 }

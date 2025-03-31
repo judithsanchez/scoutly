@@ -14,6 +14,7 @@ const logger = new Logger('GeminiAI');
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey as string);
 
+// Define function schema for structured output
 const schema: FunctionDeclaration = {
 	name: 'extractJobData',
 	description: 'Extract job data from content',
@@ -48,6 +49,7 @@ const schema: FunctionDeclaration = {
 };
 
 logger.debug('Initializing Gemini model with function calling schema');
+
 const model = genAI.getGenerativeModel({
 	model: 'gemini-2.0-flash',
 	safetySettings: [
@@ -58,8 +60,10 @@ const model = genAI.getGenerativeModel({
 	],
 	tools: [{functionDeclarations: [schema]}],
 });
+
 logger.info('Gemini model initialized successfully');
 
+// Main function
 export async function getStructuredJobData(
 	content: string,
 	companyName?: string,
@@ -70,18 +74,18 @@ export async function getStructuredJobData(
 	logger.info(`Processing job data extraction request.`);
 	logger.debug(`Content length: ${content.length} characters`);
 
-	// Include company name in the prompt if provided
 	const companyNameInfo = companyName
 		? `The company name is "${companyName}". Use this exact name in your response.`
 		: '';
 
 	const prompt = `
-You are a helpful assistant that extracts job data from job board of the company ${companyNameInfo}.
+You are a helpful assistant that extracts job data from a company job board.
+${companyNameInfo}
 
 Content:
 ${content}
 
-Extract all job positions from the content. Make sure to use the exact company name provided and include all matching job positions with their titles and URLs.
+Extract all job positions from the content. Use the exact company name provided (if any), and include all job titles and URLs.
 `;
 
 	try {
@@ -96,18 +100,33 @@ Extract all job positions from the content. Make sure to use the exact company n
 		const endTime = Date.now();
 		logger.debug(`Gemini API response received in ${endTime - startTime}ms`);
 
-		return result;
-	} catch (err) {
-		logger.error('Gemini job extraction error', err);
+		const functionCalls = result.response.functionCalls?.();
+		const call = functionCalls?.[0];
 
-		const errorFallbackData = {
+		if (call?.name === 'extractJobData') {
+			const parsed = call.args as {
+				companyName: string;
+				openPositions: {title: string; url: string}[];
+			};
+			logger.info(
+				`✅ Extracted ${parsed.openPositions?.length ?? 0} job(s) from Gemini.`,
+			);
+			return parsed;
+		}
+
+		logger.warn('⚠️ No structured function call received from Gemini.');
+		throw new Error('No structured response from Gemini.');
+	} catch (err) {
+		logger.error('❌ Gemini job extraction error:', err);
+
+		const fallback = {
 			companyName: companyName || 'Unknown Company',
 			openPositions: [],
 		};
 
 		logger.info(
-			`Returning error fallback structure with company name: ${errorFallbackData.companyName}`,
+			`Returning fallback structure with company name: ${fallback.companyName}`,
 		);
-		return errorFallbackData;
+		return fallback;
 	}
 }
