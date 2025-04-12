@@ -10,9 +10,15 @@ export interface ScrapeRequest {
 	company?: string; // Optional company name for error reporting
 }
 
+export interface JobData {
+	url: string;
+	title?: string;
+	description?: string;
+}
+
 export interface ScrapeResult {
 	content: string;
-	urls: string[];
+	jobs: JobData[];
 	error?: string; // Optional error message
 }
 
@@ -80,7 +86,7 @@ export async function scrapeWebsite(
 		logger.success('Auto-scroll completed');
 
 		const allContent: string[] = [];
-		const allUrls: Set<string> = new Set();
+		const allJobs: Set<JobData> = new Set();
 		let currentPage = 1;
 		const maxPages = 5;
 
@@ -92,18 +98,35 @@ export async function scrapeWebsite(
 			const content = $('body').html() || '';
 			allContent.push(content);
 
-			// Extract all URLs from the page
+			// Extract all URLs and attempt to find associated job info from surrounding content
+			const jobs = new Map<string, JobData>();
 			$('a').each((_, el) => {
-				const href = $(el).attr('href');
+				const $el = $(el);
+				const href = $el.attr('href');
 				if (href) {
 					try {
 						const absoluteUrl = new URL(href, url).toString();
-						allUrls.add(absoluteUrl);
+						if (!jobs.has(absoluteUrl)) {
+							// Try to find a job title/description in surrounding elements
+							const parentText = $el.parent().text().trim();
+							const title = $el.text().trim() || undefined;
+							const description =
+								title && parentText !== title ? parentText : undefined;
+
+							jobs.set(absoluteUrl, {
+								url: absoluteUrl,
+								title,
+								description,
+							});
+						}
 					} catch (e) {
 						logger.warn(`Invalid URL found: ${href}`);
 					}
 				}
 			});
+
+			// Add jobs to our set
+			Array.from(jobs.values()).forEach(job => allJobs.add(job));
 		} else {
 			// Process with provided selector
 			while (currentPage <= maxPages) {
@@ -147,20 +170,35 @@ export async function scrapeWebsite(
 				logger.debug(`Content length: ${content.length} characters`);
 				allContent.push(content);
 
-				// Extract URLs
+				// Extract URLs and job info
+				const jobs = new Map<string, JobData>();
 				let urlCount = 0;
 				selectedElement.find('a').each((_, el) => {
-					const href = $(el).attr('href');
+					const $el = $(el);
+					const href = $el.attr('href');
 					if (href) {
 						try {
 							const absoluteUrl = new URL(href, url).toString();
-							allUrls.add(absoluteUrl);
-							urlCount++;
+							if (!jobs.has(absoluteUrl)) {
+								const parentElement = $el.closest(selector) || $el.parent();
+								const title = $el.text().trim() || undefined;
+								const description = parentElement.text().trim();
+
+								jobs.set(absoluteUrl, {
+									url: absoluteUrl,
+									title,
+									description: description !== title ? description : undefined,
+								});
+								urlCount++;
+							}
 						} catch (e) {
 							logger.warn(`Invalid URL found: ${href}`);
 						}
 					}
 				});
+
+				// Add jobs to our set
+				Array.from(jobs.values()).forEach(job => allJobs.add(job));
 				logger.info(`Found ${urlCount} URLs on page ${currentPage}`);
 
 				// Check pagination
@@ -184,7 +222,7 @@ export async function scrapeWebsite(
 		logger.success(`Scraping completed. Processed ${currentPage} pages`);
 		return {
 			content: allContent.join('\n'),
-			urls: Array.from(allUrls),
+			jobs: Array.from(allJobs),
 		};
 	} catch (error) {
 		logger.error('Unexpected error during scraping', error);
