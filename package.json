@@ -6,13 +6,16 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "next lint",
+		"seed": "ts-node src/scripts/seedCompanies.ts"
 	},
 	"dependencies": {
 		"@google/generative-ai": "^0.24.0",
 		"@prisma/client": "^6.5.0",
 		"axios": "^1.8.4",
 		"cheerio": "^1.0.0",
+		"mongodb": "^6.15.0",
+		"mongoose": "^8.13.2",
 		"next": "^14.2.26",
 		"playwright": "^1.51.1",
 		"prisma": "^6.5.0",
@@ -20,6 +23,7 @@
 		"react-dom": "^18"
 	},
 	"devDependencies": {
+		"@types/mongoose": "^5.11.96",
 		"@types/node": "^20",
 		"@types/react": "^18",
 		"@types/react-dom": "^18",
