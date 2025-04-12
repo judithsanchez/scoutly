@@ -4,6 +4,25 @@ import {Logger} from '@/utils/logger';
 
 const logger = new Logger('ScrapeAPI');
 
+// Add CORS headers to the response
+function addCorsHeaders(response: NextResponse) {
+	response.headers.set('Access-Control-Allow-Origin', '*');
+	response.headers.set(
+		'Access-Control-Allow-Methods',
+		'GET, POST, PUT, DELETE, OPTIONS',
+	);
+	response.headers.set(
+		'Access-Control-Allow-Headers',
+		'Content-Type, Authorization',
+	);
+	return response;
+}
+
+// Handle OPTIONS request for CORS
+export async function OPTIONS() {
+	return addCorsHeaders(new NextResponse(null, {status: 200}));
+}
+
 export async function POST(request: NextRequest) {
 	logger.info('Received scrape request');
 
@@ -12,7 +31,9 @@ export async function POST(request: NextRequest) {
 
 		if (!body || !body.url) {
 			logger.warn('Missing URL in request body');
-			return NextResponse.json({error: 'URL is required'}, {status: 400});
+			return addCorsHeaders(
+				NextResponse.json({error: 'URL is required'}, {status: 400}),
+			);
 		}
 
 		const {url, selector, company} = body;
@@ -22,7 +43,9 @@ export async function POST(request: NextRequest) {
 			new URL(url);
 		} catch (error) {
 			logger.warn(`Invalid URL format: ${url}`, error);
-			return NextResponse.json({error: 'Invalid URL format'}, {status: 400});
+			return addCorsHeaders(
+				NextResponse.json({error: 'Invalid URL format'}, {status: 400}),
+			);
 		}
 
 		logger.info(`Starting scrape operation for: ${url}`);
@@ -34,18 +57,20 @@ export async function POST(request: NextRequest) {
 
 		if (result.error) {
 			logger.error(`Scrape operation failed: ${result.error}`);
-			return NextResponse.json({error: result.error}, {status: 500});
+			return addCorsHeaders(
+				NextResponse.json({error: result.error}, {status: 500}),
+			);
 		}
 
 		logger.success(
 			`Scrape operation successful, content length: ${result.content.length} characters`,
 		);
-		return NextResponse.json(result);
-	} catch (error) {
+		return addCorsHeaders(NextResponse.json(result));
+	} catch (error: any) {
 		logger.error('Failed to process request', error);
-		return NextResponse.json(
-			{error: 'Failed to process request'},
-			{status: 400},
+		const errorMessage = error.message || 'Failed to process request';
+		return addCorsHeaders(
+			NextResponse.json({error: errorMessage}, {status: 500}),
 		);
 	}
 }

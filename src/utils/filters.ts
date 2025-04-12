@@ -41,6 +41,8 @@ export const negativeFilters = [
 	'wordpress',
 	'platform',
 	'executive',
+	'enterprise',
+	'reliability',
 	'mailto:',
 ];
 
