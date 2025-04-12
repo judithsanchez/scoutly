@@ -81,6 +81,13 @@ await CompanyService.findCompaniesByWorkModel(WorkModel.FULLY_REMOTE);
 
 ## Active Considerations
 
+### Scraping System
+
+- Resilient content extraction with fallback strategies
+- Detailed error logging for invalid selectors
+- Company-specific error tracking
+- Automated error report generation
+
 ### Performance
 
 - MongoDB indexes on frequently queried fields
@@ -113,4 +120,56 @@ await CompanyService.findCompaniesByWorkModel(WorkModel.FULLY_REMOTE);
 1. Separate model and service layers
 2. Use static methods for service operations
 3. Implement comprehensive error handling
+   - Log detailed error context
+   - Provide fallback behaviors
+   - Track company-specific issues
 4. Maintain clear documentation
+5. Error resilience patterns:
+   - Graceful fallback to full page content
+   - Structured error logging
+   - Company context preservation
+
+### Recent System Enhancements
+
+#### Enhanced Scraping System
+
+```mermaid
+theme dark
+flowchart TD
+    Start[Scrape Request] --> HasSelector{Has Selector?}
+
+    HasSelector -->|Yes| TrySelector[Try Selector]
+    HasSelector -->|No| FullPage[Scrape Full Page]
+
+    TrySelector --> SelectorFound{Found?}
+    SelectorFound -->|Yes| Extract[Extract Content]
+    SelectorFound -->|No| Log[Log Error]
+
+    Log --> CompanyInfo{Has Company Info?}
+    CompanyInfo -->|Yes| ErrorReport[Create Error Report]
+    CompanyInfo -->|No| Fallback[Use Fallback]
+
+    ErrorReport --> Fallback
+    Fallback --> FullPage
+
+    FullPage --> URLs[Extract URLs]
+    Extract --> URLs
+
+    URLs --> Complete[Complete Request]
+```
+
+#### Error Handling Implementation
+
+- Error log structure:
+  ```typescript
+  interface SelectorError {
+  	company: string;
+  	url: string;
+  	selector: string;
+  	error: string;
+  	timestamp: string;
+  }
+  ```
+- Stored in: `logs/selector-errors.json`
+- Includes full context for debugging
+- Automated file management

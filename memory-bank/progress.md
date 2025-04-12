@@ -41,15 +41,21 @@
 
 ### Known Issues
 
-None currently reported
+1. Missing selectors for several companies in seedCompanies.ts
+   - Many companies have empty selector strings
+   - Need to verify and add correct selectors for careers pages
 
 ## Next Steps 🎯
 
 ### Short Term
 
-1. Monitor database performance with actual usage
-2. Consider adding indexes for frequent queries
-3. Implement query caching if needed
+1. Verify and add missing selectors in seedCompanies.ts
+   - Research each company's careers page structure
+   - Test selectors using new error handling system
+   - Update companies with verified selectors
+2. Monitor database performance with actual usage
+3. Consider adding indexes for frequent queries
+4. Implement query caching if needed
 
 ### Medium Term
 
@@ -67,10 +73,14 @@ None currently reported
 
 ### Latest Updates
 
-1. Added WorkModel enum
-2. Enhanced location tracking
-3. Implemented seeding system
-4. Added specialized query methods
+1. Enhanced scraping system resilience
+   - Fallback to full page content
+   - Company-specific error tracking
+   - Error reporting system
+2. Added WorkModel enum
+3. Enhanced location tracking
+4. Implemented seeding system
+5. Added specialized query methods
 
 ### Pending Decisions
 
@@ -99,9 +109,21 @@ None currently reported
 - Database schema
 - Service layer methods
 - Seeding instructions
+- Error handling implementation
+- Scraping system documentation
 
 ### In Progress
 
 - Performance optimization guidelines
 - Query patterns documentation
-- Error handling documentation
+- Error report analysis tools
+
+### Recently Completed Features
+
+#### Scraping System Enhancements
+
+- [x] Empty selector handling
+- [x] Invalid selector fallback
+- [x] Company-specific error tracking
+- [x] Error logging system
+- [x] Automated error report generation

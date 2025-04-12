@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({error: 'URL is required'}, {status: 400});
 		}
 
-		const url = body.url;
+		const {url, selector, company} = body;
 		logger.info(`Processing scrape request for URL: ${url}`);
 
 		try {
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
 		}
 
 		logger.info(`Starting scrape operation for: ${url}`);
-		// Pass the complete request object with both url and selector
 		const result = await scrapeWebsite({
-			url: body.url,
-			selector: body.selector,
+			url,
+			selector,
+			company,
 		});
 
 		if (result.error) {

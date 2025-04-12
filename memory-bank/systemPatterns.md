@@ -96,11 +96,40 @@ src/
     └── seedCompanies.ts  # Database seeding
 ```
 
-## Error Handling Pattern
+## Error Handling Patterns
+
+### Service Layer Errors
 
 - Service layer catches and transforms database errors
 - Consistent error message format
 - Type-safe error handling with TypeScript
+
+### Scraping System Errors
+
+- Structured error logging for invalid selectors
+- Company-context preservation in error reports
+- Fallback strategies for content extraction
+- File-based error tracking system
+
+```mermaid
+theme dark
+sequenceDiagram
+    participant C as Client
+    participant S as Scraper
+    participant F as File System
+
+    C->>S: Scrape Request
+
+    alt Has Valid Selector
+        S->>S: Extract Content
+    else Invalid/Missing Selector
+        S->>S: Log Error
+        S->>F: Write Error Report
+        S->>S: Use Fallback Strategy
+    end
+
+    S-->>C: Content Response
+```
 
 ## Query Patterns
 
@@ -115,6 +144,20 @@ src/
 - Exact matching using enum values
 - Efficient index usage
 - Type-safe query parameters
+
+## Content Extraction Patterns
+
+### Resilient Scraping
+
+- Graceful degradation with fallback strategies
+- Automatic full-page extraction when needed
+- Multi-attempt selector handling
+
+### Error Documentation
+
+- JSON-based error logging
+- Structured error reports with context
+- Timestamp-based error tracking
 
 ### Field-based Queries
 
