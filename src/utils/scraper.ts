@@ -68,42 +68,178 @@ function jobMatchesFilters(job: JobData): boolean {
 function extractJobs($: cheerio.CheerioAPI, baseUrl: string): JobData[] {
 	const jobs = new Set<JobData>();
 
-	// Find all links that might be job postings
-	$('h1 a, h2 a, h3 a, h4 a, a').each((_, element) => {
+	// Find job links using more general patterns that cover common HTML structures
+	$(
+		[
+			// Common job listing patterns
+			'a[href*="job"]',
+			'a[href*="career"]',
+			'a[href*="position"]',
+			// Header patterns
+			'h1 > a[href]',
+			'h2 > a[href]',
+			'h3 > a[href]',
+			// Common job containers
+			'.job a[href]',
+			'.position a[href]',
+			'.vacancy a[href]',
+			'.listing a[href]',
+			'[class*="job"] a[href]',
+			'[class*="career"] a[href]',
+			// Common link patterns
+			'a[href]:has(h1)',
+			'a[href]:has(h2)',
+			'a[href]:has(h3)',
+			// Specific structures we know about
+			'a.job-title-link',
+			'.jobs__job a[href]',
+		].join(', '),
+	).each((_, element) => {
 		const $el = $(element);
 		const href = $el.attr('href');
 		if (!href) return;
 
 		try {
-			const jobUrl = new URL(href, baseUrl).toString();
-			let title = $el.text().trim();
+			// Skip non-job URLs and common action URLs
+			if (
+				href.match(
+					/\/(apply|login|auth|signup|register|contact|about|search)/i,
+				) ||
+				href.match(/\.(pdf|doc|docx|zip|jpg|png)$/i) ||
+				href.includes('#') ||
+				href === '/' ||
+				href.length < 2
+			)
+				return;
 
-			// If the link is empty, try to get text from parent heading
-			if (!title) {
-				title = $el.closest('h1, h2, h3, h4').text().trim();
+			const jobUrl = href.startsWith('http')
+				? href
+				: href.startsWith('/')
+				? new URL(href, baseUrl).toString()
+				: `${baseUrl}${href}`;
+
+			// Get title from either Angular Material structure or standard HTML
+			let title;
+			const titleEl = $el.find('span[itemprop="title"]');
+			if (titleEl.length > 0) {
+				title = titleEl.text().trim();
+			} else {
+				title = $el.text().trim();
 			}
 
-			// Get surrounding content for context
-			const parentElement =
-				$el.closest('div, article, section') || $el.parent();
-			const surroundingText = parentElement.text().trim();
+			// Skip if no title or if it's an apply button
+			if (!title || ['Apply Now', 'Apply', 'Read more'].includes(title)) return;
+
+			// Try to get structured job details
+			let location, category, description;
+
+			// Try metadata first (schema.org, opengraph, etc)
+			const metaContainer = $el.closest(
+				'article, [itemtype*="JobPosting"], [typeof*="JobPosting"]',
+			);
+			if (metaContainer.length) {
+				// Try different metadata patterns
+				location = metaContainer
+					.find(
+						[
+							'[itemprop="jobLocation"]',
+							'[property="job:location"]',
+							'[name="job-location"]',
+							'[data-location]',
+							'.location',
+						].join(', '),
+					)
+					.first()
+					.text()
+					.trim();
+
+				description = metaContainer
+					.find(
+						[
+							'[itemprop="description"]',
+							'[property="job:description"]',
+							'[name="job-description"]',
+							'.description',
+							'.summary',
+						].join(', '),
+					)
+					.first()
+					.text()
+					.trim();
+
+				category = metaContainer
+					.find(
+						[
+							'[itemprop="occupationalCategory"]',
+							'[property="job:category"]',
+							'[name="job-category"]',
+							'.category',
+							'.department',
+						].join(', '),
+					)
+					.first()
+					.text()
+					.trim();
+			}
+			// Fallback to Angular Material structure if present
+			else if ($el.closest('mat-expansion-panel-header').length) {
+				const panelHeader = $el.closest('mat-expansion-panel-header');
+				const descriptionContainer = panelHeader.find('.description-container');
+				const locationElement = descriptionContainer
+					?.find('[itemprop="location"]')
+					.parent()
+					.find('.label-value.location');
+				const categoryElement = descriptionContainer
+					?.find('[itemprop="categories"]')
+					.parent()
+					.find('.label-value');
+
+				location = locationElement?.text().trim();
+				category = categoryElement?.text().trim();
+				description = `${category || ''} - ${location || ''}`.trim();
+			} else {
+				// Try to get unstructured job details (e.g., from standard HTML)
+				const jobContainer = $el.closest(
+					[
+						// Common job containers
+						'[class*="job"]',
+						'[class*="career"]',
+						'[class*="position"]',
+						'[class*="vacancy"]',
+						'[class*="listing"]',
+						'article',
+						'section',
+						'.content',
+						// Known specific containers
+						'.jobs__job',
+						'.job-posting',
+						'mat-expansion-panel-header',
+					].join(', '),
+				);
+				if (jobContainer.length) {
+					// Get description from paragraphs following the title
+					const paragraphs = jobContainer
+						.find('p')
+						.map((_, el) => $(el).text().trim())
+						.get();
+					description = paragraphs.join('\n').trim();
+
+					// Try to extract location from description
+					const locationMatch = description.match(
+						/location|based in|remote.*(?:in|from)\s+([^.]+)/i,
+					);
+					if (locationMatch) {
+						location = locationMatch[1].trim();
+					}
+				}
+			}
 
 			// If we have a title
 			if (title && title.length > 0) {
-				// Create description from surrounding text, excluding the title
-				const description = surroundingText.replace(title, '').trim();
-
-				// Optional: Extract location from description if available
-				let location: string | undefined;
-				const locationMatch = description.match(/Location:\s*([^.]+)/i);
-				if (locationMatch) {
-					location = locationMatch[1].trim();
-				}
-
 				const jobData = {
 					url: jobUrl,
 					title,
-					location,
+					location: location || undefined,
 					description: description || undefined,
 				};
 
@@ -145,6 +281,15 @@ export async function scrapeWebsite(
 		logger.info('Navigating to page...');
 		await page.goto(url, {waitUntil: 'networkidle', timeout: 30000});
 		logger.success('Page loaded successfully');
+
+		// Wait for Angular Material content to load
+		await page
+			.waitForSelector('mat-expansion-panel-header', {timeout: 10000})
+			.catch(() => {
+				logger.warn(
+					'Angular Material elements not found, continuing with default scraping',
+				);
+			});
 
 		logger.info('Starting auto-scroll to load lazy content...');
 		await autoScroll(page);

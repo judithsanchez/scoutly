@@ -726,7 +726,7 @@ const companies = [
 		company: 'Booking.com',
 		careers_url:
 			'https://jobs.booking.com/booking/jobs?keywords=engineer&sortBy=relevance',
-		selector: '.search-results',
+		selector: '.job-results-container',
 		work_model: WorkModel.HYBRID,
 		headquarters: 'Amsterdam, Netherlands',
 		office_locations: [
