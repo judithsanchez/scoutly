@@ -775,7 +775,7 @@ const companies = [
 		companyID: 'localyze',
 		company: 'Localyze',
 		careers_url: 'https://www.localyze.com/careers',
-		selector: '"#open-positions',
+		selector: '#open-positions',
 		work_model: WorkModel.FULLY_REMOTE,
 		headquarters: 'Hamburg, Germany',
 		office_locations: [],

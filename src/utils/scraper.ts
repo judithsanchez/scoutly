@@ -1,6 +1,7 @@
 import playwright from 'playwright';
 import * as cheerio from 'cheerio';
 import {Logger} from '@/utils/logger';
+import {matchesFilters} from '@/utils/filters';
 
 const logger = new Logger('Scraper');
 
@@ -13,6 +14,7 @@ export interface ScrapeRequest {
 export interface JobData {
 	url: string;
 	title?: string;
+	location?: string;
 	description?: string;
 }
 
@@ -33,33 +35,62 @@ interface SelectorError {
 // Store selector errors in memory (could be moved to database in future)
 const selectorErrors: SelectorError[] = [];
 
-function logSelectorError(
+async function logSelectorError(
 	company: string,
 	url: string,
 	selector: string,
 	error: string,
-): void {
-	const errorLog: SelectorError = {
-		company,
-		url,
-		selector,
-		error,
-		timestamp: new Date().toISOString(),
-	};
+): Promise<void> {
+	try {
+		const errorLog: SelectorError = {
+			company,
+			url,
+			selector,
+			error,
+			timestamp: new Date().toISOString(),
+		};
 
-	selectorErrors.push(errorLog);
+		// Store in memory
+		selectorErrors.push(errorLog);
 
-	// Write error to file
-	const fs = require('fs');
-	const path = require('path');
-	const errorDir = path.join(process.cwd(), 'logs');
+		// Write to file in src/logs
+		try {
+			const fs = require('fs/promises');
+			const path = require('path');
+			const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+			const errorDir = path.join(process.cwd(), 'src', 'logs');
 
-	if (!fs.existsSync(errorDir)) {
-		fs.mkdirSync(errorDir, {recursive: true});
+			// Ensure error directory exists
+			await fs.access(errorDir).catch(async () => {
+				await fs.mkdir(errorDir, {recursive: true});
+			});
+
+			const errorFile = path.join(
+				errorDir,
+				`selector-errors-${timestamp}.json`,
+			);
+			await fs.writeFile(
+				errorFile,
+				JSON.stringify(
+					{
+						...errorLog,
+						date: new Date().toLocaleDateString(),
+						time: new Date().toLocaleTimeString(),
+					},
+					null,
+					2,
+				),
+				'utf8',
+			);
+			logger.info(`Selector error logged to: ${errorFile}`);
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error ? error.message : 'Unknown error';
+			logger.error('Failed to write selector error to file:', errorMessage);
+		}
+	} catch (e) {
+		logger.error('Error in logSelectorError:', e);
 	}
-
-	const errorFile = path.join(errorDir, 'selector-errors.json');
-	fs.writeFileSync(errorFile, JSON.stringify(selectorErrors, null, 2), 'utf8');
 }
 
 export async function scrapeWebsite(
@@ -113,11 +144,20 @@ export async function scrapeWebsite(
 							const description =
 								title && parentText !== title ? parentText : undefined;
 
-							jobs.set(absoluteUrl, {
-								url: absoluteUrl,
-								title,
-								description,
-							});
+							// Check if any field matches the filters
+							const titleMatch = title && matchesFilters(title);
+							const descriptionMatch =
+								description && matchesFilters(description);
+							const urlMatch = absoluteUrl && matchesFilters(absoluteUrl);
+
+							// Only add if it passes our filters (matches positive filters AND doesn't match negative filters)
+							if (titleMatch || descriptionMatch || urlMatch) {
+								jobs.set(absoluteUrl, {
+									url: absoluteUrl,
+									title,
+									description,
+								});
+							}
 						}
 					} catch (e) {
 						logger.warn(`Invalid URL found: ${href}`);
@@ -139,13 +179,73 @@ export async function scrapeWebsite(
 					const errorMsg = `Selector not found: ${selector}`;
 					logger.error(errorMsg, e);
 					if (company) {
-						logSelectorError(company, url, selector, errorMsg);
+						await logSelectorError(company, url, selector, errorMsg);
 					}
-					// Extract full page content as fallback
+
+					// Fall back to processing the entire page
+					logger.info('Falling back to processing entire page content');
 					const html = await page.content();
 					const $ = cheerio.load(html);
 					const content = $('body').html() || '';
 					allContent.push(content);
+
+					// Extract all job-related links and their surrounding content
+					$('a').each((_, el) => {
+						const $el = $(el);
+						const href = $el.attr('href');
+						if (href) {
+							try {
+								const absoluteUrl = new URL(href, url).toString();
+								// Check if URL might be a job posting
+								if (
+									absoluteUrl.includes('greenhouse.io') ||
+									absoluteUrl.includes('/jobs/')
+								) {
+									const title = $el.text().trim();
+									// Clean up the title by removing "Apply Now" and splitting location
+									let cleanTitle = title.replace(/Apply Now→$/, '').trim();
+									let location;
+
+									// Extract location if it starts with "Remote" or contains a dash
+									const locationMatch = cleanTitle.match(
+										/(Remote.*?)(?=Apply|$)/,
+									);
+									if (locationMatch) {
+										location = locationMatch[1].trim();
+										cleanTitle = cleanTitle.replace(location, '').trim();
+										// Remove any remaining dash
+										cleanTitle = cleanTitle.replace(/\s*[-—]\s*$/, '');
+									}
+
+									// Get the containing div for more context
+									const jobDiv = $el.closest('div');
+									const description = jobDiv.length
+										? jobDiv.text().trim()
+										: undefined;
+
+									// Check if any field matches the filters
+									const titleMatch = cleanTitle && matchesFilters(cleanTitle);
+									const descriptionMatch =
+										description && matchesFilters(description);
+									const urlMatch = absoluteUrl && matchesFilters(absoluteUrl);
+
+									// Only add if it passes our filters (matches positive filters AND doesn't match negative filters)
+									if (titleMatch || descriptionMatch || urlMatch) {
+										allJobs.add({
+											url: absoluteUrl,
+											title: cleanTitle,
+											location: location,
+											description:
+												description !== title ? description : undefined,
+										});
+									}
+								}
+							} catch (e) {
+								logger.warn(`Invalid URL found: ${href}`);
+							}
+						}
+					});
+
 					break;
 				}
 
@@ -184,12 +284,22 @@ export async function scrapeWebsite(
 								const title = $el.text().trim() || undefined;
 								const description = parentElement.text().trim();
 
-								jobs.set(absoluteUrl, {
-									url: absoluteUrl,
-									title,
-									description: description !== title ? description : undefined,
-								});
-								urlCount++;
+								// Check if any field matches the filters
+								const titleMatch = title && matchesFilters(title);
+								const descriptionMatch =
+									description && matchesFilters(description);
+								const urlMatch = absoluteUrl && matchesFilters(absoluteUrl);
+
+								// Only add if it passes our filters (matches positive filters AND doesn't match negative filters)
+								if (titleMatch || descriptionMatch || urlMatch) {
+									jobs.set(absoluteUrl, {
+										url: absoluteUrl,
+										title,
+										description:
+											description !== title ? description : undefined,
+									});
+									urlCount++;
+								}
 							}
 						} catch (e) {
 							logger.warn(`Invalid URL found: ${href}`);
