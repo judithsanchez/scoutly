@@ -63,21 +63,35 @@ export class JobMatchingOrchestrator {
 		);
 	}
 
-	private objectToXML(obj: any, parentTag?: string): string {
+	private objectToXML(obj: any): string {
 		if (obj === null || obj === undefined) return '';
+
+		// Handle arrays
 		if (Array.isArray(obj)) {
-			return obj.map(item => this.objectToXML(item, parentTag)).join('');
+			return obj
+				.map(item => {
+					// Use 'item' as tag for array elements
+					return `<item>${
+						typeof item === 'object' ? this.objectToXML(item) : item
+					}</item>`;
+				})
+				.join('');
 		}
+
+		// Handle objects
 		if (typeof obj === 'object') {
 			let xml = '';
 			for (const [key, value] of Object.entries(obj)) {
 				const tag = key.replace(/[^a-zA-Z0-9]/g, '');
-				xml += this.objectToXML(value, tag);
+				xml += `<${tag}>${
+					typeof value === 'object' ? this.objectToXML(value) : value
+				}</${tag}>`;
 			}
 			return xml;
 		}
-		const tag = parentTag?.replace(/[^a-zA-Z0-9]/g, '') || 'value';
-		return `<${tag}>${obj}</${tag}>`;
+
+		// Handle primitive values
+		return String(obj);
 	}
 
 	private async getCvContentAsText(cvUrl: string): Promise<string> {
@@ -179,9 +193,19 @@ export class JobMatchingOrchestrator {
 			if (jobsResult.error) {
 				throw new Error(`Failed to scrape jobs: ${jobsResult.error}`);
 			}
-			logger.info(
-				`✓ Scraping completed. Found ${jobsResult.links.length} links.`,
-			);
+			// Get 3 random job samples
+			const getRandomJobs = (jobs: ExtractedLink[], count: number) => {
+				const shuffled = [...jobs].sort(() => Math.random() - 0.5);
+				return shuffled.slice(0, count);
+			};
+
+			logger.info('📊 Initial Job Board Scrape Results:', {
+				totalJobs: jobsResult.links.length,
+				sampleJobs: getRandomJobs(jobsResult.links, 3).map(link => ({
+					title: link.text,
+					url: link.url,
+				})),
+			});
 
 			if (jobsResult.links.length === 0) {
 				logger.warn('No links found on the job board. Ending pipeline.');
@@ -194,7 +218,10 @@ export class JobMatchingOrchestrator {
 				cvContent,
 				candidateInfo,
 			);
-			logger.info(`Found ${matchedPositions.length} potential matches.`);
+			logger.info('📊 Initial AI Matching Results:', {
+				totalMatches: matchedPositions.length,
+				originalLinks: jobsResult.links.length,
+			});
 
 			if (matchedPositions.length === 0) {
 				logger.info(
@@ -228,12 +255,19 @@ export class JobMatchingOrchestrator {
 		cvContent: string,
 		candidateInfo: Record<string, any>,
 	): Promise<Array<{title: string; url: string}>> {
+		// Log the processed candidate information
+		const candidateXML = this.objectToXML(candidateInfo);
+		logger.debug('Processed Candidate Profile XML:', {
+			stage: 'Initial Matching',
+			xml: candidateXML,
+		});
+
 		const prompt = `
             ${this.systemRole}
             ${this.firstSelectionTask}
             Analyze these job postings based on the candidate's profile and the following CV content.
             <CandidateProfile>
-                ${this.objectToXML(candidateInfo)}
+                ${candidateXML}
             </CandidateProfile>
             <CVContent>
                 ${cvContent}
@@ -287,11 +321,19 @@ export class JobMatchingOrchestrator {
 
 				const jobContent = await this.scrapeJobDetails(position.url);
 
+				// Log the processed candidate information for deep dive analysis
+				const candidateXML = this.objectToXML(candidateInfo);
+				logger.debug('Processed Candidate Profile XML:', {
+					stage: 'Deep Dive Analysis',
+					position: position.title,
+					xml: candidateXML,
+				});
+
 				const prompt = `
                     ${this.systemRole}
                     ${this.jobPostDeepDive}
                     <CandidateProfile>
-                        ${this.objectToXML(candidateInfo)}
+                        ${candidateXML}
                     </CandidateProfile>
                     <CVContent>
                         ${cvContent}
@@ -313,12 +355,22 @@ export class JobMatchingOrchestrator {
 				});
 
 				const analysis = JSON.parse(result.response.text());
-				results.push({...position, ...analysis});
-				logger.success(`✓ Completed analysis for "${position.title}"`);
+				// Only include positions that pass the deep dive analysis
+				if (analysis.suitabilityScore > 0) {
+					results.push({...position, ...analysis});
+					logger.success(`✓ Position passed analysis: "${position.title}"`);
+				} else {
+					logger.info(`✗ Position excluded by deep dive: "${position.title}"`);
+				}
 			} catch (error) {
 				logger.error(`Failed to analyze position: ${position.title}`, error);
 			}
 		}
+
+		logger.info('📊 Deep Dive Analysis Results:', {
+			inputPositions: total,
+			acceptedPositions: results.length,
+		});
 
 		return results.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
 	}

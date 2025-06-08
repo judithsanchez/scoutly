@@ -1,8 +1,5 @@
-// src/utils/geminiSchemas.ts
-
 import {Schema, SchemaType} from '@google/generative-ai';
 
-// Schema for the First Pass (Initial Matching)
 export const initialMatchingSchema: Schema = {
 	type: SchemaType.OBJECT,
 	properties: {
@@ -36,25 +33,25 @@ export const deepDiveSchema: Schema = {
 		goodFitReasons: {
 			type: SchemaType.ARRAY,
 			description:
-				'A list of reasons why this job is a strong match for the candidate.',
+				'Concise reasons why this job strongly matches the candidate. Be brief but specific.',
 			items: {type: SchemaType.STRING},
 		},
 		considerationPoints: {
 			type: SchemaType.ARRAY,
 			description:
-				'A list of potential concerns, risks, or points for the candidate to consider.',
+				'Brief list of concerns, risks, or key points for candidate consideration. Keep each point concise.',
 			items: {type: SchemaType.STRING},
 		},
 		stretchGoals: {
 			type: SchemaType.ARRAY,
 			description:
-				'A list of skills the candidate would learn or be stretched by in this role, framed as growth opportunities.',
+				'Skills the candidate would learn/develop in this role. Frame as growth opportunities, keep brief.',
 			items: {type: SchemaType.STRING},
 		},
 		suitabilityScore: {
 			type: SchemaType.NUMBER,
 			description:
-				'A numerical score from 0 to 100 indicating the overall suitability of the role for the candidate.',
+				'Overall suitability score (0-100) for this role-candidate match.',
 		},
 	},
 	required: [

@@ -305,9 +305,7 @@ export async function scrapeWebsite(
 		};
 
 		// Extract all links
-		logger.info('Extracting links from page...');
 		const links = extractLinks($, url);
-		logger.success(`Found ${links.length} valid links`);
 
 		// Get the full body content
 		const content = $('body').html() || '';
