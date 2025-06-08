@@ -4,13 +4,11 @@ import {
 	type ScrapeResult,
 } from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
-import {
-	GoogleGenerativeAI,
-	GenerationConfig,
-	Part,
-} from '@google/generative-ai';
+import {GoogleGenerativeAI, GenerationConfig} from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
+import {spawn} from 'child_process';
+import os from 'os';
 import {initialMatchingSchema, deepDiveSchema} from '@/utils/geminiSchemas';
 
 const logger = new Logger('JobMatchingOrchestrator');
@@ -26,7 +24,7 @@ interface JobAnalysisResult {
 
 export class JobMatchingOrchestrator {
 	private genAI!: GoogleGenerativeAI;
-	private model!: any; // In a stricter setup, you'd type this as GenerativeModel
+	private model!: any;
 	private systemRole = '';
 	private firstSelectionTask = '';
 	private jobPostDeepDive = '';
@@ -38,9 +36,8 @@ export class JobMatchingOrchestrator {
 		}
 
 		this.genAI = new GoogleGenerativeAI(apiKey);
-		// CHANGED: Use a powerful model that excels at file processing
 		this.model = this.genAI.getGenerativeModel({
-			model: 'gemini-1.5-pro-latest',
+			model: 'gemini-1.5-flash',
 		});
 
 		this.loadPromptTemplates().catch(error => {
@@ -83,51 +80,81 @@ export class JobMatchingOrchestrator {
 		return `<${tag}>${obj}</${tag}>`;
 	}
 
-	// ADDED: New method to process the CV from a Google Drive URL
 	private async getCvContentAsText(cvUrl: string): Promise<string> {
-		logger.info('Processing CV from URL...', {url: cvUrl});
+		logger.info('Processing CV from URL using Python helper...', {url: cvUrl});
+
+		const tempFilePath = path.join(os.tmpdir(), `cv-${Date.now()}.pdf`);
+
 		try {
 			const url = new URL(cvUrl);
 			let fileId: string | null = null;
-
 			if (url.hostname === 'drive.google.com') {
 				const match = url.pathname.match(/\/d\/([^/]+)/);
 				fileId = match ? match[1] : null;
 			}
-
 			if (!fileId) {
 				throw new Error('Could not extract file ID from Google Drive URL.');
 			}
 
-			// NOTE: This requires the Google Drive file to be publicly accessible
 			const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-
 			const response = await fetch(downloadUrl);
 			if (!response.ok) {
 				throw new Error(`Failed to download file: ${response.statusText}`);
 			}
 
 			const pdfBuffer = await response.arrayBuffer();
+			await fs.writeFile(tempFilePath, Buffer.from(pdfBuffer));
 
-			const pdfPart: Part = {
-				inlineData: {
-					data: Buffer.from(pdfBuffer).toString('base64'),
-					mimeType: 'application/pdf',
-				},
-			};
+			logger.debug(`PDF saved temporarily to: ${tempFilePath}`);
 
-			const prompt =
-				'Extract all text from this PDF document. Focus on skills, experiences, and project details.';
+			return new Promise((resolve, reject) => {
+				const pythonProcess = spawn('python3', [
+					'src/scripts/pdf_extractor.py',
+					tempFilePath,
+				]);
 
-			const result = await this.model.generateContent({
-				contents: [{role: 'user', parts: [pdfPart, {text: prompt}]}],
+				let extractedText = '';
+				let errorOutput = '';
+
+				pythonProcess.stdout.on('data', data => {
+					extractedText += data.toString();
+				});
+
+				pythonProcess.stderr.on('data', data => {
+					errorOutput += data.toString();
+				});
+
+				pythonProcess.on('close', code => {
+					// Clean up the file regardless of success or failure
+					fs.unlink(tempFilePath).catch(e =>
+						logger.warn(`Failed to delete temp file: ${tempFilePath}`, e),
+					);
+					if (code !== 0) {
+						logger.error('Python script exited with error code:', {
+							code,
+							errorOutput,
+						});
+						reject(new Error(`Python script failed: ${errorOutput}`));
+					} else {
+						logger.success(
+							'Successfully extracted text from CV via Python script.',
+						);
+						resolve(extractedText);
+					}
+				});
+
+				pythonProcess.on('error', err => {
+					logger.error('Failed to spawn Python script.', err);
+					fs.unlink(tempFilePath).catch(e =>
+						logger.warn(`Failed to delete temp file: ${tempFilePath}`, e),
+					);
+					reject(err);
+				});
 			});
-
-			const cvText = result.response.text();
-			logger.success('Successfully extracted text content from CV.');
-			return cvText;
 		} catch (error) {
 			logger.error('Failed to process CV from Google Drive link.', error);
+			// Attempt cleanup in case of download/write failure
+			await fs.unlink(tempFilePath).catch(() => {});
 			throw new Error('Could not read CV content from the provided URL.');
 		}
 	}
@@ -141,11 +168,13 @@ export class JobMatchingOrchestrator {
 			const startTime = Date.now();
 			logger.info('🚀 Starting job matching pipeline');
 
-			// ADDED: Process CV at the beginning of the pipeline
-			logger.info('Processing candidate CV...');
+			logger.info('📄 Step 1: Processing candidate CV...');
 			const cvContent = await this.getCvContentAsText(cvUrl);
+			logger.success(
+				`✓ CV processed. Extracted ${cvContent.length} characters.`,
+			);
 
-			logger.info('📝 Step 1: Scraping job listings from', {url: jobBoardUrl});
+			logger.info('📝 Step 2: Scraping job listings from', {url: jobBoardUrl});
 			const jobsResult = await this.scrapeJobs(jobBoardUrl);
 			if (jobsResult.error) {
 				throw new Error(`Failed to scrape jobs: ${jobsResult.error}`);
@@ -159,8 +188,7 @@ export class JobMatchingOrchestrator {
 				return [];
 			}
 
-			logger.info('🔍 Step 2: Performing initial job matching analysis');
-			// CHANGED: Pass cvContent instead of cvUrl
+			logger.info('🔍 Step 3: Performing initial job matching analysis');
 			const matchedPositions = await this.performInitialMatching(
 				jobsResult.links,
 				cvContent,
@@ -175,8 +203,7 @@ export class JobMatchingOrchestrator {
 				return [];
 			}
 
-			logger.info('🔬 Step 3: Starting deep dive analysis');
-			// CHANGED: Pass cvContent instead of cvUrl
+			logger.info('🔬 Step 4: Starting deep dive analysis');
 			const analysisResults = await this.performDeepDiveAnalysis(
 				matchedPositions,
 				cvContent,
@@ -198,10 +225,9 @@ export class JobMatchingOrchestrator {
 
 	private async performInitialMatching(
 		links: ExtractedLink[],
-		cvContent: string, // CHANGED: Now accepts CV text content
+		cvContent: string,
 		candidateInfo: Record<string, any>,
 	): Promise<Array<{title: string; url: string}>> {
-		// CHANGED: Prompt now includes the full CV content
 		const prompt = `
             ${this.systemRole}
             ${this.firstSelectionTask}
@@ -247,7 +273,7 @@ export class JobMatchingOrchestrator {
 
 	private async performDeepDiveAnalysis(
 		positions: Array<{title: string; url: string}>,
-		cvContent: string, // CHANGED: Now accepts CV text content
+		cvContent: string,
 		candidateInfo: Record<string, any>,
 	): Promise<JobAnalysisResult[]> {
 		const results: JobAnalysisResult[] = [];
@@ -261,7 +287,6 @@ export class JobMatchingOrchestrator {
 
 				const jobContent = await this.scrapeJobDetails(position.url);
 
-				// CHANGED: Prompt now includes the full CV content
 				const prompt = `
                     ${this.systemRole}
                     ${this.jobPostDeepDive}

@@ -4,11 +4,21 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including Playwright requirements
+# Install system dependencies
+# ADDED: python3, py3-pip, and the build tools needed by PyMuPDF
 RUN apk add --no-cache \
     chromium \
     chromium-chromedriver \
-    wget
+    wget \
+    python3 \
+    py3-pip \
+    g++ \
+    make \
+    mupdf-dev
+
+# ADDED: Install the Python library using pip, now that the build tools are available
+# The --break-system-packages flag is required to bypass the environment protection
+RUN pip3 install PyMuPDF --break-system-packages
 
 # Set Playwright configs
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
