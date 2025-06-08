@@ -4,9 +4,14 @@ import {
 	type ScrapeResult,
 } from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
-import {GoogleGenerativeAI} from '@google/generative-ai';
+import {
+	GoogleGenerativeAI,
+	GenerationConfig,
+	Part,
+} from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
+import {initialMatchingSchema, deepDiveSchema} from '@/utils/geminiSchemas';
 
 const logger = new Logger('JobMatchingOrchestrator');
 
@@ -21,7 +26,7 @@ interface JobAnalysisResult {
 
 export class JobMatchingOrchestrator {
 	private genAI!: GoogleGenerativeAI;
-	private model!: any;
+	private model!: any; // In a stricter setup, you'd type this as GenerativeModel
 	private systemRole = '';
 	private firstSelectionTask = '';
 	private jobPostDeepDive = '';
@@ -33,9 +38,11 @@ export class JobMatchingOrchestrator {
 		}
 
 		this.genAI = new GoogleGenerativeAI(apiKey);
+		// CHANGED: Use a powerful model that excels at file processing
 		this.model = this.genAI.getGenerativeModel({
-			model: 'gemini-2.0-flash',
+			model: 'gemini-1.5-pro-latest',
 		});
+
 		this.loadPromptTemplates().catch(error => {
 			logger.error('Failed to load prompt templates:', error);
 			throw new Error('Failed to load required prompt templates');
@@ -61,11 +68,9 @@ export class JobMatchingOrchestrator {
 
 	private objectToXML(obj: any, parentTag?: string): string {
 		if (obj === null || obj === undefined) return '';
-
 		if (Array.isArray(obj)) {
-			return obj.map(item => this.objectToXML(item, parentTag)).join('\n');
+			return obj.map(item => this.objectToXML(item, parentTag)).join('');
 		}
-
 		if (typeof obj === 'object') {
 			let xml = '';
 			for (const [key, value] of Object.entries(obj)) {
@@ -74,9 +79,57 @@ export class JobMatchingOrchestrator {
 			}
 			return xml;
 		}
-
 		const tag = parentTag?.replace(/[^a-zA-Z0-9]/g, '') || 'value';
-		return `<${tag}>${obj}</${tag}>\n`;
+		return `<${tag}>${obj}</${tag}>`;
+	}
+
+	// ADDED: New method to process the CV from a Google Drive URL
+	private async getCvContentAsText(cvUrl: string): Promise<string> {
+		logger.info('Processing CV from URL...', {url: cvUrl});
+		try {
+			const url = new URL(cvUrl);
+			let fileId: string | null = null;
+
+			if (url.hostname === 'drive.google.com') {
+				const match = url.pathname.match(/\/d\/([^/]+)/);
+				fileId = match ? match[1] : null;
+			}
+
+			if (!fileId) {
+				throw new Error('Could not extract file ID from Google Drive URL.');
+			}
+
+			// NOTE: This requires the Google Drive file to be publicly accessible
+			const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+			const response = await fetch(downloadUrl);
+			if (!response.ok) {
+				throw new Error(`Failed to download file: ${response.statusText}`);
+			}
+
+			const pdfBuffer = await response.arrayBuffer();
+
+			const pdfPart: Part = {
+				inlineData: {
+					data: Buffer.from(pdfBuffer).toString('base64'),
+					mimeType: 'application/pdf',
+				},
+			};
+
+			const prompt =
+				'Extract all text from this PDF document. Focus on skills, experiences, and project details.';
+
+			const result = await this.model.generateContent({
+				contents: [{role: 'user', parts: [pdfPart, {text: prompt}]}],
+			});
+
+			const cvText = result.response.text();
+			logger.success('Successfully extracted text content from CV.');
+			return cvText;
+		} catch (error) {
+			logger.error('Failed to process CV from Google Drive link.', error);
+			throw new Error('Could not read CV content from the provided URL.');
+		}
 	}
 
 	async orchestrateJobMatching(
@@ -88,54 +141,50 @@ export class JobMatchingOrchestrator {
 			const startTime = Date.now();
 			logger.info('🚀 Starting job matching pipeline');
 
-			logger.info('📝 Step 1: Scraping job listings from', jobBoardUrl);
-			const scrapeStartTime = Date.now();
+			// ADDED: Process CV at the beginning of the pipeline
+			logger.info('Processing candidate CV...');
+			const cvContent = await this.getCvContentAsText(cvUrl);
+
+			logger.info('📝 Step 1: Scraping job listings from', {url: jobBoardUrl});
 			const jobsResult = await this.scrapeJobs(jobBoardUrl);
 			if (jobsResult.error) {
 				throw new Error(`Failed to scrape jobs: ${jobsResult.error}`);
 			}
 			logger.info(
-				`✓ Scraping completed in ${
-					(Date.now() - scrapeStartTime) / 1000
-				}s. Found ${jobsResult.links.length} links.`,
+				`✓ Scraping completed. Found ${jobsResult.links.length} links.`,
 			);
+
+			if (jobsResult.links.length === 0) {
+				logger.warn('No links found on the job board. Ending pipeline.');
+				return [];
+			}
 
 			logger.info('🔍 Step 2: Performing initial job matching analysis');
-			const matchStartTime = Date.now();
+			// CHANGED: Pass cvContent instead of cvUrl
 			const matchedPositions = await this.performInitialMatching(
 				jobsResult.links,
-				cvUrl,
+				cvContent,
 				candidateInfo,
 			);
-			logger.info(
-				`✓ Initial matching completed in ${
-					(Date.now() - matchStartTime) / 1000
-				}s`,
-			);
-			logger.info(
-				`Found ${matchedPositions.length} potential matches out of ${jobsResult.links.length} total positions`,
-			);
+			logger.info(`Found ${matchedPositions.length} potential matches.`);
+
+			if (matchedPositions.length === 0) {
+				logger.info(
+					'No potential matches found after initial screening. Ending pipeline.',
+				);
+				return [];
+			}
 
 			logger.info('🔬 Step 3: Starting deep dive analysis');
-			logger.info(
-				`Will analyze ${matchedPositions.length} positions sequentially`,
-			);
-			const deepDiveStartTime = Date.now();
+			// CHANGED: Pass cvContent instead of cvUrl
 			const analysisResults = await this.performDeepDiveAnalysis(
 				matchedPositions,
-				cvUrl,
+				cvContent,
 				candidateInfo,
-			);
-			logger.info(
-				`✓ Deep dive completed in ${(Date.now() - deepDiveStartTime) / 1000}s`,
 			);
 
 			const totalTime = (Date.now() - startTime) / 1000;
 			logger.info(`🏁 Pipeline completed in ${totalTime}s`);
-			logger.info(`Total positions analyzed: ${jobsResult.links.length}`);
-			logger.info(`Matches after initial filter: ${matchedPositions.length}`);
-			logger.info(`Final matches with analysis: ${analysisResults.length}`);
-
 			return analysisResults;
 		} catch (error) {
 			logger.error('Error in job matching pipeline:', error);
@@ -149,49 +198,43 @@ export class JobMatchingOrchestrator {
 
 	private async performInitialMatching(
 		links: ExtractedLink[],
-		cvUrl: string,
+		cvContent: string, // CHANGED: Now accepts CV text content
 		candidateInfo: Record<string, any>,
 	): Promise<Array<{title: string; url: string}>> {
-		logger.info(`Preparing to analyze ${links.length} job listings`);
-		logger.info('Generating analysis prompt with candidate profile and links');
-
+		// CHANGED: Prompt now includes the full CV content
 		const prompt = `
-${this.systemRole}
+            ${this.systemRole}
+            ${this.firstSelectionTask}
+            Analyze these job postings based on the candidate's profile and the following CV content.
+            <CandidateProfile>
+                ${this.objectToXML(candidateInfo)}
+            </CandidateProfile>
+            <CVContent>
+                ${cvContent}
+            </CVContent>
+            Links to analyze:
+            ${links
+							.map(
+								link =>
+									`\nTitle: ${link.text}\nURL: ${link.url}\nContext: ${link.context}`,
+							)
+							.join('')}
+        `;
 
-${this.firstSelectionTask}
+		logger.info('Waiting for AI initial screening with structured output...');
 
-Analyze these job postings based on the candidate's profile:
+		const generationConfig: GenerationConfig = {
+			responseMimeType: 'application/json',
+			responseSchema: initialMatchingSchema,
+		};
 
-<CandidateProfile>
-${this.objectToXML(candidateInfo)}
-</CandidateProfile>
+		const result = await this.model.generateContent({
+			contents: [{role: 'user', parts: [{text: prompt}]}],
+			generationConfig,
+		});
 
-CV URL: ${cvUrl}
-
-Links to analyze:
-${links
-	.map(
-		link => `
-Title: ${link.text}
-URL: ${link.url}
-Context: ${link.context}
-`,
-	)
-	.join('\n')}
-`;
-
-		logger.info('Waiting for AI initial screening...');
-		const startTime = Date.now();
-		const result = await this.model.generateContent(prompt);
-
-		const duration = (Date.now() - startTime) / 1000;
-		const response = JSON.parse(result.response.text());
-		const recommendations = response.recommendedPositions || [];
-
-		logger.info(
-			`Initial screening found ${recommendations.length} potential matches in ${duration}s`,
-		);
-		return recommendations;
+		const responseText = result.response.text();
+		return JSON.parse(responseText).recommendedPositions || [];
 	}
 
 	private async scrapeJobDetails(url: string): Promise<string> {
@@ -204,61 +247,49 @@ Context: ${link.context}
 
 	private async performDeepDiveAnalysis(
 		positions: Array<{title: string; url: string}>,
-		cvUrl: string,
+		cvContent: string, // CHANGED: Now accepts CV text content
 		candidateInfo: Record<string, any>,
 	): Promise<JobAnalysisResult[]> {
 		const results: JobAnalysisResult[] = [];
 		const total = positions.length;
-		let current = 0;
 
-		for (const position of positions) {
-			current++;
+		for (const [index, position] of positions.entries()) {
 			try {
 				logger.info(
-					`[${current}/${total}] 🔍 Analyzing position: ${position.title}`,
+					`[${index + 1}/${total}] 🔍 Analyzing position: ${position.title}`,
 				);
-				const startTime = Date.now();
 
-				logger.info(`  ↳ Scraping job details from ${position.url}`);
 				const jobContent = await this.scrapeJobDetails(position.url);
-				logger.info('  ↳ Generating AI analysis prompt');
 
+				// CHANGED: Prompt now includes the full CV content
 				const prompt = `
-${this.systemRole}
-
-${this.jobPostDeepDive}
-
-Candidate Profile:
-<CandidateProfile>
-${this.objectToXML(candidateInfo)}
-</CandidateProfile>
-
-CV URL: ${cvUrl}
-
-Job Posting Content:
-${jobContent}
-`;
+                    ${this.systemRole}
+                    ${this.jobPostDeepDive}
+                    <CandidateProfile>
+                        ${this.objectToXML(candidateInfo)}
+                    </CandidateProfile>
+                    <CVContent>
+                        ${cvContent}
+                    </CVContent>
+                    Job Posting Content (HTML):
+                    ${jobContent}
+                `;
 
 				logger.info('  ↳ Waiting for AI analysis...');
-				const result = await this.model.generateContent(prompt);
 
-				const duration = (Date.now() - startTime) / 1000;
-				const analysis = JSON.parse(result.response.text());
+				const generationConfig: GenerationConfig = {
+					responseMimeType: 'application/json',
+					responseSchema: deepDiveSchema,
+				};
 
-				results.push({
-					title: position.title,
-					url: position.url,
-					goodFitReasons: analysis.goodFitReasons || [],
-					considerationPoints: analysis.considerationPoints || [],
-					stretchGoals: analysis.stretchGoals || [],
-					suitabilityScore: analysis.suitabilityScore || 0,
+				const result = await this.model.generateContent({
+					contents: [{role: 'user', parts: [{text: prompt}]}],
+					generationConfig,
 				});
 
-				logger.success(
-					`✓ Completed analysis for "${position.title}" (Score: ${
-						analysis.suitabilityScore || 0
-					}/100) in ${duration}s`,
-				);
+				const analysis = JSON.parse(result.response.text());
+				results.push({...position, ...analysis});
+				logger.success(`✓ Completed analysis for "${position.title}"`);
 			} catch (error) {
 				logger.error(`Failed to analyze position: ${position.title}`, error);
 			}
