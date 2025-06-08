@@ -1,26 +1,27 @@
-# Project Brief: Scoutly MongoDB Integration
+# Project Brief: Scoutly
 
-## Project Overview
+## Overview
 
-Scoutly needs a MongoDB database to store and manage company information. This includes details about companies' work arrangements, locations, and fields of expertise.
+A job listing aggregator with advanced scraping capabilities and MongoDB integration.
 
 ## Core Requirements
 
-1. Store company data with enhanced work model information
-2. Enable efficient querying of companies by various criteria
-3. Provide a seeding mechanism for initial data population
+1. Company data storage with MongoDB
+2. Anti-bot scraping system
+3. Flexible API endpoints
+4. Type-safe operations
 
 ## Technical Goals
 
+- Next.js application with TypeScript
 - MongoDB & Mongoose integration
-- Type-safe database operations
-- Flexible query capabilities
-- Easy data seeding process
+- Advanced scraping with Playwright
+- Dockerized development environment
 
 ## Success Criteria
 
-- ✅ Companies can be stored with complete information
-- ✅ Work models (FULLY_REMOTE, HYBRID, IN_OFFICE) are properly tracked
-- ✅ Office locations are tracked alongside headquarters
-- ✅ Database operations are type-safe
-- ✅ Seeding system populates initial company data
+- ✅ Company data persistence
+- ✅ Resilient scraping system
+- ✅ RESTful API endpoints
+- ✅ Type-safe operations
+- ✅ Docker configuration

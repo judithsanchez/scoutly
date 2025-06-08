@@ -12,8 +12,12 @@
 	"dependencies": {
 		"@google/generative-ai": "^0.24.0",
 		"@prisma/client": "^6.5.0",
+		"@radix-ui/react-slot": "^1.2.3",
 		"axios": "^1.8.4",
 		"cheerio": "^1.0.0",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"lucide-react": "^0.513.0",
 		"mongodb": "^6.15.0",
 		"mongoose": "^8.13.2",
 		"next": "^15.3.3",
@@ -21,6 +25,8 @@
 		"prisma": "^6.5.0",
 		"react": "^18",
 		"react-dom": "^18",
+		"tailwind-merge": "^3.3.0",
+		"tailwindcss-animate": "^1.0.7",
 		"tsx": "^4.7.1"
 	},
 	"devDependencies": {
@@ -28,8 +34,11 @@
 		"@types/node": "^20",
 		"@types/react": "^18",
 		"@types/react-dom": "^18",
+		"autoprefixer": "^10.4.21",
 		"eslint": "^8",
 		"eslint-config-next": "14.1.0",
+		"postcss": "^8.5.4",
+		"tailwindcss": "^4.1.8",
 		"typescript": "^5"
 	}
 }

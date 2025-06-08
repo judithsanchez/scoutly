@@ -3,6 +3,8 @@ import * as cheerio from 'cheerio';
 import type {Element} from 'domhandler';
 import {Logger} from '@/utils/logger';
 
+// TODO: create netflix specific scraper - https://explore.jobs.netflix.net/careers?query=manager&location=United%20States&pid=790303120222&Teams=Engineering&Teams=Engineering%20Operations&domain=netflix.com&sort_by=relevance&triggerGoButton=false&triggerGoButton=true
+
 const logger = new Logger('Scraper');
 
 export interface ScrapeRequest {

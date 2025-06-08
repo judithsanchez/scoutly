@@ -2,120 +2,81 @@
 
 ## Purpose
 
-The MongoDB integration serves as the data persistence layer for Scoutly's company database. It stores and manages information about companies, their work arrangements, locations, and fields of expertise.
+Scoutly serves as a job listing aggregator with advanced scraping capabilities, storing company and job data with robust anti-bot measures.
 
 ## Core Functionality
 
-### Company Data Management
+### Data Management
 
-- Store detailed company information
-- Track company work models
-- Manage multiple office locations
-- Categorize companies by fields/industries
+- Company information storage
+- Job listing aggregation
+- Anti-bot scraping system
+- RESTful API access
 
-### Search & Discovery
-
-- Find companies by work model preference
-- Search by location (headquarters or offices)
-- Filter by industry/field
-- Flexible text-based searches
-
-## User Stories
-
-### Data Entry
+### Key Features
 
 ```mermaid
 theme dark
 flowchart LR
-    A[Admin] -->|Creates| C[Company Entry]
-    C -->|Includes| W[Work Model]
-    C -->|Specifies| L[Locations]
-    C -->|Tags| F[Fields]
+    S[Scraping] -->|Protected Sites| D[Data Layer]
+    D -->|MongoDB| A[API Layer]
+    A -->|Next.js| C[Client Layer]
 ```
 
-### Data Access
+## System Components
 
-```mermaid
-theme dark
-flowchart LR
-    U[User] -->|Searches| DB[(Database)]
-    DB -->|Returns| R[Results]
-    R -->|Filtered by| W[Work Model]
-    R -->|Filtered by| L[Location]
-    R -->|Filtered by| F[Fields]
-```
+### Scraping System
 
-## Business Value
+- Browser stealth configuration
+- Human-like interaction patterns
+- Progressive loading strategies
+- Detailed error tracking
 
-### For Companies
+### Data Layer
 
-- Clear representation of work model
-- Accurate location information
-- Proper industry categorization
+- MongoDB persistence
+- Mongoose ODM
+- Type-safe operations
+- Flexible querying
 
-### For Users
+### API Layer
 
-- Find remote-friendly companies
-- Discover companies in specific locations
-- Filter by industry interests
-
-### For System
-
-- Efficient data organization
-- Fast query performance
-- Easy data maintenance
+- RESTful endpoints
+- Companies API
+- Jobs API
+- Scrape API
 
 ## Integration Points
 
 ### External Systems
 
-- Next.js frontend for data display
-- API routes for data access
-- Scraping system for data updates
+- MongoDB database
+- Playwright browser
+- Next.js frontend
 
 ### Internal Components
 
-- Database configuration
-- Model definitions
+- Database models
 - Service layer
-- Seeding system
+- API routes
+- Utility functions
 
 ## Success Metrics
 
+### Reliability
+
+- Successful scraping rate
+- Error recovery
+- Data consistency
+
 ### Performance
 
-- Query response times
-- Data consistency
-- System reliability
-
-### Usability
-
-- Easy data entry
-- Flexible searching
-- Accurate results
+- Response times
+- Query efficiency
+- Scraping speed
 
 ### Maintainability
 
-- Clear code structure
 - Type safety
+- Code organization
 - Documentation quality
-
-## Future Considerations
-
-### Scalability
-
-- Handle growing company dataset
-- Support increased query load
-- Maintain performance at scale
-
-### Features
-
-- Advanced search capabilities
-- Real-time updates
-- Analytics support
-
-### Integration
-
-- Additional data sources
-- Enhanced filtering options
-- Extended company profiles
