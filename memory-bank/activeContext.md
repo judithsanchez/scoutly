@@ -131,7 +131,48 @@ await CompanyService.findCompaniesByWorkModel(WorkModel.FULLY_REMOTE);
 
 ### Recent System Enhancements
 
-#### Enhanced Scraping System
+#### Enhanced Scraping System with Anti-Bot Measures
+
+Recent improvements to handle protected sites:
+
+1. Browser Stealth Configuration:
+
+   - Disabled automation flags and infobar
+   - Spoofed browser fingerprint
+   - Realistic viewport and user agent
+   - Common plugins and languages
+   - Geolocation support
+
+2. Human-like Interaction Patterns:
+
+   - Random mouse movements
+   - Natural scrolling behavior
+   - Randomized delays between actions
+   - Progressive content loading
+   - Extended timeouts for protected sites
+
+3. Error Handling and Recovery:
+   - Multiple loading strategies
+   - Automatic fallbacks
+   - Detailed error logging
+   - Progressive timeouts
+
+Recent improvements to the scraping system include:
+
+1. Smart context extraction for links:
+
+   - Limited to 3 sibling elements before and after each link
+   - Maximum 100 characters in each direction (200 total)
+   - Removes duplicate link text mentions
+   - Cleans up whitespace and newlines
+   - Falls back to parent text only if immediate context is too short
+
+2. Progressive page loading strategy for handling dynamic sites:
+   - Configurable wait strategies (domcontentloaded, load, networkidle)
+   - Automatic fallback through strategies on failure
+   - Default 30s timeout with extended 60s timeout for networkidle
+   - Custom timeout configuration per request
+   - Improved error logging for debugging loading issues
 
 ```mermaid
 theme dark

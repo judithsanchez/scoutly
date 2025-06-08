@@ -1,0 +1,44 @@
+erDiagram
+    Job {
+        ObjectId _id PK
+        String title
+        String url UK
+        String description
+        ObjectId company FK
+        String location
+        String salary
+        Date firstSeenAt
+        Date lastSeenAt
+        Boolean hasApplied
+        Date firstApplicationDate
+        Date lastApplicationDate
+        Enum applicationStatus
+        Boolean isEvergreen
+        Number aiScore
+        String aiNotes
+        Number aiMatchPercentage
+        Enum aiRecommendation
+        Array tags
+        String source
+        Enum jobType
+        Enum remoteStatus
+        Date createdAt
+        Date updatedAt
+    }
+    
+    Company {
+        ObjectId _id PK
+        String name
+        String website
+        String description
+        String logo
+        String industry
+        Number employeeCount
+        Date foundedYear
+        Date createdAt
+        Date updatedAt
+    }
+    
+    
+    Job ||--o{ Company : "belongs to"
+    User ||--o{ Job : "tracks"

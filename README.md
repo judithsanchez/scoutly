@@ -145,12 +145,29 @@ docker compose logs -f
 ```json
 {
 	"content": "Scraped content...",
+	"links": [
+		{
+			"url": "https://example.com/job",
+			"text": "Job Title",
+			"context": "Relevant surrounding text...",
+			"isExternal": false
+		}
+	],
 	"metadata": {
 		"url": "https://example.com",
-		"timestamp": "2025-04-12T..."
+		"title": "Page Title",
+		"description": "Page description",
+		"scrapedAt": "2025-04-12T..."
 	}
 }
 ```
+
+Note about context extraction:
+
+- Limited to 3 adjacent elements before and after each link
+- Maximum of 100 characters in each direction
+- Automatically cleans up whitespace and removes duplicates
+- Includes only relevant surrounding text for better context
 
 ## Development Commands
 

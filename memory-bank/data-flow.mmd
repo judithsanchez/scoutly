@@ -1,0 +1,46 @@
+graph TD
+    A[Web Scraper] -->|Scrapes job listings| B[Job Data]
+    B -->|Store new jobs| C[MongoDB]
+    B -->|Update existing jobs| C
+    
+    D[JobManager] -->|Deduplicates jobs| C
+    D -->|Detects evergreen posts| C
+    D -->|Tracks application status| C
+    
+    E[User Interface] -->|User applies to job| F[Application Tracking]
+    F -->|Update job status| C
+    
+    G[Search API] -->|Query jobs| C
+    G -->|Return filtered results| E
+    
+    H[Gemini AI] -->|Process job content| I[AI Analysis]
+    I -->|Score job match| C
+    I -->|Generate recommendations| E
+    
+    J[URL Extractor] -->|Fetch job details| K[Content Cleaner]
+    K -->|Clean text| H
+    
+    L[User Profile] -->|Candidate info| H
+    
+    subgraph "Data Storage"
+        C
+    end
+    
+    subgraph "Job Processing"
+        B
+        D
+        F
+    end
+    
+    subgraph "AI Pipeline"
+        J
+        K
+        H
+        I
+    end
+    
+    subgraph "User Interaction"
+        E
+        G
+        L
+    end
