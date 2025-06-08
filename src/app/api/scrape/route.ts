@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const {url, selector, company} = body;
+		const {url} = body;
 		logger.info(`Processing scrape request for URL: ${url}`);
 
 		try {
@@ -49,11 +49,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		logger.info(`Starting scrape operation for: ${url}`);
-		const result = await scrapeWebsite({
-			url,
-			selector,
-			company,
-		});
+		const result = await scrapeWebsite({url});
 
 		if (result.error) {
 			logger.error(`Scrape operation failed: ${result.error}`);
@@ -63,9 +59,16 @@ export async function POST(request: NextRequest) {
 		}
 
 		logger.success(
-			`Scrape operation successful, content length: ${result.content.length} characters`,
+			`Scrape operation successful - Content length: ${result.content.length}, Links found: ${result.links.length}`,
 		);
-		return addCorsHeaders(NextResponse.json(result));
+
+		return addCorsHeaders(
+			NextResponse.json({
+				content: result.content,
+				links: result.links,
+				metadata: result.metadata,
+			}),
+		);
 	} catch (error: any) {
 		logger.error('Failed to process request', error);
 		const errorMessage = error.message || 'Failed to process request';

@@ -1,266 +1,162 @@
 import playwright from 'playwright';
 import * as cheerio from 'cheerio';
+import type {Element} from 'domhandler';
 import {Logger} from '@/utils/logger';
-import {matchesFilters} from '@/utils/filters';
 
 const logger = new Logger('Scraper');
 
 export interface ScrapeRequest {
 	url: string;
-	selector?: string;
-	company?: string;
+	options?: {
+		timeout?: number;
+		waitUntil?: 'domcontentloaded' | 'load' | 'networkidle';
+	};
 }
 
-export interface JobData {
+const DEFAULT_TIMEOUT = 30000;
+const EXTENDED_TIMEOUT = 60000;
+const WAIT_STRATEGIES = ['domcontentloaded', 'load', 'networkidle'] as const;
+
+export interface ExtractedLink {
 	url: string;
+	text: string;
 	title?: string;
-	location?: string;
-	description?: string;
+	context: string;
+	isExternal: boolean;
 }
 
 export interface ScrapeResult {
 	content: string;
-	jobs: JobData[];
+	links: ExtractedLink[];
 	error?: string;
-}
-
-interface SelectorError {
-	company: string;
-	url: string;
-	selector: string;
-	error: string;
-	timestamp: string;
-}
-
-const selectorErrors: SelectorError[] = [];
-
-async function logSelectorError(
-	company: string,
-	url: string,
-	selector: string,
-	error: string,
-): Promise<void> {
-	const errorLog: SelectorError = {
-		company,
-		url,
-		selector,
-		error,
-		timestamp: new Date().toISOString(),
+	metadata?: {
+		title?: string;
+		description?: string;
+		url: string;
+		scrapedAt: string;
 	};
-
-	selectorErrors.push(errorLog);
-	logger.error('Selector error:', errorLog);
 }
 
-// Helper function to check if a job matches our filtering criteria
-function jobMatchesFilters(job: JobData): boolean {
-	// Combine all text fields for filtering
-	const textToCheck = [
-		job.url || '',
-		job.title || '',
-		job.description || '',
-	].join(' ');
-
-	// Apply the matchesFilters function from filters.ts
-	return matchesFilters(textToCheck);
+function getFullUrl(href: string, baseUrl: string): string {
+	try {
+		// Handle protocol-relative URLs
+		if (href.startsWith('//')) {
+			href = 'https:' + href;
+		}
+		const fullUrl = new URL(href, baseUrl);
+		return fullUrl.toString();
+	} catch {
+		return ''; // Return empty string for invalid URLs
+	}
 }
 
-function extractJobs($: cheerio.CheerioAPI, baseUrl: string): JobData[] {
-	const jobs = new Set<JobData>();
+function isExternalUrl(url: string, baseUrl: string): boolean {
+	try {
+		return new URL(url).hostname !== new URL(baseUrl).hostname;
+	} catch {
+		return false;
+	}
+}
 
-	// Find job links using more general patterns that cover common HTML structures
-	$(
-		[
-			// Common job listing patterns
-			'a[href*="job"]',
-			'a[href*="career"]',
-			'a[href*="position"]',
-			// Header patterns
-			'h1 > a[href]',
-			'h2 > a[href]',
-			'h3 > a[href]',
-			// Common job containers
-			'.job a[href]',
-			'.position a[href]',
-			'.vacancy a[href]',
-			'.listing a[href]',
-			'[class*="job"] a[href]',
-			'[class*="career"] a[href]',
-			// Common link patterns
-			'a[href]:has(h1)',
-			'a[href]:has(h2)',
-			'a[href]:has(h3)',
-			// Specific structures we know about
-			'a.job-title-link',
-			'.jobs__job a[href]',
-		].join(', '),
-	).each((_, element) => {
-		const $el = $(element);
-		const href = $el.attr('href');
-		if (!href) return;
+function cleanText(text: string): string {
+	return text.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim();
+}
 
-		try {
-			// Skip non-job URLs and common action URLs
-			if (
-				href.match(
-					/\/(apply|login|auth|signup|register|contact|about|search)/i,
-				) ||
-				href.match(/\.(pdf|doc|docx|zip|jpg|png)$/i) ||
-				href.includes('#') ||
-				href === '/' ||
-				href.length < 2
-			)
-				return;
+function extractContext(
+	$: cheerio.CheerioAPI,
+	$elem: cheerio.Cheerio<Element>,
+): string {
+	const MAX_LENGTH = 100; // Maximum characters for context before/after
+	let context = '';
 
-			const jobUrl = href.startsWith('http')
-				? href
-				: href.startsWith('/')
-				? new URL(href, baseUrl).toString()
-				: `${baseUrl}${href}`;
+	// Get the element's own text content
+	const linkText = $elem.text().trim();
 
-			// Get title from either Angular Material structure or standard HTML
-			let title;
-			const titleEl = $el.find('span[itemprop="title"]');
-			if (titleEl.length > 0) {
-				title = titleEl.text().trim();
-			} else {
-				title = $el.text().trim();
-			}
-
-			// Skip if no title or if it's an apply button
-			if (!title || ['Apply Now', 'Apply', 'Read more'].includes(title)) return;
-
-			// Try to get structured job details
-			let location, category, description;
-
-			// Try metadata first (schema.org, opengraph, etc)
-			const metaContainer = $el.closest(
-				'article, [itemtype*="JobPosting"], [typeof*="JobPosting"]',
-			);
-			if (metaContainer.length) {
-				// Try different metadata patterns
-				location = metaContainer
-					.find(
-						[
-							'[itemprop="jobLocation"]',
-							'[property="job:location"]',
-							'[name="job-location"]',
-							'[data-location]',
-							'.location',
-						].join(', '),
-					)
-					.first()
-					.text()
-					.trim();
-
-				description = metaContainer
-					.find(
-						[
-							'[itemprop="description"]',
-							'[property="job:description"]',
-							'[name="job-description"]',
-							'.description',
-							'.summary',
-						].join(', '),
-					)
-					.first()
-					.text()
-					.trim();
-
-				category = metaContainer
-					.find(
-						[
-							'[itemprop="occupationalCategory"]',
-							'[property="job:category"]',
-							'[name="job-category"]',
-							'.category',
-							'.department',
-						].join(', '),
-					)
-					.first()
-					.text()
-					.trim();
-			}
-			// Fallback to Angular Material structure if present
-			else if ($el.closest('mat-expansion-panel-header').length) {
-				const panelHeader = $el.closest('mat-expansion-panel-header');
-				const descriptionContainer = panelHeader.find('.description-container');
-				const locationElement = descriptionContainer
-					?.find('[itemprop="location"]')
-					.parent()
-					.find('.label-value.location');
-				const categoryElement = descriptionContainer
-					?.find('[itemprop="categories"]')
-					.parent()
-					.find('.label-value');
-
-				location = locationElement?.text().trim();
-				category = categoryElement?.text().trim();
-				description = `${category || ''} - ${location || ''}`.trim();
-			} else {
-				// Try to get unstructured job details (e.g., from standard HTML)
-				const jobContainer = $el.closest(
-					[
-						// Common job containers
-						'[class*="job"]',
-						'[class*="career"]',
-						'[class*="position"]',
-						'[class*="vacancy"]',
-						'[class*="listing"]',
-						'article',
-						'section',
-						'.content',
-						// Known specific containers
-						'.jobs__job',
-						'.job-posting',
-						'mat-expansion-panel-header',
-					].join(', '),
-				);
-				if (jobContainer.length) {
-					// Get description from paragraphs following the title
-					const paragraphs = jobContainer
-						.find('p')
-						.map((_, el) => $(el).text().trim())
-						.get();
-					description = paragraphs.join('\n').trim();
-
-					// Try to extract location from description
-					const locationMatch = description.match(
-						/location|based in|remote.*(?:in|from)\s+([^.]+)/i,
-					);
-					if (locationMatch) {
-						location = locationMatch[1].trim();
-					}
+	// Get previous text nodes
+	let prevText = '';
+	$elem
+		.prevAll()
+		.slice(0, 3)
+		.each((i: number, elem: Element) => {
+			if (prevText.length < MAX_LENGTH) {
+				const text = cleanText($(elem).text());
+				if (text) {
+					prevText = text + ' ' + prevText;
 				}
 			}
+		});
 
-			// If we have a title
-			if (title && title.length > 0) {
-				const jobData = {
-					url: jobUrl,
-					title,
-					location: location || undefined,
-					description: description || undefined,
-				};
-
-				// Only add the job if it passes our filtering criteria
-				if (jobMatchesFilters(jobData)) {
-					jobs.add(jobData);
+	// Get next text nodes
+	let nextText = '';
+	$elem
+		.nextAll()
+		.slice(0, 3)
+		.each((i: number, elem: Element) => {
+			if (nextText.length < MAX_LENGTH) {
+				const text = cleanText($(elem).text());
+				if (text) {
+					nextText = nextText + ' ' + text;
 				}
 			}
-		} catch (e) {
-			// Skip invalid URLs
+		});
+
+	// Combine the context
+	context = (prevText + ' ' + linkText + ' ' + nextText).trim();
+
+	// If context is too short, try parent's text
+	if (context.length < 20 && $elem.parent().length) {
+		context = cleanText($elem.parent().text());
+	}
+
+	// Final cleanup and length limitation
+	context = context
+		.replace(new RegExp(linkText, 'g'), '') // Remove duplicate link text
+		.replace(/\s+/g, ' ')
+		.trim();
+
+	// Ensure context isn't too long
+	if (context.length > MAX_LENGTH * 2) {
+		context = context.substring(0, MAX_LENGTH * 2) + '...';
+	}
+
+	return context;
+}
+
+function extractLinks($: cheerio.CheerioAPI, baseUrl: string): ExtractedLink[] {
+	const links: ExtractedLink[] = [];
+
+	$('a[href]').each((_, elem) => {
+		const $link = $(elem);
+		const href = $link.attr('href');
+
+		if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+			const fullUrl = getFullUrl(href, baseUrl);
+			if (fullUrl) {
+				const linkText = $link.text().trim();
+				const context = extractContext($, $link);
+
+				// Only add if we have meaningful content
+				if (linkText) {
+					links.push({
+						url: fullUrl,
+						text: linkText,
+						title: $link.attr('title'),
+						context: context || '',
+						isExternal: isExternalUrl(fullUrl, baseUrl),
+					});
+				}
+			}
 		}
 	});
 
-	return Array.from(jobs);
+	return links;
 }
 
 export async function scrapeWebsite(
 	request: ScrapeRequest,
 ): Promise<ScrapeResult> {
-	const {url, selector, company} = request;
-	logger.info(`Starting scrape operation for URL: ${url}`);
+	const {url} = request;
+	logger.info(`Starting scrape operation for URL: ${url}`, {url});
 
 	const browserOptions = {
 		headless: true,
@@ -268,6 +164,8 @@ export async function scrapeWebsite(
 			'--no-sandbox',
 			'--disable-setuid-sandbox',
 			'--disable-dev-shm-usage',
+			'--disable-blink-features=AutomationControlled', // Hide automation
+			'--disable-infobars',
 		],
 		executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
 	};
@@ -275,87 +173,160 @@ export async function scrapeWebsite(
 	let browser;
 	try {
 		browser = await playwright.chromium.launch(browserOptions);
-		const context = await browser.newContext();
+
+		// Create a more human-like context
+		const context = await browser.newContext({
+			userAgent:
+				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+			viewport: {width: 1920, height: 1080},
+			deviceScaleFactor: 1,
+			hasTouch: false,
+			isMobile: false,
+			javaScriptEnabled: true,
+			locale: 'en-US',
+			timezoneId: 'America/New_York',
+			permissions: ['geolocation'],
+		});
+
+		// Add human-like behaviors
+		await context.addInitScript(() => {
+			// Override automation flags
+			Object.defineProperty(navigator, 'webdriver', {get: () => false});
+			Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+			Object.defineProperty(navigator, 'languages', {
+				get: () => ['en-US', 'en'],
+			});
+		});
+
 		const page = await context.newPage();
 
-		logger.info('Navigating to page...');
-		await page.goto(url, {waitUntil: 'networkidle', timeout: 30000});
+		// Add random mouse movements
+		await page.mouse.move(Math.random() * 500, Math.random() * 500);
+
+		logger.info('Navigating to page...', {url});
+
+		// Get options or use defaults
+		const timeout = request.options?.timeout || DEFAULT_TIMEOUT;
+		const preferredWaitUntil = request.options?.waitUntil;
+
+		// Try loading with different strategies
+		let loaded = false;
+		let lastError;
+
+		// First try the preferred strategy if specified
+		if (preferredWaitUntil) {
+			try {
+				await page.goto(url, {
+					waitUntil: preferredWaitUntil,
+					timeout: timeout,
+				});
+				loaded = true;
+				logger.success(
+					`Page loaded successfully with ${preferredWaitUntil} strategy`,
+				);
+			} catch (error: any) {
+				lastError = error;
+				logger.warn(
+					`Failed to load with ${preferredWaitUntil} strategy: ${error.message}`,
+				);
+			}
+		}
+
+		// If not loaded and no preferred strategy, try each in order
+		if (!loaded) {
+			for (const strategy of WAIT_STRATEGIES) {
+				if (strategy === preferredWaitUntil) continue; // Skip if already tried
+
+				try {
+					await page.goto(url, {
+						waitUntil: strategy,
+						timeout: strategy === 'networkidle' ? EXTENDED_TIMEOUT : timeout,
+					});
+					loaded = true;
+					logger.success(`Page loaded successfully with ${strategy} strategy`);
+					break;
+				} catch (error: any) {
+					lastError = error;
+					logger.warn(
+						`Failed to load with ${strategy} strategy: ${error.message}`,
+					);
+				}
+			}
+		}
+
+		if (!loaded) {
+			throw lastError || new Error('Failed to load page with all strategies');
+		}
+
 		logger.success('Page loaded successfully');
 
-		// Wait for Angular Material content to load
-		await page
-			.waitForSelector('mat-expansion-panel-header', {timeout: 10000})
-			.catch(() => {
-				logger.warn(
-					'Angular Material elements not found, continuing with default scraping',
-				);
-			});
+		// Wait for content with better timeouts and checks
+		await page.waitForSelector('body', {timeout: 30000});
+		await page.waitForTimeout(Math.random() * 2000 + 1000); // Random delay
 
-		logger.info('Starting auto-scroll to load lazy content...');
-		await autoScroll(page);
-		logger.success('Auto-scroll completed');
+		// Scroll the page like a human
+		await page.evaluate(() => {
+			const scrollHeight = document.documentElement.scrollHeight;
+			const viewportHeight = window.innerHeight;
+			let scrollTop = 0;
+
+			while (scrollTop < scrollHeight) {
+				scrollTop += Math.floor(Math.random() * viewportHeight * 0.8);
+				window.scrollTo(0, scrollTop);
+			}
+		});
+
+		await page.waitForTimeout(Math.random() * 1000 + 500); // Another random delay
+
+		// Basic cleanup of non-content elements
+		await page.evaluate(() => {
+			const cleanup = () => {
+				const unwanted = ['script', 'style', 'noscript'];
+				unwanted.forEach(tag => {
+					document.querySelectorAll(tag).forEach(el => el.remove());
+				});
+			};
+			cleanup();
+		});
 
 		const pageContent = await page.content();
 		const $ = cheerio.load(pageContent);
 
-		if (!selector) {
-			logger.info('No selector provided - scraping entire page');
-			const bodyContent = $('body').html() || '';
-			return {
-				content: bodyContent,
-				jobs: extractJobs($, url),
-			};
-		}
+		// Extract metadata
+		const metadata = {
+			title: $('title').text().trim() || $('h1').first().text().trim(),
+			description:
+				$('meta[name="description"]').attr('content')?.trim() ||
+				$('meta[property="og:description"]').attr('content')?.trim(),
+			url: url,
+			scrapedAt: new Date().toISOString(),
+		};
 
-		logger.info(`Waiting for selector: ${selector}`);
-		try {
-			await page.waitForSelector(selector, {timeout: 10000});
-		} catch (error) {
-			const errorMsg = `Selector not found: ${selector}`;
-			logger.error(errorMsg);
-			if (company) {
-				await logSelectorError(company, url, selector, errorMsg);
-			}
+		// Extract all links
+		logger.info('Extracting links from page...');
+		const links = extractLinks($, url);
+		logger.success(`Found ${links.length} valid links`);
 
-			// Fall back to returning whole page content
-			const bodyContent = $('body').html() || '';
-			return {
-				content: bodyContent,
-				jobs: extractJobs($, url),
-				error: 'Selector not found - returned full page content',
-			};
-		}
+		// Get the full body content
+		const content = $('body').html() || '';
 
-		const selectedElement = $(selector);
-		const selectedContent = selectedElement.html() || '';
-
-		if (!selectedContent) {
-			const errorMsg = 'Selected element contains no content';
-			logger.warn(errorMsg);
-			return {
-				content: '',
-				jobs: [],
-				error: errorMsg,
-			};
-		}
-
-		// Extract jobs from the selected content
-		const jobsFromSelectedContent = extractJobs(
-			cheerio.load(selectedContent),
-			url,
-		);
-
+		logger.success('Content successfully scraped');
 		return {
-			content: selectedContent,
-			jobs: jobsFromSelectedContent,
+			content,
+			links,
+			metadata,
 		};
 	} catch (error: any) {
 		const errorMsg = error.message || 'Unknown error during scraping';
-		logger.error('Scraping error:', errorMsg);
+		logger.error('Scraping error:', {error: errorMsg, url});
 		return {
 			content: '',
-			jobs: [],
+			links: [],
 			error: errorMsg,
+			metadata: {
+				url,
+				scrapedAt: new Date().toISOString(),
+			},
 		};
 	} finally {
 		if (browser) {
@@ -363,34 +334,4 @@ export async function scrapeWebsite(
 			logger.debug('Browser closed');
 		}
 	}
-}
-
-async function autoScroll(page: playwright.Page): Promise<void> {
-	logger.debug('Starting auto-scroll');
-	await page.evaluate(async () => {
-		await new Promise<void>(resolve => {
-			let totalHeight = 0;
-			const distance = 100;
-			const maxScrolls = 30;
-			let scrollCount = 0;
-
-			const timer = setInterval(() => {
-				window.scrollBy(0, distance);
-				totalHeight += distance;
-				scrollCount++;
-
-				if (
-					totalHeight >= document.body.scrollHeight ||
-					scrollCount >= maxScrolls
-				) {
-					clearInterval(timer);
-					resolve();
-				}
-			}, 200);
-		});
-	});
-
-	logger.debug('Waiting for lazy-loaded content');
-	await page.waitForTimeout(2000);
-	logger.debug('Auto-scroll complete');
 }

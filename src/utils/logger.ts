@@ -5,6 +5,33 @@ interface LogOptions {
 	timestamp?: boolean;
 	prefix?: string;
 	color?: boolean;
+	stackDepth?: number; // How many stack frames to include
+}
+
+interface LogMetadata {
+	functionName?: string;
+	lineNumber?: number;
+	fileName?: string;
+	stackTrace?: string[];
+}
+
+function getCallerInfo(depth: number = 1): LogMetadata {
+	const stack = new Error().stack?.split('\n').slice(3); // Skip Error and Logger frames
+	if (!stack) return {};
+
+	const callerFrame = stack[depth];
+	if (!callerFrame) return {};
+
+	// Parse stack frame for function name and location
+	const match = callerFrame.match(/at (?:(.+?)\s+\()?(?:(.+?):(\d+):(\d+))/);
+	if (!match) return {};
+
+	return {
+		functionName: match[1] || 'anonymous',
+		fileName: match[2],
+		lineNumber: parseInt(match[3], 10),
+		stackTrace: stack.slice(0, depth + 1).map(frame => frame.trim()),
+	};
 }
 
 /**
@@ -15,6 +42,7 @@ export class Logger {
 		emoji: true,
 		timestamp: true,
 		color: true,
+		stackDepth: 1, // Default to showing immediate caller
 	};
 
 	private options: LogOptions;
@@ -86,7 +114,21 @@ export class Logger {
 		const prefix = this.options.prefix ? `${this.options.prefix} ` : '';
 		const contextStr = this.context ? `[${this.context}]` : '';
 
-		const formattedMessage = `${timestamp} ${emoji} ${prefix}${contextStr} ${message}`;
+		// Get caller information with configurable stack depth
+		const depth = this.options.stackDepth ?? 1;
+		const {functionName, fileName, lineNumber, stackTrace} =
+			getCallerInfo(depth);
+
+		// Add caller info to message
+		const location = functionName ? ` @${functionName}` : '';
+		const lineInfo = fileName ? ` (${fileName}:${lineNumber})` : '';
+
+		const formattedMessage = `${timestamp} ${emoji} ${prefix}${contextStr}${location}${lineInfo} ${message}`;
+
+		// Add stack trace for errors
+		if (level === 'error' && stackTrace) {
+			message += '\n' + stackTrace.join('\n');
+		}
 
 		switch (level) {
 			case 'debug':
