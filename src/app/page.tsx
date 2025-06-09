@@ -32,6 +32,7 @@ export default function Home() {
 							)}`,
 						);
 						const data = await response.json();
+						console.log('Saved jobs data:', data.jobs); // Debug log
 						setSavedJobs(data.jobs || []);
 					} catch (error) {
 						console.error('Error fetching saved jobs:', error);
@@ -100,12 +101,38 @@ export default function Home() {
 							key={job._id}
 							className="bg-white/10 p-4 rounded-lg shadow-lg backdrop-blur-sm"
 						>
-							<h3 className="text-lg font-semibold text-white mb-2">
-								{job.jobTitle}
-							</h3>
-							{job.company && (
-								<p className="text-white/80 mb-2">{job.company.company}</p>
-							)}
+							<div className="mb-4">
+								<a
+									href={job.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="block text-lg font-semibold text-white hover:text-blue-300 transition-colors cursor-pointer"
+								>
+									{job.title}
+								</a>
+								{job.company && (
+									<div className="mt-1 flex items-center gap-2">
+										<a
+											href={job.company.careerPageUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-white/80 hover:text-blue-300 transition-colors cursor-pointer text-sm"
+										>
+											{job.company.company}
+										</a>
+										{job.company.websiteUrl && (
+											<a
+												href={job.company.websiteUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-white/60 hover:text-blue-300 transition-colors text-xs cursor-pointer"
+											>
+												(Company Website)
+											</a>
+										)}
+									</div>
+								)}
+							</div>
 							<div className="flex items-center gap-2 mb-2">
 								<span className="text-white/60 text-sm">Status:</span>
 								<select
