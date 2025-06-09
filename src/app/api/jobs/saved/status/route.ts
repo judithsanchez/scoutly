@@ -6,6 +6,71 @@ import {SavedJob, ApplicationStatus} from '@/models/SavedJob';
 
 const logger = new Logger('SavedJobsStatusAPI');
 
+export async function PATCH(request: NextRequest) {
+	try {
+		await dbConnect();
+
+		const body = await request.json();
+		const {jobId, status, gmail} = body;
+
+		if (!jobId || !status || !gmail) {
+			return NextResponse.json(
+				{error: 'JobId, status, and gmail are required.'},
+				{status: 400},
+			);
+		}
+
+		// Validate status value
+		if (
+			!Object.values(ApplicationStatus).includes(status as ApplicationStatus)
+		) {
+			return NextResponse.json(
+				{
+					error: `Invalid status. Must be one of: ${Object.values(
+						ApplicationStatus,
+					).join(', ')}`,
+				},
+				{status: 400},
+			);
+		}
+
+		// Find user by email
+		const user = await User.findOne({email: gmail.toLowerCase()});
+		if (!user) {
+			return NextResponse.json({error: 'User not found.'}, {status: 404});
+		}
+
+		// Find and update the job
+		const savedJob = await SavedJob.findOneAndUpdate(
+			{_id: jobId, user: user._id},
+			{status},
+			{new: true},
+		).populate(
+			'company',
+			'company websiteUrl careerPageUrl logo companySize industry',
+		);
+
+		if (!savedJob) {
+			return NextResponse.json({error: 'Job not found.'}, {status: 404});
+		}
+
+		logger.success(
+			`Updated status to ${status} for job ${jobId} (user: ${gmail})`,
+		);
+
+		return NextResponse.json(savedJob);
+	} catch (error: any) {
+		logger.error('Error in PATCH /api/jobs/saved/status route:', {
+			message: error.message,
+			stack: error.stack,
+		});
+		return NextResponse.json(
+			{error: error.message || 'An internal server error occurred.'},
+			{status: 500},
+		);
+	}
+}
+
 export async function GET(request: NextRequest) {
 	try {
 		await dbConnect();

@@ -106,7 +106,52 @@ export default function Home() {
 							{job.company && (
 								<p className="text-white/80 mb-2">{job.company.company}</p>
 							)}
-							<p className="text-white/60 text-sm mb-2">Status: {job.status}</p>
+							<div className="flex items-center gap-2 mb-2">
+								<span className="text-white/60 text-sm">Status:</span>
+								<select
+									value={job.status}
+									onChange={async e => {
+										const saved = localStorage.getItem('jobFormData');
+										if (saved) {
+											const formData = JSON.parse(saved);
+											try {
+												const response = await fetch('/api/jobs/saved/status', {
+													method: 'PATCH',
+													headers: {
+														'Content-Type': 'application/json',
+													},
+													body: JSON.stringify({
+														jobId: job._id,
+														status: e.target.value,
+														gmail: formData.credentials.gmail,
+													}),
+												});
+												if (!response.ok)
+													throw new Error('Failed to update status');
+
+												// Refresh saved jobs list
+												const savedResponse = await fetch(
+													`/api/jobs/saved?gmail=${encodeURIComponent(
+														formData.credentials.gmail,
+													)}`,
+												);
+												const data = await savedResponse.json();
+												setSavedJobs(data.jobs || []);
+											} catch (error) {
+												console.error('Error updating job status:', error);
+											}
+										}
+									}}
+									className="bg-white/10 text-white border border-white/20 rounded px-2 py-1 text-sm"
+								>
+									<option value="WANT_TO_APPLY">Want to Apply</option>
+									<option value="PENDING_APPLICATION">
+										Pending Application
+									</option>
+									<option value="APPLIED">Applied</option>
+									<option value="DISCARDED">Discarded</option>
+								</select>
+							</div>
 							<p className="text-white/60 text-sm">
 								Saved on: {new Date(job.createdAt).toLocaleDateString()}
 							</p>
