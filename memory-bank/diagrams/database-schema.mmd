@@ -1,0 +1,63 @@
+erDiagram
+    User {
+        ObjectId _id PK
+        String email UK
+        Date createdAt
+        Date updatedAt
+    }
+
+    Company {
+        ObjectId _id PK
+        String companyID UK
+        String company
+        String careers_url
+        String selector
+        Enum work_model
+        String headquarters
+        Array office_locations
+        Array fields
+        Boolean openToApplication
+        Date createdAt
+        Date updatedAt
+    }
+
+    CompanyScrapeHistory {
+        ObjectId _id PK
+        ObjectId companyId FK
+        String userEmail FK
+        Date lastScrapeDate
+        Array links
+        Date createdAt
+        Date updatedAt
+    }
+
+    SavedJob {
+        ObjectId _id PK
+        String title
+        String url UK
+        Array goodFitReasons
+        Array considerationPoints
+        Array stretchGoals
+        Number suitabilityScore
+        Enum status
+        String notes
+        ObjectId userId FK
+        ObjectId companyId FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    Log {
+        ObjectId _id PK
+        Date timestamp
+        Enum level
+        String message
+        String context
+        Mixed data
+        Date createdAt
+    }
+
+    User ||--o{ CompanyScrapeHistory : "tracks scrapes"
+    Company ||--o{ CompanyScrapeHistory : "has scrapes"
+    User ||--o{ SavedJob : "saves"
+    Company ||--o{ SavedJob : "offers"

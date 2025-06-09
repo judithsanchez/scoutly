@@ -1,4 +1,4 @@
-import {connectDB, disconnectDB} from '../config/database';
+import {connectDB} from '../config/database';
 import {CompanyService} from '../services/companyService';
 import {WorkModel} from '../models/Company';
 
@@ -1313,12 +1313,11 @@ async function seedCompanies() {
 		);
 		console.log(`Successfully seeded ${createdCompanies.length} companies`);
 
-		await disconnectDB();
-		console.log('Database connection closed');
+		// Give time for any pending operations to complete
+		setTimeout(() => process.exit(0), 1000);
 	} catch (error) {
 		console.error('Error seeding companies:', error);
-		await disconnectDB();
-		process.exit(1);
+		setTimeout(() => process.exit(1), 1000);
 	}
 } // Run the seed function
 seedCompanies();

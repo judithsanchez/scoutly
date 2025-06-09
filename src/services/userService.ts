@@ -1,0 +1,37 @@
+import {User, IUser} from '../models/User';
+import {Logger} from '../utils/logger';
+
+const logger = new Logger('UserService');
+
+export class UserService {
+	static async getOrCreateUser(email: string): Promise<IUser> {
+		try {
+			let user = await User.findOne({email});
+
+			if (!user) {
+				logger.info(`Creating new user with email: ${email}`);
+				user = await User.create({email});
+			}
+
+			return user;
+		} catch (error: any) {
+			throw new Error(`Error in user operation: ${error.message}`);
+		}
+	}
+
+	static async getUserByEmail(email: string): Promise<IUser | null> {
+		try {
+			return await User.findOne({email});
+		} catch (error: any) {
+			throw new Error(`Error finding user: ${error.message}`);
+		}
+	}
+
+	static async getAllUsers(): Promise<IUser[]> {
+		try {
+			return await User.find();
+		} catch (error: any) {
+			throw new Error(`Error fetching users: ${error.message}`);
+		}
+	}
+}

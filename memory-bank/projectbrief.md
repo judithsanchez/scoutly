@@ -4,24 +4,99 @@
 
 A job listing aggregator with advanced scraping capabilities and MongoDB integration.
 
-## Core Requirements
+## Getting Started
 
-1. Company data storage with MongoDB
-2. Anti-bot scraping system
-3. Flexible API endpoints
-4. Type-safe operations
+### Prerequisites
 
-## Technical Goals
+- Docker and Docker Compose
+- Node.js (for local development)
 
-- Next.js application with TypeScript
-- MongoDB & Mongoose integration
-- Advanced scraping with Playwright
-- Dockerized development environment
+### Docker Commands
 
-## Success Criteria
+```bash
+# Start the application
+docker compose up -d
 
-- ✅ Company data persistence
-- ✅ Resilient scraping system
-- ✅ RESTful API endpoints
-- ✅ Type-safe operations
-- ✅ Docker configuration
+# View logs
+docker compose logs -f app
+
+# Stop the application
+docker compose down
+
+# Rebuild after changes
+docker compose build app
+docker compose up -d
+
+# Seed the database
+docker compose exec app npx tsx src/scripts/seedCompanies.ts
+```
+
+## API Endpoints
+
+### POST /api/users
+
+Creates a new user. No authentication currently implemented.
+
+```json
+{
+	"email": "user@example.com"
+}
+```
+
+### POST /api/jobs
+
+Searches for jobs. No authentication currently implemented.
+
+Request body:
+
+```json
+{
+  "credentials": {
+    "gmail": "user@gmail.com"
+  },
+  "companyNames": ["company1", "company2"],
+  "cvUrl": "https://drive.google.com/file/...",
+  "candidateInfo": {
+    "logistics": {
+      "currentResidence": {
+        "city": "City",
+        "country": "Country",
+        "countryCode": "CC",
+        "timezone": "Region/City"
+      },
+      "willingToRelocate": boolean,
+      "workAuthorization": [
+        {
+          "region": "Region",
+          "regionCode": "RC",
+          "status": "Status"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "language": "Language",
+        "level": "Level"
+      }
+    ],
+    "preferences": {
+      "careerGoals": ["goal1", "goal2"],
+      "jobTypes": ["type1", "type2"],
+      "workEnvironments": ["env1", "env2"],
+      "companySizes": ["size1", "size2"],
+      "exclusions": {
+        "industries": ["ind1", "ind2"],
+        "technologies": ["tech1", "tech2"],
+        "roleTypes": ["role1", "role2"]
+      }
+    }
+  }
+}
+```
+
+## Technical Stack
+
+- Next.js with TypeScript
+- MongoDB & Mongoose
+- Playwright for scraping
+- Docker for containerization
