@@ -3,9 +3,48 @@ import * as cheerio from 'cheerio';
 import type {Element} from 'domhandler';
 import {Logger} from '@/utils/logger';
 
-// TODO: create netflix specific scraper - https://explore.jobs.netflix.net/careers?query=manager&location=United%20States&pid=790303120222&Teams=Engineering&Teams=Engineering%20Operations&domain=netflix.com&sort_by=relevance&triggerGoButton=false&triggerGoButton=true
-
 const logger = new Logger('Scraper');
+
+// Semaphore for limiting concurrent browser instances
+let activeBrowsers = 0;
+const MAX_BROWSERS = 3;
+const activeInstances = new Set<playwright.Browser>();
+
+// Ensure cleanup on process exit
+async function cleanupBrowsers(signal: string) {
+	logger.info(`Received ${signal}, cleaning up browsers...`);
+	await Promise.all(
+		Array.from(activeInstances).map(browser => {
+			return browser
+				.close()
+				.catch(e => logger.error('Error closing browser:', e));
+		}),
+	);
+	process.exit(0);
+}
+
+process.on('SIGINT', () => cleanupBrowsers('SIGINT'));
+process.on('SIGTERM', () => cleanupBrowsers('SIGTERM'));
+
+async function acquireBrowser(): Promise<void> {
+	while (activeBrowsers >= MAX_BROWSERS) {
+		logger.debug(
+			`Waiting for browser slot (${activeBrowsers}/${MAX_BROWSERS} active)...`,
+		);
+		await new Promise(resolve => setTimeout(resolve, 1000));
+	}
+	activeBrowsers++;
+	logger.debug(
+		`Browser slot acquired (${activeBrowsers}/${MAX_BROWSERS} active)`,
+	);
+}
+
+function releaseBrowser(): void {
+	activeBrowsers--;
+	logger.debug(
+		`Browser slot released (${activeBrowsers}/${MAX_BROWSERS} active)`,
+	);
+}
 
 export interface ScrapeRequest {
 	url: string;
@@ -15,9 +54,15 @@ export interface ScrapeRequest {
 	};
 }
 
-const DEFAULT_TIMEOUT = 30000;
-const EXTENDED_TIMEOUT = 60000;
-const WAIT_STRATEGIES = ['domcontentloaded', 'load', 'networkidle'] as const;
+const DEFAULT_TIMEOUT = 60000; // 60s
+const EXTENDED_TIMEOUT = 120000; // 120s
+const MAX_LOAD_TIME = 300000; // 5m absolute maximum
+const WAIT_STRATEGIES = ['networkidle', 'load', 'domcontentloaded'] as const;
+
+// Retry configuration
+const MAX_RETRIES = 5;
+const MIN_RETRY_DELAY = 2000; // Start with 2s delay
+const MAX_RETRY_DELAY = 30000; // Max 30s delay
 
 export interface ExtractedLink {
 	url: string;
@@ -41,14 +86,12 @@ export interface ScrapeResult {
 
 function getFullUrl(href: string, baseUrl: string): string {
 	try {
-		// Handle protocol-relative URLs
 		if (href.startsWith('//')) {
-			href = 'https:' + href;
+			href = new URL(baseUrl).protocol + href;
 		}
-		const fullUrl = new URL(href, baseUrl);
-		return fullUrl.toString();
+		return new URL(href, baseUrl).toString();
 	} catch {
-		return ''; // Return empty string for invalid URLs
+		return '';
 	}
 }
 
@@ -68,13 +111,9 @@ function extractContext(
 	$: cheerio.CheerioAPI,
 	$elem: cheerio.Cheerio<Element>,
 ): string {
-	const MAX_LENGTH = 100; // Maximum characters for context before/after
+	const MAX_LENGTH = 100;
 	let context = '';
-
-	// Get the element's own text content
 	const linkText = $elem.text().trim();
-
-	// Get previous text nodes
 	let prevText = '';
 	$elem
 		.prevAll()
@@ -88,7 +127,6 @@ function extractContext(
 			}
 		});
 
-	// Get next text nodes
 	let nextText = '';
 	$elem
 		.nextAll()
@@ -101,57 +139,65 @@ function extractContext(
 				}
 			}
 		});
-
-	// Combine the context
 	context = (prevText + ' ' + linkText + ' ' + nextText).trim();
 
-	// If context is too short, try parent's text
 	if (context.length < 20 && $elem.parent().length) {
 		context = cleanText($elem.parent().text());
 	}
-
-	// Final cleanup and length limitation
 	context = context
-		.replace(new RegExp(linkText, 'g'), '') // Remove duplicate link text
+		.replace(new RegExp(linkText, 'g'), '')
 		.replace(/\s+/g, ' ')
 		.trim();
 
-	// Ensure context isn't too long
 	if (context.length > MAX_LENGTH * 2) {
 		context = context.substring(0, MAX_LENGTH * 2) + '...';
 	}
-
 	return context;
 }
 
 function extractLinks($: cheerio.CheerioAPI, baseUrl: string): ExtractedLink[] {
 	const links: ExtractedLink[] = [];
-
 	$('a[href]').each((_, elem) => {
 		const $link = $(elem);
 		const href = $link.attr('href');
-
 		if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
 			const fullUrl = getFullUrl(href, baseUrl);
 			if (fullUrl) {
 				const linkText = $link.text().trim();
-				const context = extractContext($, $link);
-
-				// Only add if we have meaningful content
 				if (linkText) {
 					links.push({
 						url: fullUrl,
 						text: linkText,
 						title: $link.attr('title'),
-						context: context || '',
+						context: extractContext($, $link) || '',
 						isExternal: isExternalUrl(fullUrl, baseUrl),
 					});
 				}
 			}
 		}
 	});
-
 	return links;
+}
+
+async function autoScroll(page: playwright.Page) {
+	await page.evaluate(async () => {
+		await new Promise<void>(resolve => {
+			let totalHeight = 0;
+			const distance = 100;
+			let scrolls = 0;
+			const timer = setInterval(() => {
+				const scrollHeight = document.body.scrollHeight;
+				window.scrollBy(0, distance);
+				totalHeight += distance;
+				scrolls++;
+				if (totalHeight >= scrollHeight || scrolls >= 30) {
+					// Add max scrolls
+					clearInterval(timer);
+					resolve();
+				}
+			}, 100);
+		});
+	});
 }
 
 export async function scrapeWebsite(
@@ -166,172 +212,213 @@ export async function scrapeWebsite(
 			'--no-sandbox',
 			'--disable-setuid-sandbox',
 			'--disable-dev-shm-usage',
-			'--disable-blink-features=AutomationControlled', // Hide automation
+			'--disable-blink-features=AutomationControlled',
 			'--disable-infobars',
 		],
 		executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
 	};
 
+	// Try to reuse browser for batch operations
+	await acquireBrowser();
 	let browser;
-	try {
-		browser = await playwright.chromium.launch(browserOptions);
+	let retries = 0;
 
-		// Create a more human-like context
-		const context = await browser.newContext({
-			userAgent:
-				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-			viewport: {width: 1920, height: 1080},
-			deviceScaleFactor: 1,
-			hasTouch: false,
-			isMobile: false,
-			javaScriptEnabled: true,
-			locale: 'en-US',
-			timezoneId: 'America/New_York',
-			permissions: ['geolocation'],
-		});
+	while (retries < MAX_RETRIES) {
+		try {
+			browser = await playwright.chromium.launch(browserOptions);
+			activeInstances.add(browser);
+			logger.debug('Browser launched successfully');
 
-		// Add human-like behaviors
-		await context.addInitScript(() => {
-			// Override automation flags
-			Object.defineProperty(navigator, 'webdriver', {get: () => false});
-			Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-			Object.defineProperty(navigator, 'languages', {
-				get: () => ['en-US', 'en'],
+			const context = await browser.newContext({
+				userAgent:
+					'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+				viewport: {width: 1920, height: 1080},
+				deviceScaleFactor: 1,
+				hasTouch: false,
+				isMobile: false,
+				javaScriptEnabled: true,
 			});
-		});
 
-		const page = await context.newPage();
+			await context.addInitScript(() => {
+				Object.defineProperty(navigator, 'webdriver', {get: () => false});
+			});
 
-		// Add random mouse movements
-		await page.mouse.move(Math.random() * 500, Math.random() * 500);
+			const page = await context.newPage();
+			await page.mouse.move(Math.random() * 500, Math.random() * 500);
 
-		logger.info('Navigating to page...', {url});
+			logger.info('Navigating to page...', {url});
 
-		// Get options or use defaults
-		const timeout = request.options?.timeout || DEFAULT_TIMEOUT;
-		const preferredWaitUntil = request.options?.waitUntil;
+			const timeout = request.options?.timeout || DEFAULT_TIMEOUT;
+			const preferredWaitUntil = request.options?.waitUntil;
+			let loaded = false;
+			let lastError;
 
-		// Try loading with different strategies
-		let loaded = false;
-		let lastError;
+			const strategies = preferredWaitUntil
+				? [
+						preferredWaitUntil,
+						...WAIT_STRATEGIES.filter(s => s !== preferredWaitUntil),
+				  ]
+				: WAIT_STRATEGIES;
 
-		// First try the preferred strategy if specified
-		if (preferredWaitUntil) {
-			try {
-				await page.goto(url, {
-					waitUntil: preferredWaitUntil,
-					timeout: timeout,
-				});
-				loaded = true;
-				logger.success(
-					`Page loaded successfully with ${preferredWaitUntil} strategy`,
-				);
-			} catch (error: any) {
-				lastError = error;
-				logger.warn(
-					`Failed to load with ${preferredWaitUntil} strategy: ${error.message}`,
-				);
-			}
-		}
-
-		// If not loaded and no preferred strategy, try each in order
-		if (!loaded) {
-			for (const strategy of WAIT_STRATEGIES) {
-				if (strategy === preferredWaitUntil) continue; // Skip if already tried
-
+			// Try each strategy with increasing timeouts
+			for (const strategy of strategies) {
+				const startTime = Date.now();
 				try {
-					await page.goto(url, {
+					const currentTimeout =
+						strategy === 'networkidle' ? EXTENDED_TIMEOUT : timeout;
+
+					logger.debug(
+						`Attempting to load page with strategy: '${strategy}'...`,
+						{strategy, timeout: `${currentTimeout / 1000}s`},
+					);
+
+					// Set a hard timeout limit
+					const loadPromise = page.goto(url, {
 						waitUntil: strategy,
-						timeout: strategy === 'networkidle' ? EXTENDED_TIMEOUT : timeout,
+						timeout: currentTimeout,
 					});
+					const timeoutPromise = new Promise((_, reject) => {
+						setTimeout(
+							() => reject(new Error('Max load time exceeded')),
+							MAX_LOAD_TIME,
+						);
+					});
+
+					await Promise.race([loadPromise, timeoutPromise]);
+
+					// Additional validation - check if content is actually present
+					const hasContent = await page.evaluate(() => {
+						const body = document.body;
+						return body && body.innerHTML.length > 0;
+					});
+
+					if (!hasContent) {
+						throw new Error('Page loaded but no content found');
+					}
+
+					// Wait a bit more for dynamic content
+					await page.waitForTimeout(1000);
+
 					loaded = true;
-					logger.success(`Page loaded successfully with ${strategy} strategy`);
+					const loadTime = (Date.now() - startTime) / 1000;
+					logger.success(
+						`Page loaded successfully with '${strategy}' strategy`,
+						{loadTime: `${loadTime.toFixed(1)}s`},
+					);
 					break;
 				} catch (error: any) {
 					lastError = error;
+					const elapsed = (Date.now() - startTime) / 1000;
 					logger.warn(
-						`Failed to load with ${strategy} strategy: ${error.message}`,
+						`Failed to load with '${strategy}' strategy: ${
+							error.message.split('\n')[0]
+						}`,
+						{
+							strategy,
+							error: error.message,
+							elapsed: `${elapsed.toFixed(1)}s`,
+						},
 					);
+					// Wait before trying next strategy
+					await page.waitForTimeout(2000);
+				}
+			}
+
+			if (!loaded) {
+				throw (
+					lastError ||
+					new Error('Failed to load page with all available strategies')
+				);
+			}
+
+			logger.info('Scrolling page to load lazy content...');
+			await autoScroll(page);
+			await page.waitForTimeout(1000); // Wait a final moment for anything to settle
+			logger.success('Scrolling complete.');
+
+			const pageContent = await page.content();
+			logger.success('Content successfully scraped');
+			const $ = cheerio.load(pageContent);
+
+			const metadata = {
+				title: $('title').text().trim() || $('h1').first().text().trim(),
+				description:
+					$('meta[name="description"]').attr('content')?.trim() ||
+					$('meta[property="og:description"]').attr('content')?.trim(),
+				url: url,
+				scrapedAt: new Date().toISOString(),
+			};
+
+			const links = extractLinks($, url);
+			logger.info(`Extracted ${links.length} links from the page.`);
+
+			const content = $('body').html() || '';
+
+			return {
+				content,
+				links,
+				metadata,
+			};
+		} catch (error: any) {
+			const errorMsg = error.message || 'Unknown error during scraping';
+			logger.error('Scraping error:', {
+				error: errorMsg,
+				url,
+				attempt: retries + 1,
+			});
+
+			retries++;
+			if (retries < MAX_RETRIES) {
+				const delay = Math.min(
+					MIN_RETRY_DELAY * Math.pow(2, retries),
+					MAX_RETRY_DELAY,
+				);
+
+				logger.info(
+					`Retrying scrape (attempt ${retries + 1}/${MAX_RETRIES})...`,
+					{
+						delay: `${Math.round(delay / 1000)}s`,
+						error: errorMsg,
+						url,
+					},
+				);
+
+				await new Promise(resolve => setTimeout(resolve, delay));
+				continue;
+			}
+			return {
+				content: '',
+				links: [],
+				error: errorMsg,
+				metadata: {
+					url,
+					scrapedAt: new Date().toISOString(),
+				},
+			};
+		} finally {
+			if (browser) {
+				try {
+					await browser.close();
+					activeInstances.delete(browser);
+					logger.debug('Browser closed successfully');
+				} catch (error) {
+					logger.error('Error closing browser:', error);
+				} finally {
+					releaseBrowser();
 				}
 			}
 		}
-
-		if (!loaded) {
-			throw lastError || new Error('Failed to load page with all strategies');
-		}
-
-		logger.success('Page loaded successfully');
-
-		// Wait for content with better timeouts and checks
-		await page.waitForSelector('body', {timeout: 30000});
-		await page.waitForTimeout(Math.random() * 2000 + 1000); // Random delay
-
-		// Scroll the page like a human
-		await page.evaluate(() => {
-			const scrollHeight = document.documentElement.scrollHeight;
-			const viewportHeight = window.innerHeight;
-			let scrollTop = 0;
-
-			while (scrollTop < scrollHeight) {
-				scrollTop += Math.floor(Math.random() * viewportHeight * 0.8);
-				window.scrollTo(0, scrollTop);
-			}
-		});
-
-		await page.waitForTimeout(Math.random() * 1000 + 500); // Another random delay
-
-		// Basic cleanup of non-content elements
-		await page.evaluate(() => {
-			const cleanup = () => {
-				const unwanted = ['script', 'style', 'noscript'];
-				unwanted.forEach(tag => {
-					document.querySelectorAll(tag).forEach(el => el.remove());
-				});
-			};
-			cleanup();
-		});
-
-		const pageContent = await page.content();
-		const $ = cheerio.load(pageContent);
-
-		// Extract metadata
-		const metadata = {
-			title: $('title').text().trim() || $('h1').first().text().trim(),
-			description:
-				$('meta[name="description"]').attr('content')?.trim() ||
-				$('meta[property="og:description"]').attr('content')?.trim(),
-			url: url,
-			scrapedAt: new Date().toISOString(),
-		};
-
-		// Extract all links
-		const links = extractLinks($, url);
-
-		// Get the full body content
-		const content = $('body').html() || '';
-
-		logger.success('Content successfully scraped');
-		return {
-			content,
-			links,
-			metadata,
-		};
-	} catch (error: any) {
-		const errorMsg = error.message || 'Unknown error during scraping';
-		logger.error('Scraping error:', {error: errorMsg, url});
-		return {
-			content: '',
-			links: [],
-			error: errorMsg,
-			metadata: {
-				url,
-				scrapedAt: new Date().toISOString(),
-			},
-		};
-	} finally {
-		if (browser) {
-			await browser.close();
-			logger.debug('Browser closed');
-		}
+		break; // Exit retry loop on success
 	}
+
+	// If all retries failed, return error
+	return {
+		content: '',
+		links: [],
+		error: 'Max retries exceeded - failed to scrape page',
+		metadata: {
+			url,
+			scrapedAt: new Date().toISOString(),
+		},
+	};
 }
