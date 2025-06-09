@@ -50,7 +50,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 
 		user: {
 			type: Schema.Types.ObjectId,
-			ref: 'User', // This will link to a User model you'll create
+			ref: 'User', // This will link to a User model
 			required: true,
 		},
 		company: {
