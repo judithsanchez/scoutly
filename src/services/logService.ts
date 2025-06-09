@@ -6,6 +6,7 @@ interface LogEntry {
 	message: string;
 	context: string;
 	data?: Record<string, any>;
+	sequence?: number;
 }
 
 export class LogService {
@@ -16,6 +17,16 @@ export class LogService {
 		} catch (error: any) {
 			console.error('Failed to write log to database:', error.message);
 			throw new Error(`Error creating log: ${error.message}`);
+		}
+	}
+
+	public static async createLogs(logEntries: LogEntry[]): Promise<ILog[]> {
+		try {
+			const logs = await Log.insertMany(logEntries);
+			return logs;
+		} catch (error: any) {
+			console.error('Failed to write logs to database:', error.message);
+			throw new Error(`Error creating logs: ${error.message}`);
 		}
 	}
 }

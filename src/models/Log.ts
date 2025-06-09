@@ -8,6 +8,7 @@ export interface ILog extends Document {
 	message: string;
 	context: string;
 	data?: Record<string, any>;
+	sequence?: number;
 }
 
 const LogSchema = new Schema<ILog>(
@@ -17,6 +18,7 @@ const LogSchema = new Schema<ILog>(
 		message: {type: String, required: true},
 		context: {type: String, required: true},
 		data: {type: Schema.Types.Mixed},
+		sequence: {type: Number},
 	},
 	{
 		capped: {size: 52428800, max: 50000},

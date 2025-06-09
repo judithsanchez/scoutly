@@ -273,7 +273,7 @@ export class JobMatchingOrchestrator {
 				logger.warn(
 					`No new jobs found for ${company.company}. Ending pipeline.`,
 				);
-				this.cleanup();
+				await this.cleanup();
 				return [];
 			}
 			logger.info(
@@ -293,7 +293,7 @@ export class JobMatchingOrchestrator {
 				logger.info(
 					'No potential matches found after initial screening. Ending pipeline.',
 				);
-				this.cleanup();
+				await this.cleanup();
 				return [];
 			}
 
@@ -310,7 +310,7 @@ export class JobMatchingOrchestrator {
 				logger.warn(
 					'Failed to fetch content for any matched positions. Ending pipeline.',
 				);
-				this.cleanup();
+				await this.cleanup();
 				return [];
 			}
 
@@ -318,7 +318,7 @@ export class JobMatchingOrchestrator {
 			const analysisResults = await this.runDeepDiveAnalysis();
 			if (analysisResults.length === 0) {
 				logger.warn('Deep dive analysis resulted in 0 suitable jobs.');
-				this.cleanup();
+				await this.cleanup();
 				return [];
 			}
 
@@ -353,11 +353,11 @@ export class JobMatchingOrchestrator {
 
 			const totalTime = (Date.now() - startTime) / 1000;
 			logger.info(`🏁 Pipeline completed in ${totalTime}s`);
-			this.cleanup();
+			await this.cleanup();
 			return analysisResults;
 		} catch (error) {
 			logger.error('Error in job matching pipeline:', error);
-			this.cleanup();
+			await this.cleanup();
 			throw error;
 		}
 	}
@@ -610,7 +610,7 @@ export class JobMatchingOrchestrator {
 		].join('\n');
 	}
 
-	private cleanup() {
+	private async cleanup() {
 		logger.debug('Starting cleanup...');
 		const usageSummary = this.getUsageSummary();
 		logger.info('🔢 Final AI usage statistics:', {
@@ -622,6 +622,10 @@ export class JobMatchingOrchestrator {
 		this.cvContent = '';
 		this.candidateXML = '';
 		this.candidateInfo = null;
+
+		// Save all collected logs to the database
+		await logger.saveBufferedLogs();
+
 		logger.debug('Cleanup completed');
 	}
 

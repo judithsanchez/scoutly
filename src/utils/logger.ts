@@ -1,5 +1,14 @@
 import {LogService} from '../services/logService';
-import type {LogLevel} from '../models/Log';
+import type {LogLevel, ILog} from '../models/Log';
+
+interface BufferedLog {
+	timestamp: Date;
+	level: LogLevel;
+	message: string;
+	context: string;
+	data?: Record<string, any>;
+	sequence: number;
+}
 
 interface LogOptions {
 	emoji?: boolean;
@@ -48,6 +57,8 @@ export class Logger {
 
 	private options: LogOptions;
 	private context: string;
+	private logBuffer: BufferedLog[] = [];
+	private sequence: number = 0;
 
 	/**
 	 * Creates a new Logger instance
@@ -57,6 +68,29 @@ export class Logger {
 	constructor(context: string, options: LogOptions = {}) {
 		this.context = context;
 		this.options = {...Logger.defaultOptions, ...options};
+		this.clearBuffer();
+	}
+
+	/**
+	 * Clears the log buffer and resets sequence
+	 */
+	private clearBuffer(): void {
+		this.logBuffer = [];
+		this.sequence = 0;
+	}
+
+	/**
+	 * Saves all buffered logs to the database at once
+	 */
+	public async saveBufferedLogs(): Promise<void> {
+		if (this.logBuffer.length === 0) return;
+
+		try {
+			await LogService.createLogs(this.logBuffer);
+			this.clearBuffer();
+		} catch (error) {
+			console.error('[Logger DB] Failed to save buffered logs:', error);
+		}
 	}
 
 	/**
@@ -64,7 +98,7 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	async debug(message: string, data?: any): Promise<void> {
+	public async debug(message: string, data?: any): Promise<void> {
 		await this.log('debug', message, data);
 	}
 
@@ -73,7 +107,7 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	async info(message: string, data?: any): Promise<void> {
+	public async info(message: string, data?: any): Promise<void> {
 		await this.log('info', message, data);
 	}
 
@@ -82,7 +116,7 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	async warn(message: string, data?: any): Promise<void> {
+	public async warn(message: string, data?: any): Promise<void> {
 		await this.log('warn', message, data);
 	}
 
@@ -91,7 +125,7 @@ export class Logger {
 	 * @param message The message to log
 	 * @param error Optional error to include
 	 */
-	async error(message: string, error?: any): Promise<void> {
+	public async error(message: string, error?: any): Promise<void> {
 		await this.log('error', message, error);
 	}
 
@@ -100,7 +134,7 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	async success(message: string, data?: any): Promise<void> {
+	public async success(message: string, data?: any): Promise<void> {
 		await this.log('success', message, data);
 	}
 
@@ -161,21 +195,15 @@ export class Logger {
 			}
 		}
 
-		// Asynchronous logging to the database
-		try {
-			LogService.createLog({
-				timestamp: new Date(),
-				level,
-				message,
-				context: this.context,
-				data: data || undefined,
-			}).catch(dbError => {
-				// If the DB write fails, we log it to the console but don't crash the app.
-				console.error('[Logger DB] Failed to save log:', dbError.message);
-			});
-		} catch (error) {
-			console.error('[Logger DB] Error invoking LogService:', error);
-		}
+		// Buffer the log for later database storage
+		this.logBuffer.push({
+			timestamp: new Date(),
+			level,
+			message,
+			context: this.context,
+			data: data || undefined,
+			sequence: this.sequence++,
+		});
 	}
 
 	/**
