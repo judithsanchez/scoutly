@@ -44,6 +44,62 @@ export const deepDiveSchema: Schema = {
 						type: SchemaType.STRING,
 						description: 'The URL of the job position.',
 					},
+					location: {
+						type: SchemaType.STRING,
+						description: 'The location of the job position (if specified)',
+					},
+					timezone: {
+						type: SchemaType.STRING,
+						description:
+							'The timezone or working hours requirement (if specified)',
+					},
+					salary: {
+						type: SchemaType.OBJECT,
+						description: 'Salary information if available in the job posting',
+						properties: {
+							min: {
+								type: SchemaType.NUMBER,
+								description: 'Minimum salary amount',
+							},
+							max: {
+								type: SchemaType.NUMBER,
+								description: 'Maximum salary amount',
+							},
+							currency: {
+								type: SchemaType.STRING,
+								description: 'Currency code (e.g., USD, EUR)',
+							},
+							period: {
+								type: SchemaType.STRING,
+								description: 'Pay period (yearly, monthly, hourly)',
+							},
+						},
+					},
+					techStack: {
+						type: SchemaType.ARRAY,
+						description:
+							'Main technologies and tools required for the position',
+						items: {type: SchemaType.STRING},
+					},
+					experienceLevel: {
+						type: SchemaType.STRING,
+						description:
+							'Required experience level (e.g., Junior, Mid, Senior)',
+					},
+					languageRequirements: {
+						type: SchemaType.ARRAY,
+						description:
+							'Required languages for the position (e.g., ["English", "Spanish"]). Empty if not specified.',
+						items: {type: SchemaType.STRING},
+					},
+					visaSponsorshipOffered: {
+						type: SchemaType.BOOLEAN,
+						description: 'Whether visa sponsorship is explicitly offered',
+					},
+					relocationAssistanceOffered: {
+						type: SchemaType.BOOLEAN,
+						description: 'Whether relocation assistance is explicitly offered',
+					},
 					goodFitReasons: {
 						type: SchemaType.ARRAY,
 						description:

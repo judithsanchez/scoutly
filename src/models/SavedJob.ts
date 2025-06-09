@@ -14,6 +14,19 @@ export interface ISavedJob extends Document {
 	// --- Core Job Details ---
 	title: string;
 	url: string;
+	location?: string;
+	timezone?: string;
+	salary?: {
+		min?: number;
+		max?: number;
+		currency?: string;
+		period?: string;
+	};
+	techStack?: string[];
+	experienceLevel?: string;
+	languageRequirements?: string[];
+	visaSponsorshipOffered?: boolean;
+	relocationAssistanceOffered?: boolean;
 
 	// --- AI Analysis Results ---
 	goodFitReasons: string[];
@@ -35,6 +48,22 @@ const SavedJobSchema = new Schema<ISavedJob>(
 		title: {type: String, required: true},
 		url: {type: String, required: true, unique: true}, // URL should be unique to avoid duplicates per user
 
+		// Job Details
+		location: {type: String},
+		timezone: {type: String},
+		salary: {
+			min: {type: Number},
+			max: {type: Number},
+			currency: {type: String},
+			period: {type: String},
+		},
+		techStack: [{type: String}],
+		experienceLevel: {type: String},
+		languageRequirements: [{type: String}],
+		visaSponsorshipOffered: {type: Boolean},
+		relocationAssistanceOffered: {type: Boolean},
+
+		// Analysis Results
 		goodFitReasons: [{type: String}],
 		considerationPoints: [{type: String}],
 		stretchGoals: [{type: String}],
