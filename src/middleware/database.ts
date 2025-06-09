@@ -34,6 +34,10 @@ async function dbConnect() {
 	if (!cached.promise) {
 		const opts = {
 			bufferCommands: true,
+			serverSelectionTimeoutMS: 15000, // 15 seconds
+			connectTimeoutMS: 15000,
+			socketTimeoutMS: 30000,
+			maxPoolSize: 10,
 		};
 
 		logger.info('Connecting to MongoDB...');

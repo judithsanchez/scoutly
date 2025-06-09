@@ -67,4 +67,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 // To prevent a user from saving the exact same job URL twice
 SavedJobSchema.index({user: 1, url: 1}, {unique: true});
 
-export const SavedJob = mongoose.model<ISavedJob>('SavedJob', SavedJobSchema);
+// Check if model exists before compiling
+export const SavedJob =
+	mongoose.models.SavedJob ||
+	mongoose.model<ISavedJob>('SavedJob', SavedJobSchema);

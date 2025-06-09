@@ -86,4 +86,6 @@ const CompanySchema = new Schema<ICompany>(
 // Create compound index for error tracking
 CompanySchema.index({isProblematic: 1, lastSuccessfulScrape: 1});
 
-export const Company = mongoose.model<ICompany>('Company', CompanySchema);
+// Check if model exists before compiling
+export const Company =
+	mongoose.models.Company || mongoose.model<ICompany>('Company', CompanySchema);

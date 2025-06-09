@@ -24,4 +24,6 @@ const LogSchema = new Schema<ILog>(
 	},
 );
 
-export const Log = mongoose.model<ILog>('Log', LogSchema);
+// Check if model exists before compiling
+export const Log =
+	mongoose.models.Log || mongoose.model<ILog>('Log', LogSchema);

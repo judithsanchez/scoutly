@@ -113,4 +113,14 @@ export class CompanyService {
 			throw new Error(`Error finding companies by location: ${error.message}`);
 		}
 	}
+
+	static async findCompaniesByName(names: string[]): Promise<ICompany[]> {
+		try {
+			return await Company.find({
+				company: {$in: names.map(name => new RegExp(name, 'i'))},
+			});
+		} catch (error: any) {
+			throw new Error(`Error finding companies by names: ${error.message}`);
+		}
+	}
 }
