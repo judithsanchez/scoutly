@@ -1,7 +1,8 @@
 import playwright from 'playwright';
 import * as cheerio from 'cheerio';
 import type {Element} from 'domhandler';
-import {Logger} from '@/utils/logger';
+import {Logger} from './logger';
+import type {ICompany} from '../models/Company';
 
 const logger = new Logger('Scraper');
 
@@ -12,12 +13,14 @@ const activeInstances = new Set<playwright.Browser>();
 
 // Ensure cleanup on process exit
 async function cleanupBrowsers(signal: string) {
-	logger.info(`Received ${signal}, cleaning up browsers...`);
+	await logger.info(`Received ${signal}, cleaning up browsers...`);
 	await Promise.all(
 		Array.from(activeInstances).map(browser => {
 			return browser
 				.close()
-				.catch(e => logger.error('Error closing browser:', e));
+				.catch(e =>
+					logger.error('Error closing browser:', e).catch(console.error),
+				);
 		}),
 	);
 	process.exit(0);
@@ -28,22 +31,22 @@ process.on('SIGTERM', () => cleanupBrowsers('SIGTERM'));
 
 async function acquireBrowser(): Promise<void> {
 	while (activeBrowsers >= MAX_BROWSERS) {
-		logger.debug(
+		await logger.debug(
 			`Waiting for browser slot (${activeBrowsers}/${MAX_BROWSERS} active)...`,
 		);
 		await new Promise(resolve => setTimeout(resolve, 1000));
 	}
 	activeBrowsers++;
-	logger.debug(
+	await logger.debug(
 		`Browser slot acquired (${activeBrowsers}/${MAX_BROWSERS} active)`,
 	);
 }
 
 function releaseBrowser(): void {
 	activeBrowsers--;
-	logger.debug(
-		`Browser slot released (${activeBrowsers}/${MAX_BROWSERS} active)`,
-	);
+	logger
+		.debug(`Browser slot released (${activeBrowsers}/${MAX_BROWSERS} active)`)
+		.catch(console.error);
 }
 
 export interface ScrapeRequest {
@@ -202,9 +205,10 @@ async function autoScroll(page: playwright.Page) {
 
 export async function scrapeWebsite(
 	request: ScrapeRequest,
+	company?: ICompany,
 ): Promise<ScrapeResult> {
 	const {url} = request;
-	logger.info(`Starting scrape operation for URL: ${url}`, {url});
+	await logger.info(`Starting scrape operation for URL: ${url}`, {url});
 
 	const browserOptions = {
 		headless: true,
@@ -222,12 +226,13 @@ export async function scrapeWebsite(
 	await acquireBrowser();
 	let browser;
 	let retries = 0;
+	let lastError: Error | null = null;
 
 	while (retries < MAX_RETRIES) {
 		try {
 			browser = await playwright.chromium.launch(browserOptions);
 			activeInstances.add(browser);
-			logger.debug('Browser launched successfully');
+			await logger.debug('Browser launched successfully');
 
 			const context = await browser.newContext({
 				userAgent:
@@ -246,7 +251,7 @@ export async function scrapeWebsite(
 			const page = await context.newPage();
 			await page.mouse.move(Math.random() * 500, Math.random() * 500);
 
-			logger.info('Navigating to page...', {url});
+			await logger.info('Navigating to page...', {url});
 
 			const timeout = request.options?.timeout || DEFAULT_TIMEOUT;
 			const preferredWaitUntil = request.options?.waitUntil;
@@ -267,7 +272,7 @@ export async function scrapeWebsite(
 					const currentTimeout =
 						strategy === 'networkidle' ? EXTENDED_TIMEOUT : timeout;
 
-					logger.debug(
+					await logger.debug(
 						`Attempting to load page with strategy: '${strategy}'...`,
 						{strategy, timeout: `${currentTimeout / 1000}s`},
 					);
@@ -301,7 +306,7 @@ export async function scrapeWebsite(
 
 					loaded = true;
 					const loadTime = (Date.now() - startTime) / 1000;
-					logger.success(
+					await logger.success(
 						`Page loaded successfully with '${strategy}' strategy`,
 						{loadTime: `${loadTime.toFixed(1)}s`},
 					);
@@ -309,7 +314,7 @@ export async function scrapeWebsite(
 				} catch (error: any) {
 					lastError = error;
 					const elapsed = (Date.now() - startTime) / 1000;
-					logger.warn(
+					await logger.warn(
 						`Failed to load with '${strategy}' strategy: ${
 							error.message.split('\n')[0]
 						}`,
@@ -331,13 +336,13 @@ export async function scrapeWebsite(
 				);
 			}
 
-			logger.info('Scrolling page to load lazy content...');
+			await logger.info('Scrolling page to load lazy content...');
 			await autoScroll(page);
 			await page.waitForTimeout(1000); // Wait a final moment for anything to settle
-			logger.success('Scrolling complete.');
+			await logger.success('Scrolling complete.');
 
 			const pageContent = await page.content();
-			logger.success('Content successfully scraped');
+			await logger.success('Content successfully scraped');
 			const $ = cheerio.load(pageContent);
 
 			const metadata = {
@@ -350,7 +355,7 @@ export async function scrapeWebsite(
 			};
 
 			const links = extractLinks($, url);
-			logger.info(`Extracted ${links.length} links from the page.`);
+			await logger.info(`Extracted ${links.length} links from the page.`);
 
 			const content = $('body').html() || '';
 
@@ -361,11 +366,16 @@ export async function scrapeWebsite(
 			};
 		} catch (error: any) {
 			const errorMsg = error.message || 'Unknown error during scraping';
-			logger.error('Scraping error:', {
+			await logger.error('Scraping error:', {
 				error: errorMsg,
 				url,
 				attempt: retries + 1,
 			});
+
+			// Record error if company is provided
+			if (company) {
+				// Error handling would go here - removed ScrapeErrorService reference
+			}
 
 			retries++;
 			if (retries < MAX_RETRIES) {
@@ -374,7 +384,7 @@ export async function scrapeWebsite(
 					MAX_RETRY_DELAY,
 				);
 
-				logger.info(
+				await logger.info(
 					`Retrying scrape (attempt ${retries + 1}/${MAX_RETRIES})...`,
 					{
 						delay: `${Math.round(delay / 1000)}s`,
@@ -396,13 +406,27 @@ export async function scrapeWebsite(
 				},
 			};
 		} finally {
+			if (company) {
+				try {
+					// Record successful scrape if no error occurred
+					if (!lastError) {
+						// Success handling would go here - removed ScrapeErrorService reference
+					}
+				} catch (err) {
+					await logger
+						.error('Failed to update scrape status:', err)
+						.catch(console.error);
+				}
+			}
 			if (browser) {
 				try {
 					await browser.close();
 					activeInstances.delete(browser);
-					logger.debug('Browser closed successfully');
+					await logger.debug('Browser closed successfully');
 				} catch (error) {
-					logger.error('Error closing browser:', error);
+					await logger
+						.error('Error closing browser:', error)
+						.catch(console.error);
 				} finally {
 					releaseBrowser();
 				}

@@ -1,0 +1,27 @@
+import mongoose, {Schema, Document} from 'mongoose';
+
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'success';
+
+export interface ILog extends Document {
+	timestamp: Date;
+	level: LogLevel;
+	message: string;
+	context: string;
+	data?: Record<string, any>;
+}
+
+const LogSchema = new Schema<ILog>(
+	{
+		timestamp: {type: Date, required: true},
+		level: {type: String, required: true},
+		message: {type: String, required: true},
+		context: {type: String, required: true},
+		data: {type: Schema.Types.Mixed},
+	},
+	{
+		capped: {size: 52428800, max: 50000},
+		timestamps: false,
+	},
+);
+
+export const Log = mongoose.model<ILog>('Log', LogSchema);

@@ -1,4 +1,5 @@
-type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'success';
+import {LogService} from '../services/logService';
+import type {LogLevel} from '../models/Log';
 
 interface LogOptions {
 	emoji?: boolean;
@@ -63,8 +64,8 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	debug(message: string, data?: any): void {
-		this.log('debug', message, data);
+	async debug(message: string, data?: any): Promise<void> {
+		await this.log('debug', message, data);
 	}
 
 	/**
@@ -72,8 +73,8 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	info(message: string, data?: any): void {
-		this.log('info', message, data);
+	async info(message: string, data?: any): Promise<void> {
+		await this.log('info', message, data);
 	}
 
 	/**
@@ -81,8 +82,8 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	warn(message: string, data?: any): void {
-		this.log('warn', message, data);
+	async warn(message: string, data?: any): Promise<void> {
+		await this.log('warn', message, data);
 	}
 
 	/**
@@ -90,8 +91,8 @@ export class Logger {
 	 * @param message The message to log
 	 * @param error Optional error to include
 	 */
-	error(message: string, error?: any): void {
-		this.log('error', message, error);
+	async error(message: string, error?: any): Promise<void> {
+		await this.log('error', message, error);
 	}
 
 	/**
@@ -99,14 +100,18 @@ export class Logger {
 	 * @param message The message to log
 	 * @param data Optional data to include
 	 */
-	success(message: string, data?: any): void {
-		this.log('success', message, data);
+	async success(message: string, data?: any): Promise<void> {
+		await this.log('success', message, data);
 	}
 
 	/**
 	 * Internal log method
 	 */
-	private log(level: LogLevel, message: string, data?: any): void {
+	private async log(
+		level: LogLevel,
+		message: string,
+		data?: any,
+	): Promise<void> {
 		const timestamp = this.options.timestamp
 			? `[${new Date().toISOString()}]`
 			: '';
@@ -154,6 +159,22 @@ export class Logger {
 			} else {
 				console.log(data);
 			}
+		}
+
+		// Asynchronous logging to the database
+		try {
+			LogService.createLog({
+				timestamp: new Date(),
+				level,
+				message,
+				context: this.context,
+				data: data || undefined,
+			}).catch(dbError => {
+				// If the DB write fails, we log it to the console but don't crash the app.
+				console.error('[Logger DB] Failed to save log:', dbError.message);
+			});
+		} catch (error) {
+			console.error('[Logger DB] Error invoking LogService:', error);
 		}
 	}
 

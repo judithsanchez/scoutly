@@ -267,7 +267,7 @@ const companies = [
 	{
 		companyID: 'eyeo',
 		company: 'Eyeo',
-		careers_url: 'https://eyeo.com/careers?department=23243030',
+		careers_url: 'https://eyeo.com/careers?department=27655362',
 		selector: '.jobs-block',
 		work_model: WorkModel.FULLY_REMOTE,
 		headquarters: 'Cologne, Germany',
@@ -1110,7 +1110,7 @@ const companies = [
 		companyID: 'revenuecat',
 		company: 'RevenueCat',
 		careers_url:
-			'https://job-boards.greenhouse.io/revenuecat?departments%5B%5D=4006947004',
+			'https://jobs.ashbyhq.com/revenuecat?departmentId=8dcde971-b533-404f-8e67-e94e5f89b590',
 		selector: '',
 		work_model: WorkModel.FULLY_REMOTE,
 		headquarters: 'San Francisco, USA',

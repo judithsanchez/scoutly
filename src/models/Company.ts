@@ -16,6 +16,9 @@ export interface ICompany extends Document {
 	office_locations: string[];
 	fields: string[];
 	openToApplication: boolean;
+	lastSuccessfulScrape?: Date;
+	isProblematic: boolean;
+	scrapeErrors: mongoose.Schema.Types.ObjectId[];
 }
 
 const CompanySchema = new Schema<ICompany>(
@@ -61,10 +64,26 @@ const CompanySchema = new Schema<ICompany>(
 			default: false,
 			required: true,
 		},
+		lastSuccessfulScrape: {
+			type: Date,
+		},
+		isProblematic: {
+			type: Boolean,
+			default: false,
+		},
+		scrapeErrors: [
+			{
+				type: Schema.Types.ObjectId,
+				ref: 'ScrapeError',
+			},
+		],
 	},
 	{
 		timestamps: true,
 	},
 );
+
+// Create compound index for error tracking
+CompanySchema.index({isProblematic: 1, lastSuccessfulScrape: 1});
 
 export const Company = mongoose.model<ICompany>('Company', CompanySchema);
