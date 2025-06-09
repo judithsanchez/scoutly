@@ -43,6 +43,13 @@ Creates a new user. No authentication currently implemented.
 }
 ```
 
+```bash
+curl -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+
+```
+
 ### POST /api/jobs
 
 Searches for jobs. No authentication currently implemented.

@@ -1,13 +1,13 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {Logger} from '@/utils/logger';
 import {CompanyService} from '@/services/companyService';
-import {connectDB} from '@/config/database';
+import dbConnect from '@/middleware/database'; // <-- Change this import
 
 const logger = new Logger('CompaniesAPI');
 
 export async function GET(request: NextRequest) {
 	try {
-		await connectDB();
+		await dbConnect(); // <-- Change this function call
 		logger.info('Database connection established');
 
 		const companies = await CompanyService.getAllCompanies();

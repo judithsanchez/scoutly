@@ -11,6 +11,8 @@ import {spawn} from 'child_process';
 import os from 'os';
 import {initialMatchingSchema, deepDiveSchema} from '@/utils/geminiSchemas';
 import {GeminiFreeTierLimits, type IGeminiRateLimit} from '@/config/rateLimits';
+import {ICompany} from '@/models/Company'; // Import ICompany
+import {ScrapeHistoryService} from './scrapeHistoryService'; // Import ScrapeHistoryService
 
 const logger = new Logger('JobMatchingOrchestrator');
 const MODEL_NAME = 'gemini-2.0-flash-lite';
@@ -287,9 +289,10 @@ export class JobMatchingOrchestrator {
 	}
 
 	async orchestrateJobMatching(
-		jobBoardUrl: string,
+		company: ICompany,
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
+		userEmail: string,
 	): Promise<JobAnalysisResult[]> {
 		try {
 			const startTime = Date.now();
@@ -299,27 +302,45 @@ export class JobMatchingOrchestrator {
 			this.resetPipelineState();
 
 			// Step 1: Scrape job board for initial listings
-			logger.info('📝 Step 1: Scraping job board listings...');
-			const jobsResult = await this.scrapeJobs(jobBoardUrl);
+			logger.info(`📝 Step 1: Scraping ${company.company} job listings...`);
+			const jobsResult = await this.scrapeJobs(company.careers_url);
 			if (jobsResult.error) {
 				throw new Error(`Failed to scrape jobs: ${jobsResult.error}`);
 			}
 
-			this.scrapedJobs = jobsResult.links;
-			const jobScrapeTime = (Date.now() - startTime) / 1000;
-			logger.info('📊 Initial Job Board Results:', {
-				totalJobs: this.scrapedJobs.length,
-				timeToScrape: `${jobScrapeTime}s`,
-				sampleJobs: this.getRandomJobs(this.scrapedJobs, 3).map(link => ({
-					title: link.text,
-					url: link.url,
-				})),
-			});
+			const allScrapedLinks = jobsResult.links;
+			const allScrapedUrls = allScrapedLinks.map(link => link.url);
 
-			if (this.scrapedJobs.length === 0) {
-				logger.warn('No jobs found on the job board. Ending pipeline.');
+			// --- DATABASE LOGIC: START ---
+			// Find which of the scraped links are new for this user
+			const newLinkUrls = await ScrapeHistoryService.findNewLinks(
+				company.id,
+				userEmail,
+				allScrapedUrls,
+			);
+
+			// Always record the new scrape to keep history up-to-date
+			await ScrapeHistoryService.recordScrape(
+				company.id,
+				userEmail,
+				allScrapedUrls,
+			);
+			// --- DATABASE LOGIC: END ---
+
+			if (newLinkUrls.length === 0) {
+				logger.warn(
+					`No new jobs found for ${company.company}. Ending pipeline.`,
+				);
+				this.cleanup();
 				return [];
 			}
+
+			logger.info(
+				`Found ${newLinkUrls.length} new links for ${company.company} to analyze.`,
+			);
+			this.scrapedJobs = allScrapedLinks.filter(link =>
+				newLinkUrls.includes(link.url),
+			);
 
 			// Step 2: Process candidate profile (sync operation)
 			logger.info('📋 Step 2: Processing candidate profile...');
@@ -489,8 +510,6 @@ export class JobMatchingOrchestrator {
 		return shuffled.slice(0, count);
 	}
 
-	// Method removed as its functionality is now in orchestrateJobMatching
-
 	private async scrapeJobs(url: string): Promise<ScrapeResult> {
 		const result = await scrapeWebsite({url});
 
@@ -498,11 +517,9 @@ export class JobMatchingOrchestrator {
 		if (result.links.length > 0) {
 			const filteredLinks = result.links.filter(link => {
 				const title = link.text.toLowerCase();
-				// Skip navigation, utility and non-job links
+				// Keep the filter simple: remove short, login, and policy links.
 				if (
 					title.length < 5 ||
-					title.includes('read more') ||
-					title.includes('apply') ||
 					title.includes('login') ||
 					title.includes('sign') ||
 					title.includes('cookie') ||
@@ -771,23 +788,11 @@ export class JobMatchingOrchestrator {
 		cvContent: string,
 		candidateInfo: Record<string, any>,
 	): Promise<JobAnalysisResult[]> {
-		// First perform a quick title-based screening
-		const titleScreened = positions.filter(pos => {
-			const title = pos.title.toLowerCase();
-			// Skip obvious mismatches like "Read More" links
-			if (
-				title.length < 5 ||
-				title.includes('read more') ||
-				title.includes('apply')
-			) {
-				logger.debug(`Skipping non-job link: ${pos.title}`);
-				return false;
-			}
-			return true;
-		});
-
+		// This second, manual filter is redundant and error-prone.
+		// The first AI pass has already selected the candidates. We trust its judgment.
+		const titleScreened = positions;
 		logger.info(
-			`Title screening reduced positions from ${positions.length} to ${titleScreened.length}`,
+			`Skipping redundant title screen. Proceeding with ${positions.length} AI-selected candidate(s).`,
 		);
 
 		// Then prepare the valid positions for content analysis

@@ -8,8 +8,24 @@ const MONGODB_URI =
 
 export const connectDB = async () => {
 	try {
-		await mongoose.connect(MONGODB_URI);
-		logger.info('MongoDB connected successfully');
+		const options = {
+			serverSelectionTimeoutMS: 15000,
+			connectTimeoutMS: 15000,
+			socketTimeoutMS: 30000,
+			maxPoolSize: 10,
+			bufferCommands: true,
+			maxConnecting: 5,
+		};
+
+		await mongoose.connect(MONGODB_URI, options);
+
+		// Verify connection is ready
+		const db = mongoose.connection.db;
+		if (!db) {
+			throw new Error('Database connection not established');
+		}
+		await db.admin().ping();
+		logger.info('MongoDB connected and ready');
 	} catch (error) {
 		logger.error('MongoDB connection error:', error);
 		throw error;
