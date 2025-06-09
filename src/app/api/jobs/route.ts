@@ -36,40 +36,62 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// This implementation will process the first company in the list.
-		const companyName = companyNames[0];
-
 		// Ensure the user exists (this is quick)
 		await UserService.getOrCreateUser(credentials.gmail);
 
-		// Get the company details from the database
-		const companies = await CompanyService.findCompaniesByName([companyName]);
-		if (companies.length === 0) {
-			return NextResponse.json(
-				{error: `Company '${companyName}' not found in the database.`},
-				{status: 404},
-			);
-		}
-		const company = companies[0];
-
-		// Instantiate and run the main AI workflow
+		// Instantiate the orchestrator once for reuse
 		const orchestrator = new JobMatchingOrchestrator();
-		const analysisResults = await orchestrator.orchestrateJobMatching(
-			company, // Pass the full company object
-			cvUrl,
-			candidateInfo,
-			credentials.gmail, // Pass the email for history tracking
-		);
 
-		logger.success(
-			`Job matching pipeline completed for ${company.company}. Found ${analysisResults.length} suitable jobs.`,
-		);
+		// Process each company sequentially
+		const results = [];
+		for (const companyName of companyNames) {
+			try {
+				// Get the company details from the database
+				const companies = await CompanyService.findCompaniesByName([
+					companyName,
+				]);
+				if (companies.length === 0) {
+					logger.warn(`Company '${companyName}' not found in the database.`);
+					results.push({
+						company: companyName,
+						processed: false,
+						error: 'Company not found in the database',
+						results: [],
+					});
+					continue;
+				}
+				const company = companies[0];
 
-		return NextResponse.json({
-			company: company.company,
-			processed: true,
-			results: analysisResults,
-		});
+				// Run the main AI workflow
+				const analysisResults = await orchestrator.orchestrateJobMatching(
+					company,
+					cvUrl,
+					candidateInfo,
+					credentials.gmail,
+				);
+
+				logger.success(
+					`Job matching pipeline completed for ${company.company}. Found ${analysisResults.length} suitable jobs.`,
+				);
+
+				results.push({
+					company: company.company,
+					processed: true,
+					results: analysisResults,
+				});
+			} catch (error: any) {
+				logger.error(`Error processing company ${companyName}:`, error);
+				results.push({
+					company: companyName,
+					processed: false,
+					error:
+						error.message || 'An error occurred while processing this company',
+					results: [],
+				});
+			}
+		}
+
+		return NextResponse.json({results});
 	} catch (error: any) {
 		logger.error('Error in /api/jobs route:', {
 			message: error.message,
