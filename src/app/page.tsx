@@ -14,6 +14,35 @@ export default function Home() {
 	const [companies, setCompanies] = useState<Company[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [selectedCompany, setSelectedCompany] = useState<string>('');
+	const [savedJobs, setSavedJobs] = useState<any[]>([]);
+	const [savedJobsLoading, setSavedJobsLoading] = useState(true);
+
+	// Fetch saved jobs when the component mounts
+	useEffect(() => {
+		const fetchSavedJobs = async () => {
+			setSavedJobsLoading(true);
+			const saved = localStorage.getItem('jobFormData');
+			if (saved) {
+				const formData = JSON.parse(saved);
+				if (formData.credentials?.gmail) {
+					try {
+						const response = await fetch(
+							`/api/jobs/saved?gmail=${encodeURIComponent(
+								formData.credentials.gmail,
+							)}`,
+						);
+						const data = await response.json();
+						setSavedJobs(data.jobs || []);
+					} catch (error) {
+						console.error('Error fetching saved jobs:', error);
+					}
+				}
+			}
+			setSavedJobsLoading(false);
+		};
+
+		fetchSavedJobs();
+	}, []);
 
 	useEffect(() => {
 		const saved = localStorage.getItem('jobFormData');
@@ -45,7 +74,7 @@ export default function Home() {
 		return (
 			<main className="min-h-screen p-8 bg-gradient-to-b from-indigo-950 via-purple-950 to-pink-950">
 				<div className="container mx-auto max-w-7xl">
-					<div className="flex justify-center items-center h-[80vh]">
+					<div className="flex justify-center items-center h-48">
 						<h1 className="text-2xl font-medium text-white/80">
 							Loading companies...
 						</h1>
@@ -54,6 +83,39 @@ export default function Home() {
 			</main>
 		);
 	}
+
+	const renderSavedJobs = () => (
+		<div className="mt-12 pb-8">
+			<h2 className="text-2xl font-bold text-white mb-8 text-center">
+				Saved Jobs
+			</h2>
+			{savedJobsLoading ? (
+				<div className="text-center text-white/60">Loading saved jobs...</div>
+			) : savedJobs.length === 0 ? (
+				<div className="text-center text-white/60">No saved jobs found</div>
+			) : (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{savedJobs.map((job: any) => (
+						<div
+							key={job._id}
+							className="bg-white/10 p-4 rounded-lg shadow-lg backdrop-blur-sm"
+						>
+							<h3 className="text-lg font-semibold text-white mb-2">
+								{job.jobTitle}
+							</h3>
+							{job.company && (
+								<p className="text-white/80 mb-2">{job.company.company}</p>
+							)}
+							<p className="text-white/60 text-sm mb-2">Status: {job.status}</p>
+							<p className="text-white/60 text-sm">
+								Saved on: {new Date(job.createdAt).toLocaleDateString()}
+							</p>
+						</div>
+					))}
+				</div>
+			)}
+		</div>
+	);
 
 	return (
 		<main className="min-h-screen p-8 bg-gradient-to-b from-indigo-950 via-purple-950 to-pink-950">
@@ -113,6 +175,7 @@ export default function Home() {
 						</Button>
 					))}
 				</div>
+				{renderSavedJobs()}
 			</div>
 		</main>
 	);
