@@ -256,19 +256,25 @@ export class JobMatchingOrchestrator {
 				throw new Error(`Failed to scrape jobs: ${jobsResult.error}`);
 			}
 			const allScrapedLinks = jobsResult.links;
-			const allScrapedUrls = allScrapedLinks.map(link => link.url);
-
 			logger.info('🗄️ Step 2: Checking for new links against user history...');
+			logger.debug('Total scraped links:', {
+				count: allScrapedLinks.length,
+				sample: allScrapedLinks.slice(0, 2),
+			});
+
 			const newLinkUrls = await ScrapeHistoryService.findNewLinks(
 				company.id,
 				userEmail,
-				allScrapedUrls,
+				allScrapedLinks,
 			);
+
+			// Record all links for future comparisons
 			await ScrapeHistoryService.recordScrape(
 				company.id,
 				userEmail,
-				allScrapedUrls,
+				allScrapedLinks,
 			);
+
 			if (newLinkUrls.length === 0) {
 				logger.warn(
 					`No new jobs found for ${company.company}. Ending pipeline.`,
@@ -276,12 +282,23 @@ export class JobMatchingOrchestrator {
 				await this.cleanup();
 				return [];
 			}
+
 			logger.info(
 				`Found ${newLinkUrls.length} new links for ${company.company} to analyze.`,
 			);
+
+			// Create a Set for O(1) lookups
+			const newUrlsSet = new Set(newLinkUrls.map(url => String(url)));
 			this.scrapedJobs = allScrapedLinks.filter(link =>
-				newLinkUrls.includes(link.url),
+				newUrlsSet.has(String(link.url)),
 			);
+
+			logger.debug('Filtered scraped jobs:', {
+				total: allScrapedLinks.length,
+				new: newLinkUrls.length,
+				matched: this.scrapedJobs.length,
+				sample: this.scrapedJobs.slice(0, 2),
+			});
 
 			logger.info('📋 Step 3: Processing candidate profile and CV...');
 			this.initializeCandidateProfile(candidateInfo);
@@ -322,31 +339,50 @@ export class JobMatchingOrchestrator {
 				return [];
 			}
 
-			// BUG FIX: Step 7 - Save the successful results to the database
+			// Step 7 - Save unique job results to the database
 			logger.info(
-				`💾 Step 7: Saving ${analysisResults.length} matched jobs to the database...`,
+				`💾 Step 7: Processing ${analysisResults.length} jobs for database storage...`,
 			);
 			const user = await UserService.getUserByEmail(userEmail);
 			if (user) {
+				let savedCount = 0;
+				let skippedCount = 0;
+
 				for (const job of analysisResults) {
 					try {
-						await SavedJob.findOneAndUpdate(
-							{user: user.id, url: job.url},
-							{
-								...job,
-								user: user.id,
-								company: company.id,
-								status: ApplicationStatus.WANT_TO_APPLY,
-							},
-							{upsert: true, new: true, setDefaultsOnInsert: true},
-						);
+						// Check if job already exists for this user
+						const existingJob = await SavedJob.findOne({
+							user: user.id,
+							url: job.url,
+						});
+
+						if (existingJob) {
+							logger.debug(
+								`Skipping duplicate job: "${job.title}" (${job.url})`,
+							);
+							skippedCount++;
+							continue;
+						}
+
+						// Job doesn't exist, save it
+						await SavedJob.create({
+							...job,
+							user: user.id,
+							company: company.id,
+							status: ApplicationStatus.WANT_TO_APPLY,
+						});
+						savedCount++;
 					} catch (dbError) {
-						logger.error(`Failed to save job "${job.title}" to DB`, {
+						logger.error(`Failed to process job "${job.title}"`, {
 							error: dbError,
+							url: job.url,
 						});
 					}
 				}
-				logger.success('✓ Successfully saved jobs to the database.');
+
+				logger.success(
+					`✓ Database update complete: ${savedCount} new jobs saved, ${skippedCount} duplicates skipped.`,
+				);
 			} else {
 				logger.error('Could not find user to save jobs against.');
 			}

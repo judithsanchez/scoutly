@@ -1,13 +1,30 @@
 import mongoose, {Schema, Document} from 'mongoose';
 
+export interface ScrapeLink {
+	url: string;
+	text: string;
+	context: string;
+	title?: string;
+}
+
 export interface ICompanyScrapeHistory extends Document {
 	companyId: mongoose.Schema.Types.ObjectId;
 	userEmail: string;
 	lastScrapeDate: Date;
-	links: string[];
+	links: ScrapeLink[];
 	createdAt: Date;
 	updatedAt: Date;
 }
+
+const ScrapedLinkSchema = new Schema(
+	{
+		url: {type: String, required: true},
+		text: {type: String, required: true},
+		context: {type: String, required: true},
+		title: String,
+	},
+	{_id: false},
+); // Disable _id for subdocuments since we'll use url as identifier
 
 const CompanyScrapeHistorySchema = new Schema<ICompanyScrapeHistory>(
 	{
@@ -27,12 +44,7 @@ const CompanyScrapeHistorySchema = new Schema<ICompanyScrapeHistory>(
 			required: true,
 			default: Date.now,
 		},
-		links: [
-			{
-				type: String,
-				required: true,
-			},
-		],
+		links: [ScrapedLinkSchema],
 	},
 	{
 		timestamps: true,

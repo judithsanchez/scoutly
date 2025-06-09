@@ -1,9 +1,11 @@
 import {
 	CompanyScrapeHistory,
 	ICompanyScrapeHistory,
+	ScrapeLink,
 } from '../models/CompanyScrapeHistory';
 import {Logger} from '../utils/logger';
 import mongoose from 'mongoose';
+import {ExtractedLink} from '../utils/scraper';
 
 const logger = new Logger('ScrapeHistoryService');
 
@@ -25,15 +27,24 @@ export class ScrapeHistoryService {
 	static async recordScrape(
 		companyId: string,
 		userEmail: string,
-		links: string[],
+		links: ExtractedLink[],
 	): Promise<ICompanyScrapeHistory> {
 		try {
 			const objectId = new mongoose.Types.ObjectId(companyId);
+
+			// Ensure all required fields are present and strings
+			const scrapeLinks = links.map(link => ({
+				url: String(link.url),
+				text: String(link.text || ''),
+				context: String(link.context || ''),
+				title: link.title ? String(link.title) : undefined,
+			}));
+
 			const update = {
 				companyId: objectId,
 				userEmail,
 				lastScrapeDate: new Date(),
-				links,
+				links: scrapeLinks,
 			};
 
 			return await CompanyScrapeHistory.findOneAndUpdate(
@@ -49,16 +60,24 @@ export class ScrapeHistoryService {
 	static async findNewLinks(
 		companyId: string,
 		userEmail: string,
-		currentLinks: string[],
+		currentLinks: ExtractedLink[],
 	): Promise<string[]> {
 		try {
 			const lastScrape = await this.getLastScrape(companyId, userEmail);
 			if (!lastScrape) {
-				return currentLinks; // All links are new if no previous scrape exists
+				// All URLs are new if no previous scrape exists
+				return currentLinks.map(link => String(link.url));
 			}
 
-			// Return only links that weren't in the last scrape
-			return currentLinks.filter(link => !lastScrape.links.includes(link));
+			// Get unique URLs from last scrape
+			const lastScrapeUrls = new Set(
+				lastScrape.links.map(link => String(link.url)),
+			);
+
+			// Return URLs that don't exist in the last scrape
+			return currentLinks
+				.filter(link => !lastScrapeUrls.has(String(link.url)))
+				.map(link => String(link.url));
 		} catch (error: any) {
 			throw new Error(`Error finding new links: ${error.message}`);
 		}
