@@ -1,4 +1,5 @@
 import {Log, type ILog, type LogLevel} from '../models/Log';
+import crypto from 'crypto';
 
 interface LogEntry {
 	timestamp: Date;
@@ -6,27 +7,44 @@ interface LogEntry {
 	message: string;
 	context: string;
 	data?: Record<string, any>;
-	sequence?: number;
+	sequence: number;
 }
 
 export class LogService {
-	public static async createLog(logEntry: LogEntry): Promise<ILog> {
+	public static async saveBatchedLogs(logs: LogEntry[]): Promise<ILog> {
+		if (logs.length === 0) {
+			throw new Error('Cannot save empty log batch');
+		}
+
 		try {
-			const log = new Log(logEntry);
-			return await log.save();
+			// Create a single document containing all logs
+			const batch = {
+				processId: crypto.randomUUID(),
+				context: logs[0].context, // Use context from first log
+				startTime: logs[0].timestamp,
+				endTime: logs[logs.length - 1].timestamp,
+				entries: logs.map(entry => ({
+					...entry,
+					sequence: entry.sequence || 0,
+				})),
+			};
+
+			const log = await Log.create(batch);
+			return log;
 		} catch (error: any) {
-			console.error('Failed to write log to database:', error.message);
-			throw new Error(`Error creating log: ${error.message}`);
+			console.error('Failed to write batched logs to database:', error.message);
+			throw new Error(`Error creating log batch: ${error.message}`);
 		}
 	}
 
-	public static async createLogs(logEntries: LogEntry[]): Promise<ILog[]> {
-		try {
-			const logs = await Log.insertMany(logEntries);
-			return logs;
-		} catch (error: any) {
-			console.error('Failed to write logs to database:', error.message);
-			throw new Error(`Error creating logs: ${error.message}`);
-		}
+	// Keep for backwards compatibility, but mark as deprecated
+	/** @deprecated Use saveBatchedLogs instead */
+	public static async createLog(logEntry: LogEntry): Promise<ILog> {
+		return this.saveBatchedLogs([logEntry]);
+	}
+
+	/** @deprecated Use saveBatchedLogs instead */
+	public static async createLogs(logEntries: LogEntry[]): Promise<ILog> {
+		return this.saveBatchedLogs(logEntries);
 	}
 }

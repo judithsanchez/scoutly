@@ -59,6 +59,7 @@ export class Logger {
 	private context: string;
 	private logBuffer: BufferedLog[] = [];
 	private sequence: number = 0;
+	private initialLogTime: Date | null = null;
 
 	/**
 	 * Creates a new Logger instance
@@ -69,24 +70,26 @@ export class Logger {
 		this.context = context;
 		this.options = {...Logger.defaultOptions, ...options};
 		this.clearBuffer();
+		this.initialLogTime = null;
 	}
 
 	/**
-	 * Clears the log buffer and resets sequence
+	 * Clears the log buffer and resets tracking
 	 */
 	private clearBuffer(): void {
 		this.logBuffer = [];
 		this.sequence = 0;
+		this.initialLogTime = null;
 	}
 
 	/**
-	 * Saves all buffered logs to the database at once
+	 * Saves all buffered logs to the database as a single document
 	 */
 	public async saveBufferedLogs(): Promise<void> {
 		if (this.logBuffer.length === 0) return;
 
 		try {
-			await LogService.createLogs(this.logBuffer);
+			await LogService.saveBatchedLogs(this.logBuffer);
 			this.clearBuffer();
 		} catch (error) {
 			console.error('[Logger DB] Failed to save buffered logs:', error);
@@ -146,9 +149,12 @@ export class Logger {
 		message: string,
 		data?: any,
 	): Promise<void> {
-		const timestamp = this.options.timestamp
-			? `[${new Date().toISOString()}]`
-			: '';
+		const now = new Date();
+		if (!this.initialLogTime) {
+			this.initialLogTime = now;
+		}
+
+		const timestamp = this.options.timestamp ? `[${now.toISOString()}]` : '';
 		const emoji = this.options.emoji ? this.getEmoji(level) : '';
 		const prefix = this.options.prefix ? `${this.options.prefix} ` : '';
 		const contextStr = this.context ? `[${this.context}]` : '';
@@ -197,7 +203,7 @@ export class Logger {
 
 		// Buffer the log for later database storage
 		this.logBuffer.push({
-			timestamp: new Date(),
+			timestamp: now, // Use same timestamp instance from above
 			level,
 			message,
 			context: this.context,
