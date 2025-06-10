@@ -51,6 +51,10 @@ interface CandidateInfo {
 interface CandidateData {
 	cvUrl: string;
 	candidateInfo: CandidateInfo;
+	credentials?: {
+		gmail: string;
+	};
+	companyNames?: string[];
 }
 
 interface ArrayInputProps {
@@ -609,6 +613,11 @@ function CandidateForm({initialData, onFormSubmit}: CandidateFormProps) {
 export default function ProfilePage() {
 	const handleFormSubmit = (formData: CandidateData) => {
 		const requestBody = {
+			credentials: {
+				// This will be replaced by the actual email from auth
+				gmail: 'judithv.sanchezc@gmail.com',
+			},
+			companyNames: ['Booking'], // For now hardcoded to match example
 			cvUrl: formData.cvUrl,
 			candidateInfo: formData.candidateInfo,
 		};
