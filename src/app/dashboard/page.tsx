@@ -5,7 +5,7 @@ import {ArrayInput} from '@/components/form/ArrayInput';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import {SearchModal} from '@/components/SearchModal';
 import SavedJobCard from '@/components/SavedJobCard';
-import {ISavedJob} from '@/types/savedJob';
+import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
 
 // --- TYPE DEFINITIONS ---
 // (keeping all interfaces unchanged...)
@@ -129,6 +129,64 @@ export default function DashboardPage() {
 
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+
+	const handleStatusChange = async (
+		jobId: string,
+		status: ApplicationStatus,
+	) => {
+		try {
+			const response = await fetch('/api/jobs/saved/status', {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					jobId,
+					status,
+					gmail: authInfo.gmail,
+				}),
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || 'Failed to update job status');
+			}
+
+			const updatedJob = await response.json();
+
+			// Update jobs list with new status and resort
+			setSavedJobs(currentJobs => {
+				const updatedJobs = currentJobs.map(job =>
+					job._id === jobId ? {...job, ...updatedJob} : job,
+				);
+
+				// Sort by status priority and suitability score
+				return updatedJobs.sort((a: ISavedJob, b: ISavedJob) => {
+					const statusPriority: Record<ApplicationStatus, number> = {
+						[ApplicationStatus.WANT_TO_APPLY]: 3,
+						[ApplicationStatus.PENDING_APPLICATION]: 2,
+						[ApplicationStatus.APPLIED]: 1,
+						[ApplicationStatus.DISCARDED]: 0,
+					};
+
+					// First compare by status priority
+					const statusDiff =
+						statusPriority[a.status as ApplicationStatus] -
+						statusPriority[b.status as ApplicationStatus];
+					if (statusDiff !== 0) return -statusDiff;
+
+					// If status is the same, sort by suitability score (highest first)
+					return b.suitabilityScore - a.suitabilityScore;
+				});
+			});
+		} catch (err) {
+			setError(
+				err instanceof Error ? err.message : 'Failed to update job status',
+			);
+			console.error('Error updating job status:', err);
+		}
+	};
 
 	useEffect(() => {
 		async function fetchSavedJobs() {
@@ -142,7 +200,26 @@ export default function DashboardPage() {
 					throw new Error(data.error || 'Failed to fetch saved jobs');
 				}
 
-				setSavedJobs(data.jobs);
+				// Sort jobs by status priority and suitability score
+				const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
+					const statusPriority: Record<ApplicationStatus, number> = {
+						[ApplicationStatus.WANT_TO_APPLY]: 3,
+						[ApplicationStatus.PENDING_APPLICATION]: 2,
+						[ApplicationStatus.APPLIED]: 1,
+						[ApplicationStatus.DISCARDED]: 0,
+					};
+
+					// First compare by status priority
+					const statusDiff =
+						statusPriority[a.status as ApplicationStatus] -
+						statusPriority[b.status as ApplicationStatus];
+					if (statusDiff !== 0) return -statusDiff;
+
+					// If status is the same, sort by suitability score (highest first)
+					return b.suitabilityScore - a.suitabilityScore;
+				});
+
+				setSavedJobs(sortedJobs);
 			} catch (err) {
 				console.error('Error fetching saved jobs:', err);
 			} finally {
@@ -621,7 +698,12 @@ export default function DashboardPage() {
 								) : (
 									<div className="space-y-3">
 										{savedJobs.map(job => (
-											<SavedJobCard key={job._id} job={job} compact />
+											<SavedJobCard
+												key={job._id}
+												job={job}
+												compact
+												onStatusChange={handleStatusChange}
+											/>
 										))}
 									</div>
 								)}

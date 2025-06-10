@@ -4,7 +4,7 @@ import mongoose, {Schema, Document} from 'mongoose';
  * Defines the possible statuses for a saved job application.
  */
 export enum ApplicationStatus {
-	WANT_TO_APPLY = 'WANT_TO_APPLY', // Default status for a newly saved job
+	WANT_TO_APPLY = 'WANT_TO_APPLY', // Star/favorite status
 	PENDING_APPLICATION = 'PENDING_APPLICATION', // Marked as "I will apply"
 	APPLIED = 'APPLIED', // Application has been sent
 	DISCARDED = 'DISCARDED', // User is not interested
@@ -72,7 +72,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 		status: {
 			type: String,
 			enum: Object.values(ApplicationStatus),
-			default: ApplicationStatus.WANT_TO_APPLY,
+			default: ApplicationStatus.PENDING_APPLICATION,
 			required: true,
 		},
 		notes: {type: String},

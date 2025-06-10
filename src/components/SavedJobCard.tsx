@@ -1,29 +1,33 @@
 import {useState} from 'react';
 import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
+import {StarIcon, CheckIcon, ArchiveIcon} from '@/components/ui/status-icons';
 
 interface SavedJobCardProps {
 	job: ISavedJob;
 	compact?: boolean; // For dashboard view
+	onStatusChange?: (jobId: string, status: ApplicationStatus) => Promise<void>;
 }
 
 export default function SavedJobCard({
 	job,
 	compact = false,
+	onStatusChange,
 }: SavedJobCardProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	const statusColors = {
-		[ApplicationStatus.WANT_TO_APPLY]: 'bg-blue-500',
-		[ApplicationStatus.PENDING_APPLICATION]: 'bg-yellow-500',
-		[ApplicationStatus.APPLIED]: 'bg-green-500',
-		[ApplicationStatus.DISCARDED]: 'bg-red-500',
+	const handleStatusChange = async (newStatus: ApplicationStatus) => {
+		if (onStatusChange) {
+			await onStatusChange(job._id, newStatus);
+		}
 	};
 
 	return (
 		<div
 			className={`bg-slate-800 rounded-lg ${
 				compact ? 'p-4' : 'p-6'
-			} mb-4 shadow-lg ${compact ? 'text-sm' : ''}`}
+			} mb-4 shadow-lg ${compact ? 'text-sm' : ''} ${
+				job.status === ApplicationStatus.DISCARDED ? 'opacity-60' : ''
+			}`}
 		>
 			<div
 				className={`flex justify-between items-start ${
@@ -50,13 +54,45 @@ export default function SavedJobCard({
 					)}
 				</div>
 				<div className="flex flex-col items-end gap-2">
-					<span
-						className={`px-3 py-1 rounded-full text-xs font-medium ${
-							statusColors[job.status]
-						}`}
-					>
-						{job.status.replace(/_/g, ' ')}
-					</span>
+					<div className="flex items-center gap-2">
+						<button
+							onClick={() =>
+								handleStatusChange(ApplicationStatus.WANT_TO_APPLY)
+							}
+							className={`p-1.5 rounded-full hover:bg-slate-700 transition-colors ${
+								job.status === ApplicationStatus.WANT_TO_APPLY
+									? 'text-yellow-400'
+									: 'text-slate-400'
+							}`}
+							title="Favorite"
+						>
+							<StarIcon
+								filled={job.status === ApplicationStatus.WANT_TO_APPLY}
+							/>
+						</button>
+						<button
+							onClick={() => handleStatusChange(ApplicationStatus.APPLIED)}
+							className={`p-1.5 rounded-full hover:bg-slate-700 transition-colors ${
+								job.status === ApplicationStatus.APPLIED
+									? 'text-green-400'
+									: 'text-slate-400'
+							}`}
+							title="Mark as Applied"
+						>
+							<CheckIcon filled={job.status === ApplicationStatus.APPLIED} />
+						</button>
+						<button
+							onClick={() => handleStatusChange(ApplicationStatus.DISCARDED)}
+							className={`p-1.5 rounded-full hover:bg-slate-700 transition-colors ${
+								job.status === ApplicationStatus.DISCARDED
+									? 'text-red-400'
+									: 'text-slate-400'
+							}`}
+							title="Archive"
+						>
+							<ArchiveIcon />
+						</button>
+					</div>
 					<div className="text-lg font-bold text-green-400">
 						{job.suitabilityScore}%
 					</div>
