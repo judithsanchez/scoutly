@@ -10,7 +10,7 @@ export default function Home() {
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
 	return (
-		<div className="relative">
+		<div className="bg-slate-950 text-white overflow-x-hidden">
 			<div className="background-glows" />
 
 			<Navbar onLoginClick={() => setIsLoginModalOpen(true)} />
@@ -19,7 +19,7 @@ export default function Home() {
 				onClose={() => setIsLoginModalOpen(false)}
 			/>
 
-			<HeroSection />
+			<HeroSection onGetStartedClick={() => setIsLoginModalOpen(true)} />
 			<HowItWorksSection />
 		</div>
 	);

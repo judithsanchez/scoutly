@@ -10,14 +10,13 @@
 		"seed": "tsx src/scripts/seedCompanies.ts"
 	},
 	"dependencies": {
-		"@auth/core": "0.34.2",
-		"@auth/mongodb-adapter": "^3.0.0",
+		"@next-auth/mongodb-adapter": "^1.1.3",
 		"@google/generative-ai": "^0.24.1",
 		"@radix-ui/react-slot": "^1.0.2",
 		"class-variance-authority": "^0.7.0",
 		"clsx": "^2.0.0",
 		"lucide-react": "^0.344.0",
-		"mongodb": "^6.3.0",
+		"mongodb": "^5.9.0",
 		"mongoose": "^8.0.3",
 		"next": "14.0.4",
 		"next-auth": "4.24.5",

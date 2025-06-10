@@ -70,6 +70,12 @@ export function HowItWorksSection() {
 		},
 	];
 
+	const iconColors = {
+		purple: 'bg-purple-500/20 text-purple-300',
+		pink: 'bg-pink-500/20 text-pink-300',
+		sky: 'bg-sky-500/20 text-sky-300',
+	};
+
 	return (
 		<section className="w-full max-w-5xl mx-auto px-4 py-20">
 			<h2 className="text-4xl font-bold text-center mb-12">How It Works</h2>
@@ -78,10 +84,12 @@ export function HowItWorksSection() {
 					<div
 						key={feature.title}
 						className="feature-card p-8 rounded-2xl border border-white/10 bg-black/20"
-						style={{animationDelay: `${index * 0.2}s`}}
+						style={{animationDelay: `${index * 0.2 + 0.1}s`}}
 					>
 						<div
-							className={`flex items-center justify-center h-16 w-16 mb-6 rounded-full bg-${feature.color}-500/20 text-${feature.color}-300`}
+							className={`flex items-center justify-center h-16 w-16 mb-6 rounded-full ${
+								iconColors[feature.color as keyof typeof iconColors]
+							}`}
 						>
 							{feature.icon}
 						</div>
