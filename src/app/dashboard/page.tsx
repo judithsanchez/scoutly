@@ -1,9 +1,11 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import {SearchModal} from '@/components/SearchModal';
+import SavedJobCard from '@/components/SavedJobCard';
+import {ISavedJob} from '@/types/savedJob';
 
 // --- TYPE DEFINITIONS ---
 // (keeping all interfaces unchanged...)
@@ -124,6 +126,32 @@ export default function DashboardPage() {
 	const authInfo = {
 		gmail: 'judithv.sanchezc@gmail.com',
 	};
+
+	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
+	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+
+	useEffect(() => {
+		async function fetchSavedJobs() {
+			try {
+				const response = await fetch(
+					`/api/jobs/saved?gmail=${encodeURIComponent(authInfo.gmail)}`,
+				);
+
+				const data = await response.json();
+				if (!response.ok) {
+					throw new Error(data.error || 'Failed to fetch saved jobs');
+				}
+
+				setSavedJobs(data.jobs);
+			} catch (err) {
+				console.error('Error fetching saved jobs:', err);
+			} finally {
+				setIsLoadingJobs(false);
+			}
+		}
+
+		fetchSavedJobs();
+	}, []);
 
 	// State from the existing profile form
 	const [cvUrl, setCvUrl] = useState(DEFAULT_CANDIDATE_DATA.cvUrl);
@@ -570,9 +598,33 @@ export default function DashboardPage() {
 					{/* Right Column - Saved Jobs */}
 					<div className="space-y-6">
 						<div className={cardClasses}>
-							<h3 className="text-lg font-bold text-white mb-4">Saved Jobs</h3>
-							<div className="min-h-[200px] flex items-center justify-center text-slate-400">
-								<p>No saved jobs yet</p>
+							<div className="flex justify-between items-center mb-4">
+								<h3 className="text-lg font-bold text-white">
+									Recent Saved Jobs
+								</h3>
+								<a
+									href="/saved-jobs"
+									className="text-purple-400 hover:text-purple-300 text-sm"
+								>
+									View All
+								</a>
+							</div>
+							<div className="min-h-[200px] max-h-[calc(100vh-20rem)] overflow-y-auto pr-2">
+								{isLoadingJobs ? (
+									<div className="flex items-center justify-center text-slate-400">
+										<p>Loading saved jobs...</p>
+									</div>
+								) : savedJobs.length === 0 ? (
+									<div className="flex items-center justify-center text-slate-400">
+										<p>No saved jobs yet</p>
+									</div>
+								) : (
+									<div className="space-y-3">
+										{savedJobs.map(job => (
+											<SavedJobCard key={job._id} job={job} compact />
+										))}
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
