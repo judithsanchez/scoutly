@@ -1,10 +1,10 @@
 'use client';
 
 interface HeroSectionProps {
-	onGetStartedClick: () => void;
+	onGetStartedClick?: () => void;
 }
 
-export function HeroSection({onGetStartedClick}: HeroSectionProps) {
+export function HeroSection() {
 	return (
 		<main className="w-full pt-32 pb-20 px-4 text-center">
 			<h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6">
@@ -18,8 +18,15 @@ export function HeroSection({onGetStartedClick}: HeroSectionProps) {
 				focus on what matters.
 			</p>
 			<button
-				onClick={onGetStartedClick}
-				className="inline-block px-8 py-4 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-all shadow-lg transform hover:scale-105"
+				className="px-8 py-3 text-base font-bold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-md"
+				onClick={() => {
+					const loginButton = document.querySelector(
+						'button[data-login-button]',
+					);
+					if (loginButton) {
+						(loginButton as HTMLButtonElement).click();
+					}
+				}}
 			>
 				Get Started Free
 			</button>

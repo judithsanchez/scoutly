@@ -5,9 +5,13 @@ import {ThemeToggle} from './ThemeToggle';
 
 interface NavbarProps {
 	onLoginClick: () => void;
+	isLoggedIn?: boolean;
 }
 
-export function Navbar({onLoginClick}: NavbarProps) {
+const commonLinkClasses =
+	'hover:text-slate-900 dark:hover:text-white transition-colors';
+
+export function Navbar({onLoginClick, isLoggedIn}: NavbarProps) {
 	return (
 		<nav className="fixed top-0 left-0 right-0 px-4 mt-4 z-40">
 			<div className="mx-auto p-3 rounded-2xl border border-slate-300/80 dark:border-white/20 bg-white/50 dark:bg-white/10 shadow-lg backdrop-blur-xl">
@@ -34,34 +38,44 @@ export function Navbar({onLoginClick}: NavbarProps) {
 					</Link>
 
 					<div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-white/80">
-						<Link
-							href="#how-it-works"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors"
-						>
-							How It Works
-						</Link>
-						<Link
-							href="#"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors"
-						>
-							Features
-						</Link>
-						<Link
-							href="#"
-							className="hover:text-slate-900 dark:hover:text-white transition-colors"
-						>
-							Pricing
-						</Link>
+						{isLoggedIn ? (
+							<>
+								<Link href="/profile" className={commonLinkClasses}>
+									Profile
+								</Link>
+								<Link href="/companies" className={commonLinkClasses}>
+									Companies
+								</Link>
+								<Link href="/saved-jobs" className={commonLinkClasses}>
+									Saved Jobs
+								</Link>
+							</>
+						) : (
+							<>
+								<Link href="#how-it-works" className={commonLinkClasses}>
+									How It Works
+								</Link>
+								<Link href="#" className={commonLinkClasses}>
+									Features
+								</Link>
+								<Link href="#" className={commonLinkClasses}>
+									Pricing
+								</Link>
+							</>
+						)}
 					</div>
 
 					<div className="flex items-center gap-2">
 						<ThemeToggle />
-						<button
-							onClick={onLoginClick}
-							className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-gray-200 transition-colors shadow-md"
-						>
-							Log In
-						</button>
+						{!isLoggedIn && (
+							<button
+								data-login-button
+								onClick={onLoginClick}
+								className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-gray-200 transition-colors shadow-md"
+							>
+								Log In
+							</button>
+						)}
 					</div>
 				</div>
 			</div>
