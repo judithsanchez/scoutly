@@ -19,11 +19,11 @@ export function CompanySelector({
 				<label className="block text-sm font-medium text-slate-300">
 					Loading companies...
 				</label>
-				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+				<div className="flex flex-wrap gap-2">
 					{[1, 2, 3, 4].map(i => (
 						<div
 							key={i}
-							className="h-10 bg-slate-700/30 animate-pulse rounded-lg"
+							className="h-10 w-28 bg-slate-700/30 animate-pulse rounded-lg"
 						/>
 					))}
 				</div>
@@ -55,13 +55,13 @@ export function CompanySelector({
 			<label className="block text-sm font-medium text-slate-300">
 				Select Target Companies
 			</label>
-			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+			<div className="flex flex-wrap gap-2">
 				{companies?.map(company => (
 					<button
 						key={company.companyID}
 						type="button"
 						onClick={() => handleCompanyChange(company.companyID)}
-						className={`p-3 rounded-lg text-sm font-medium transition-colors ${
+						className={`shrink-0 p-3 rounded-lg text-sm font-medium transition-colors ${
 							selectedCompanies.includes(company.companyID)
 								? 'bg-purple-600 text-white hover:bg-purple-700'
 								: 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'

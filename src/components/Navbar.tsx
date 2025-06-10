@@ -39,17 +39,9 @@ export function Navbar({onLoginClick, isLoggedIn}: NavbarProps) {
 
 					<div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-white/80">
 						{isLoggedIn ? (
-							<>
-								<Link href="/dashboard" className={commonLinkClasses}>
-									Dashboard
-								</Link>
-								<Link href="/companies" className={commonLinkClasses}>
-									Companies
-								</Link>
-								<Link href="/saved-jobs" className={commonLinkClasses}>
-									Saved Jobs
-								</Link>
-							</>
+							<Link href="/dashboard" className={commonLinkClasses}>
+								Dashboard
+							</Link>
 						) : (
 							<>
 								<Link href="#how-it-works" className={commonLinkClasses}>
