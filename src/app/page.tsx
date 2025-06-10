@@ -13,7 +13,7 @@ export default function Home() {
 	const handleModalClose = () => setIsLoginModalOpen(false);
 
 	return (
-		<div className="bg-slate-950 text-white overflow-x-hidden">
+		<div className="bg-background text-foreground overflow-x-hidden">
 			<div className="background-glows" />
 
 			<Navbar onLoginClick={handleLoginClick} />

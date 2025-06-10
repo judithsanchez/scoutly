@@ -17,10 +17,10 @@ export function LoginModal({isOpen, onClose}: LoginModalProps) {
 				onClick={onClose}
 			/>
 
-			<div className="relative w-full max-w-md p-8 rounded-2xl border border-white/20 bg-slate-900/80 shadow-2xl backdrop-blur-2xl modal-content-enter">
+			<div className="relative w-full max-w-md p-8 rounded-2xl border border-border/20 bg-background/80 shadow-2xl backdrop-blur-2xl modal-content-enter">
 				<button
 					onClick={onClose}
-					className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+					className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -40,13 +40,13 @@ export function LoginModal({isOpen, onClose}: LoginModalProps) {
 
 				<div className="text-center">
 					<h2 className="text-3xl font-bold mb-2">Welcome to Scoutly</h2>
-					<p className="text-slate-400 mb-8">
+					<p className="text-muted-foreground mb-8">
 						Sign in with your Google account to get started.
 					</p>
 
 					<button
 						onClick={() => signIn('google')}
-						className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl font-semibold bg-white text-slate-800 hover:bg-gray-200 transition-colors shadow-md"
+						className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-md"
 					>
 						<svg
 							className="w-5 h-5"
