@@ -4,6 +4,7 @@ import {WorkModel} from '../models/Company';
 
 const companies = [
 	{
+		ranking: 75,
 		companyID: '37signals',
 		company: '37signals',
 		careers_url: 'https://37signals.com/jobs/',
@@ -15,6 +16,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: '84codes',
 		company: '84codes',
 		careers_url: 'https://www.84codes.com/career/',
@@ -26,6 +28,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'aha',
 		company: 'Aha!',
 		careers_url: 'https://www.aha.io/company/careers/current-openings',
@@ -37,6 +40,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'ashby',
 		company: 'Ashby',
 		careers_url:
@@ -49,6 +53,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'atlassian',
 		company: 'Atlassian',
 		careers_url:
@@ -68,6 +73,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'automattic',
 		company: 'Automattic',
 		careers_url: 'https://automattic.com/jobs/',
@@ -79,6 +85,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'awesome_motive',
 		company: 'Awesome Motive',
 		careers_url: 'https://awesomemotive.com/careers/#positions',
@@ -90,6 +97,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'agency_analytics',
 		company: 'AgencyAnalytics',
 		careers_url: 'https://agencyanalytics.com/company/careers#openings',
@@ -102,6 +110,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'buffer',
 		company: 'Buffer',
 		careers_url: 'https://buffer.com/journey#open-roles',
@@ -113,6 +122,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'buddyboss',
 		company: 'BuddyBoss',
 		careers_url: 'https://www.buddyboss.com/careers/#work-with-us',
@@ -124,6 +134,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'buildkite',
 		company: 'Buildkite',
 		careers_url: 'https://buildkite.com/about/careers/#open-roles',
@@ -135,6 +146,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'chef',
 		company: 'Chef',
 		careers_url:
@@ -147,6 +159,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'clipboard_health',
 		company: 'Clipboard Health',
 		careers_url:
@@ -159,6 +172,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'cloudbeds',
 		company: 'Cloudbeds',
 		careers_url: 'https://www.cloudbeds.com/careers/',
@@ -170,6 +184,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'datadog',
 		company: 'DataDog',
 		careers_url:
@@ -182,6 +197,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'deel',
 		company: 'Deel',
 		careers_url:
@@ -194,6 +210,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'dnsimple',
 		company: 'DNSimple',
 		careers_url: 'https://dnsimple.com/jobs',
@@ -205,6 +222,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'doist',
 		company: 'Doist',
 		careers_url: 'https://doist.com/careers#open-roles',
@@ -216,6 +234,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'dribbble',
 		company: 'Dribbble',
 		careers_url: 'https://dribbble.com/careers',
@@ -227,6 +246,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'duckduckgo',
 		company: 'DuckDuckGo',
 		careers_url: 'https://duckduckgo.com/hiring',
@@ -238,6 +258,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'elastic',
 		company: 'Elastic',
 		careers_url: 'https://jobs.elastic.co/jobs/department/engineering?#/',
@@ -253,6 +274,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'envato',
 		company: 'Envato',
 		careers_url:
@@ -265,6 +287,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'eyeo',
 		company: 'Eyeo',
 		careers_url: 'https://eyeo.com/careers?department=27655362',
@@ -276,6 +299,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'gitbook',
 		company: 'GitBook',
 		careers_url: 'https://careers.gitbook.com/',
@@ -287,6 +311,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'gradle',
 		company: 'Gradle',
 		careers_url: 'https://gradle.com/careers/#open-roles',
@@ -298,6 +323,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'helpscout',
 		company: 'Help Scout',
 		careers_url: 'https://www.helpscout.com/company/careers/',
@@ -309,6 +335,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'hotjar',
 		company: 'Hotjar',
 		careers_url:
@@ -321,6 +348,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'hubstaff',
 		company: 'Hubstaff',
 		careers_url: 'https://hubstaff.com/jobs#hsds-open-positions',
@@ -332,6 +360,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'miro',
 		company: 'Miro',
 		careers_url:
@@ -345,6 +374,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'kraken',
 		company: 'Kraken',
 		careers_url:
@@ -357,6 +387,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'labster',
 		company: 'Labster',
 		careers_url: 'https://careers.labster.com/jobs',
@@ -368,6 +399,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'mailerlite',
 		company: 'MailerLite',
 		careers_url: 'https://www.mailerlite.com/jobs',
@@ -379,6 +411,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'mozilla',
 		company: 'Mozilla',
 		careers_url: 'https://www.mozilla.org/en-US/careers/listings/?team=IT',
@@ -395,6 +428,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'netlify',
 		company: 'Netlify',
 		careers_url: 'https://www.netlify.com/careers/#perfect-job',
@@ -406,6 +440,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'olark',
 		company: 'Olark',
 		careers_url: 'https://www.olark.com/about#jobs',
@@ -417,6 +452,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'onthegosystems',
 		company: 'OnTheGoSystems',
 		careers_url: 'https://onthegosystems.com/jobs/',
@@ -428,6 +464,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'oyster_hr',
 		company: 'Oyster HR',
 		careers_url: 'https://www.oysterhr.com/careers#job-board',
@@ -439,6 +476,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'overleaf',
 		company: 'Overleaf',
 		careers_url: 'https://www.overleaf.com/about/careers',
@@ -450,6 +488,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'percona',
 		company: 'Percona',
 		careers_url: 'https://www.percona.com/about/careers',
@@ -461,6 +500,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'planetscale',
 		company: 'PlanetScale',
 		careers_url: 'https://planetscale.com/careers',
@@ -471,6 +511,7 @@ const companies = [
 		fields: ['database', 'cloud infrastructure'],
 	},
 	{
+		ranking: 75,
 		companyID: 'platform_sh',
 		company: 'Platform.sh',
 		careers_url: 'https://platform.sh/company/careers/#grnhse_board',
@@ -482,6 +523,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'prezly',
 		company: 'Prezly',
 		careers_url: 'https://careers.prezly.com',
@@ -493,6 +535,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'red_hat',
 		company: 'Red Hat',
 		careers_url:
@@ -509,6 +552,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'remote',
 		company: 'Remote (Remote.com)',
 		careers_url: 'https://remote.com/careers',
@@ -520,6 +564,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'requis',
 		company: 'Requis',
 		careers_url: 'https://requis.breezy.hr/',
@@ -531,6 +576,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'saas_group',
 		company: 'SaaS.group',
 		careers_url: 'https://saas.group/careers',
@@ -543,6 +589,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'semaphore',
 		company: 'Semaphore CI',
 		careers_url: 'https://semaphoreci.com/hiring',
@@ -554,6 +601,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'shopify',
 		company: 'Shopify',
 		careers_url: 'https://www.shopify.com/careers/disciplines/engineering-data',
@@ -571,6 +619,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'sketch',
 		company: 'Sketch',
 		careers_url: 'https://www.sketch.com/careers',
@@ -582,6 +631,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'sonatype',
 		company: 'Sonatype',
 		careers_url: 'https://jobs.lever.co/sonatype?workplaceType=remote',
@@ -593,6 +643,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'sourcegraph',
 		company: 'Sourcegraph',
 		careers_url: 'https://job-boards.greenhouse.io/sourcegraph91',
@@ -604,6 +655,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'square',
 		company: 'Square (Block)',
 		careers_url:
@@ -621,6 +673,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'superside',
 		company: 'Superside',
 		careers_url: 'https://careers.superside.com/jobs',
@@ -632,6 +685,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'sword_health',
 		company: 'Sword Health',
 		careers_url: 'https://swordhealth.com/company/careers/technology',
@@ -643,6 +697,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'time_doctor',
 		company: 'Time Doctor',
 		careers_url:
@@ -655,6 +710,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'toggl',
 		company: 'Toggl',
 		careers_url: 'https://toggl.com/jobs/?category=Software+Development#_',
@@ -666,6 +722,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'toptal',
 		company: 'Toptal',
 		careers_url: 'https://www.toptal.com/careers#positions',
@@ -678,6 +735,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'xapo',
 		company: 'Xapo',
 		careers_url: 'https://xapo.com/careers',
@@ -689,6 +747,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'ynab',
 		company: 'YNAB (You Need A Budget)',
 		careers_url: 'https://www.ynab.com/careers#openings',
@@ -700,6 +759,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'zapier',
 		company: 'Zapier',
 		careers_url: 'https://zapier.com/jobs',
@@ -711,6 +771,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'zyte',
 		company: 'Zyte (Scrapinghub)',
 		careers_url: 'https://www.zyte.com/jobs/',
@@ -722,6 +783,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'booking',
 		company: 'Booking.com',
 		careers_url:
@@ -738,6 +800,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'pachama',
 		company: 'Pachama',
 		careers_url: 'https://pachama.com/careers/',
@@ -749,6 +812,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'mural',
 		company: 'MURAL',
 		careers_url: 'https://jobs.ashbyhq.com/mural',
@@ -760,6 +824,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'elevate_labs',
 		company: 'Elevate Labs',
 		careers_url:
@@ -772,6 +837,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'localyze',
 		company: 'Localyze',
 		careers_url: 'https://www.localyze.com/careers',
@@ -783,6 +849,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'customer_io',
 		company: 'Customer.io',
 		careers_url: 'https://customer.io/careers#job-openings',
@@ -794,6 +861,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'builder_io',
 		company: 'Builder.io',
 		careers_url: 'https://www.builder.io/m/careers',
@@ -805,6 +873,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'memberful',
 		company: 'Memberful',
 		careers_url: 'https://memberful.com/jobs/',
@@ -817,6 +886,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'databees',
 		company: 'DataBees',
 		careers_url: 'https://getdatabees.zohorecruit.com/jobs/Careers',
@@ -828,6 +898,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'bejamas',
 		company: 'Bejamas',
 		careers_url: 'https://bejamas.com/careers#positions',
@@ -839,6 +910,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'mailersend',
 		company: 'MailerSend',
 		careers_url: 'https://www.mailersend.com/jobs',
@@ -851,6 +923,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'contra',
 		company: 'Contra',
 		careers_url: 'https://contra.com/careers',
@@ -862,6 +935,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'namecheap',
 		company: 'Namecheap',
 		careers_url: 'https://www.namecheap.com/careers/openings/',
@@ -874,6 +948,7 @@ const companies = [
 	},
 
 	{
+		ranking: 75,
 		companyID: 'status',
 		company: 'Status',
 		careers_url: 'https://status.app/jobs',
@@ -885,6 +960,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'whitespectre',
 		company: 'Whitespectre',
 		careers_url: 'https://www.whitespectre.com/careers/',
@@ -896,6 +972,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'stickermule',
 		company: 'Sticker Mule',
 		careers_url: 'https://www.stickermule.com/careers',
@@ -907,6 +984,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'streak',
 		company: 'Streak',
 		careers_url: 'https://www.streak.com/careers#open',
@@ -918,6 +996,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'cinder',
 		company: 'Cinder',
 		careers_url:
@@ -930,6 +1009,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'bottomless',
 		company: 'Bottomless',
 		careers_url: 'https://careers.bottomless.com/',
@@ -941,6 +1021,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'quicktrials',
 		company: 'QuickTrials',
 		careers_url: 'https://www.quicktrials.com/open-jobs/',
@@ -952,6 +1033,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'bonfire',
 		company: 'Bonfire',
 		careers_url: 'https://careers.bonfire.com/',
@@ -963,6 +1045,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'mmhmm',
 		company: 'mmhmm',
 		careers_url: 'https://www.mmhmm.app/jobs',
@@ -974,6 +1057,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'timezest',
 		company: 'TimeZest',
 		careers_url: 'https://www-timezest-com.breezy.hr/',
@@ -985,6 +1069,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'assembly',
 		company: 'Assembly',
 		careers_url: 'https://assemblyhq.com/job-openings/',
@@ -996,6 +1081,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'tyk',
 		company: 'Tyk',
 		careers_url: 'https://tyk.io/current-vacancies/?category=engineering',
@@ -1007,6 +1093,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'rebilly',
 		company: 'Rebilly',
 		careers_url: 'https://www.rebilly.com/careers',
@@ -1018,6 +1105,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'tldv',
 		company: 'tl;dv',
 		careers_url:
@@ -1030,6 +1118,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'pitch',
 		company: 'Pitch',
 		careers_url: 'https://pitch.com/jobs#positions',
@@ -1040,6 +1129,7 @@ const companies = [
 		fields: ['presentation software', 'collaboration'],
 	},
 	{
+		ranking: 75,
 		companyID: 'slite',
 		company: 'Slite',
 		careers_url: 'https://slite.com/jobs#open-jobs',
@@ -1051,6 +1141,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'hackernoon',
 		company: 'Hacker Noon',
 		careers_url: 'https://careers.hackernoon.com/',
@@ -1062,6 +1153,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'designstripe',
 		company: 'DesignStripe',
 		careers_url: 'https://designstripe.com/careers',
@@ -1073,6 +1165,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'pocket_worlds',
 		company: 'Pocket Worlds',
 		careers_url:
@@ -1085,6 +1178,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'standard_notes',
 		company: 'Standard Notes',
 		careers_url: 'https://standardnotes.com/jobs',
@@ -1096,6 +1190,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'guilded',
 		company: 'Guilded',
 		careers_url: 'https://www.guilded.gg/jobs',
@@ -1107,6 +1202,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'revenuecat',
 		company: 'RevenueCat',
 		careers_url:
@@ -1119,6 +1215,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: '10up',
 		company: '10up',
 		careers_url: 'https://10up.com/careers/',
@@ -1130,6 +1227,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'xwp',
 		company: 'XWP',
 		careers_url: 'https://xwp.co/about/careers/#open-positions',
@@ -1141,6 +1239,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'weaviate',
 		company: 'Weaviate',
 		careers_url: 'https://careers.weaviate.io/jobs',
@@ -1152,6 +1251,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'runway',
 		company: 'Runway',
 		careers_url:
@@ -1164,6 +1264,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'alpaca',
 		company: 'Alpaca',
 		careers_url: 'https://alpaca.markets/hiring#alpaca-hiring',
@@ -1175,6 +1276,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'unsplash',
 		company: 'Unsplash',
 		careers_url: 'https://unsplash.com/hiring#jobsSection',
@@ -1186,6 +1288,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'meetedgar',
 		company: 'MeetEdgar',
 		careers_url: 'https://www.sureswiftcapital.com/saas-jobs',
@@ -1197,6 +1300,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'contentsquare',
 		company: 'Contentsquare',
 		careers_url:
@@ -1209,6 +1313,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'openzeppelin',
 		company: 'OpenZeppelin',
 		careers_url:
@@ -1221,6 +1326,7 @@ const companies = [
 		openToApplication: false,
 	},
 	{
+		ranking: 75,
 		companyID: 'jamie',
 		company: 'Jamie',
 		careers_url:
@@ -1232,6 +1338,7 @@ const companies = [
 		fields: ['fintech', 'financial services'],
 	},
 	{
+		ranking: 75,
 		companyID: 'paymentology',
 		company: 'Paymentology',
 		careers_url: 'https://www.paymentology.com/about-us/careers',
@@ -1242,6 +1349,7 @@ const companies = [
 		fields: ['fintech', 'payment processing'],
 	},
 	{
+		ranking: 75,
 		companyID: 'attractions_io',
 		company: 'Attractions.io',
 		careers_url: 'https://attractions.io/careers',
@@ -1253,6 +1361,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'kenjo',
 		company: 'Kenjo',
 		careers_url: 'https://careers.kenjo.io/#jobs',
@@ -1264,6 +1373,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'checkin',
 		company: 'Check-in',
 		careers_url: 'https://group.checkin.com/careers/',
@@ -1275,6 +1385,7 @@ const companies = [
 		openToApplication: true,
 	},
 	{
+		ranking: 75,
 		companyID: 'systemseed',
 		company: 'SystemSeed',
 		careers_url: 'https://systemseed.com/join-us',
@@ -1298,6 +1409,7 @@ async function seedCompanies() {
 
 		// Insert new companies
 		const companiesToCreate = companies.map(company => ({
+			ranking: company.ranking!,
 			companyID: company.companyID!,
 			company: company.company!,
 			careers_url: company.careers_url!,

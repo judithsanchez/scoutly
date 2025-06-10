@@ -71,6 +71,8 @@ export class CompanyService {
 			headquarters: string;
 			office_locations: string[];
 			fields: string[];
+			ranking?: number;
+			openToApplication?: boolean;
 		}>,
 	): Promise<ICompany[]> {
 		try {
@@ -121,6 +123,21 @@ export class CompanyService {
 			});
 		} catch (error: any) {
 			throw new Error(`Error finding companies by names: ${error.message}`);
+		}
+	}
+
+	static async updateCompanyRanking(
+		companyID: string,
+		ranking: number,
+	): Promise<ICompany | null> {
+		try {
+			return await Company.findOneAndUpdate(
+				{companyID},
+				{$set: {ranking}},
+				{new: true},
+			);
+		} catch (error: any) {
+			throw new Error(`Error updating company ranking: ${error.message}`);
 		}
 	}
 }
