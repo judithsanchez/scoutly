@@ -11,6 +11,21 @@ let activeBrowsers = 0;
 const MAX_BROWSERS = 3;
 const activeInstances = new Set<playwright.Browser>();
 
+const getBrowserOptions = () => ({
+	headless: true,
+	executablePath: '/usr/bin/chromium-browser', // Use system Chromium
+	args: [
+		'--no-sandbox',
+		'--disable-setuid-sandbox',
+		'--disable-dev-shm-usage',
+		'--disable-blink-features=AutomationControlled',
+		'--disable-infobars',
+		'--disable-gpu',
+		'--disable-web-security',
+		'--disable-features=VizDisplayCompositor',
+	],
+});
+
 // Ensure cleanup on process exit
 async function cleanupBrowsers(signal: string) {
 	await logger.info(`Received ${signal}, cleaning up browsers...`);
@@ -229,7 +244,7 @@ export async function scrapeWebsite(
 
 	while (retries < MAX_RETRIES) {
 		try {
-			browser = await playwright.chromium.launch(browserOptions);
+			browser = await playwright.chromium.launch(getBrowserOptions());
 			activeInstances.add(browser);
 			await logger.debug('Browser launched successfully');
 

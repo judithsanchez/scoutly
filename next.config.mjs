@@ -12,10 +12,21 @@ const nextConfig = {
 				child_process: false,
 			};
 		}
+
+		// Handle undici module parsing issues
+		config.module.rules.push({
+			test: /\.m?js$/,
+			type: 'javascript/auto',
+			resolve: {
+				fullySpecified: false,
+			},
+		});
+
 		return config;
 	},
 	experimental: {
 		serverComponentsExternalPackages: ['playwright', 'playwright-core'],
+		esmExternals: 'loose',
 	},
 	async headers() {
 		return [

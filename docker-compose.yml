@@ -31,6 +31,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    shm_size: 2gb
 
 volumes:
   mongodb_data:
