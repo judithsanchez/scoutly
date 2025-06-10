@@ -1,5 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+	webpack: (config, {isServer}) => {
+		if (!isServer) {
+			// Don't bundle server-only modules on the client side
+			config.resolve.fallback = {
+				...config.resolve.fallback,
+				net: false,
+				dns: false,
+				tls: false,
+				fs: false,
+				child_process: false,
+			};
+		}
+		return config;
+	},
+	experimental: {
+		serverComponentsExternalPackages: ['playwright', 'playwright-core'],
+	},
 	async headers() {
 		return [
 			{

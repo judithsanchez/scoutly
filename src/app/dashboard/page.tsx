@@ -3,6 +3,7 @@
 import React, {useState} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
 import {CompanySelector} from '@/components/form/CompanySelector';
+import {SearchModal} from '@/components/SearchModal';
 
 // --- TYPE DEFINITIONS ---
 // (keeping all interfaces unchanged...)
@@ -136,24 +137,8 @@ export default function DashboardPage() {
 		DEFAULT_CANDIDATE_DATA.candidateInfo.preferences,
 	);
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
-
-	const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		const requestBody = {
-			credentials: authInfo,
-			companyNames: selectedCompanies,
-			cvUrl,
-			candidateInfo: {
-				logistics,
-				languages,
-				preferences,
-			},
-		};
-
-		console.log('--- Form Submitted ---');
-		console.log('Final Request Body:', JSON.stringify(requestBody, null, 2));
-		alert('Form data prepared! Check the console for the final request body.');
-	};
+	const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+	const [searchRequestBody, setSearchRequestBody] = useState<any>(null);
 
 	return (
 		<div className="bg-slate-950 text-white min-h-screen">
@@ -161,11 +146,43 @@ export default function DashboardPage() {
 			<main className="relative z-10 max-w-[120rem] mx-auto pt-32 pb-24 px-2 lg:px-4">
 				{/* Auth Info Section */}
 				<div className="mb-8 p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-					<h2 className="text-lg font-medium text-slate-200">
-						Current Session
-					</h2>
-					<p className="text-purple-400 font-medium mt-1">{authInfo.gmail}</p>
+					<div className="flex justify-between items-center">
+						<div>
+							<h2 className="text-lg font-medium text-slate-200">
+								Current Session
+							</h2>
+							<p className="text-purple-400 font-medium mt-1">
+								{authInfo.gmail}
+							</p>
+						</div>
+						<button
+							onClick={() => {
+								const requestBody = {
+									credentials: authInfo,
+									companyNames: selectedCompanies,
+									cvUrl,
+									candidateInfo: {
+										logistics,
+										languages,
+										preferences,
+									},
+								};
+								setSearchRequestBody(requestBody);
+								setSearchModalOpen(true);
+							}}
+							className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+						>
+							Start Search
+						</button>
+					</div>
 				</div>
+
+				{/* Search Modal */}
+				<SearchModal
+					isOpen={isSearchModalOpen}
+					onClose={() => setSearchModalOpen(false)}
+					requestBody={searchRequestBody}
+				/>
 
 				<div className="grid grid-cols-[20%_57%_20%] gap-7">
 					{/* Left Column - Companies */}
@@ -183,7 +200,7 @@ export default function DashboardPage() {
 
 					{/* Middle Column - Form */}
 					<div className="space-y-4">
-						<form onSubmit={handleFormSubmit} className="space-y-4">
+						<div className="space-y-4">
 							<div className={cardClasses}>
 								<label htmlFor="cvUrl" className={labelClasses}>
 									CV URL
@@ -547,16 +564,7 @@ export default function DashboardPage() {
 									</div>
 								</div>
 							</div>
-
-							<div className="pt-4 flex justify-end">
-								<button
-									type="submit"
-									className={primaryButtonClasses + ' py-3 px-6 text-base'}
-								>
-									Generate Profile & Find Jobs
-								</button>
-							</div>
-						</form>
+						</div>
 					</div>
 
 					{/* Right Column - Saved Jobs */}

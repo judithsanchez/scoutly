@@ -219,7 +219,6 @@ export async function scrapeWebsite(
 			'--disable-blink-features=AutomationControlled',
 			'--disable-infobars',
 		],
-		executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
 	};
 
 	// Try to reuse browser for batch operations

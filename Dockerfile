@@ -26,6 +26,18 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Install dependencies first (including tsx and typescript)
 COPY package*.json ./
+RUN apk add --no-cache \
+    ttf-freefont \
+    fontconfig \
+    xvfb \
+    dbus \
+    mesa-gl \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates
+
 RUN npm install
 RUN npm install -g tsx typescript
 
