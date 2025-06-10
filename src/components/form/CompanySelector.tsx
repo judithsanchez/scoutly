@@ -19,7 +19,7 @@ export function CompanySelector({
 				<label className="block text-sm font-medium text-slate-300">
 					Loading companies...
 				</label>
-				<div className="flex flex-wrap gap-2">
+				<div className="flex flex-wrap gap-2 justify-center">
 					{[1, 2, 3, 4].map(i => (
 						<div
 							key={i}
@@ -52,10 +52,7 @@ export function CompanySelector({
 
 	return (
 		<div className="space-y-3">
-			<label className="block text-sm font-medium text-slate-300">
-				Select Target Companies
-			</label>
-			<div className="flex flex-wrap gap-2">
+			<div className="flex flex-wrap gap-2 justify-center">
 				{companies?.map(company => (
 					<button
 						key={company.companyID}

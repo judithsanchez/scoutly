@@ -167,7 +167,7 @@ export default function DashboardPage() {
 					<p className="text-purple-400 font-medium mt-1">{authInfo.gmail}</p>
 				</div>
 
-				<div className="grid grid-cols-[20%_60%_20%] gap-3">
+				<div className="grid grid-cols-[20%_57%_20%] gap-7">
 					{/* Left Column - Companies */}
 					<div className="space-y-6">
 						<div className={cardClasses}>
