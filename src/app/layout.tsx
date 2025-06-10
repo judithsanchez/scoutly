@@ -2,17 +2,31 @@ import './globals.css';
 import {Inter} from 'next/font/google';
 import {Providers} from './providers';
 
-const inter = Inter({subsets: ['latin']});
+const inter = Inter({
+	subsets: ['latin'],
+	variable: '--font-inter',
+	display: 'swap',
+	preload: true,
+	weight: ['400', '500', '700', '800'],
+});
 
 export const metadata = {
-	title: 'Scoutly',
-	description: 'Job listing aggregator with advanced scraping capabilities',
+	title: 'Scoutly - Your AI Job Scout',
+	description:
+		'Let our AI-powered scout find the perfect job opportunities that match your unique skills and experience. Stop searching, start matching.',
+	openGraph: {
+		title: 'Scoutly - Your AI Job Scout',
+		description:
+			'Let our AI-powered scout find the perfect job opportunities that match your unique skills and experience.',
+		type: 'website',
+		locale: 'en_US',
+	},
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
 	return (
-		<html lang="en">
-			<body className={inter.className}>
+		<html lang="en" className={inter.variable}>
+			<body>
 				<Providers>{children}</Providers>
 			</body>
 		</html>
