@@ -4,21 +4,13 @@ import React, {useState} from 'react';
 import {LogisticsForm} from './LogisticsForm';
 import {LanguagesForm} from './LanguagesForm';
 import {PreferencesForm} from './PreferencesForm';
-
-// Shared styling constants
-const cardClasses =
-	'bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg';
-const labelClasses = 'block text-sm font-medium text-slate-300 mb-2';
-const inputClasses =
-	'block w-full bg-slate-700/50 border border-slate-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition';
-const buttonClasses =
-	'px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const primaryButtonClasses = `${buttonClasses} bg-purple-600 text-white hover:bg-purple-700 shadow-md`;
-
-interface CandidateFormProps {
-	initialData: any;
-	onFormSubmit: (data: any) => void;
-}
+import {
+	CandidateFormProps,
+	cardClasses,
+	labelClasses,
+	inputClasses,
+	primaryButtonClasses,
+} from './types';
 
 export function CandidateForm({initialData, onFormSubmit}: CandidateFormProps) {
 	const [cvUrl, setCvUrl] = useState(initialData.cvUrl || '');

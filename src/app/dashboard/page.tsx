@@ -2,6 +2,7 @@
 
 import React, {useState} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
+import {CompanySelector} from '@/components/form/CompanySelector';
 
 // --- TYPE DEFINITIONS ---
 interface CurrentResidence {
@@ -132,7 +133,7 @@ export default function DashboardPage() {
 	const [preferences, setPreferences] = useState(
 		DEFAULT_CANDIDATE_DATA.candidateInfo.preferences,
 	);
-	const [selectedCompanies, setSelectedCompanies] = useState(['Booking']);
+	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
 
 	const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -186,30 +187,10 @@ export default function DashboardPage() {
 						<h3 className="text-lg font-bold text-white mb-4">
 							Target Companies
 						</h3>
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-							{['Booking', 'Adyen', 'Mollie', 'WeTransfer'].map(company => (
-								<button
-									key={company}
-									type="button"
-									onClick={() => {
-										if (selectedCompanies.includes(company)) {
-											setSelectedCompanies(
-												selectedCompanies.filter(c => c !== company),
-											);
-										} else {
-											setSelectedCompanies([...selectedCompanies, company]);
-										}
-									}}
-									className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-										selectedCompanies.includes(company)
-											? 'bg-purple-600 text-white hover:bg-purple-700'
-											: 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-									}`}
-								>
-									{company}
-								</button>
-							))}
-						</div>
+						<CompanySelector
+							selectedCompanies={selectedCompanies}
+							onCompaniesChange={setSelectedCompanies}
+						/>
 					</div>
 
 					{/* Logistics */}

@@ -1,5 +1,7 @@
 'use client';
 
+import {useCompanies} from '@/hooks/useCompanies';
+
 interface CompanySelectorProps {
 	selectedCompanies: string[];
 	onCompaniesChange: (companies: string[]) => void;
@@ -9,14 +11,42 @@ export function CompanySelector({
 	selectedCompanies,
 	onCompaniesChange,
 }: CompanySelectorProps) {
-	// For now, we'll use a hardcoded list of companies
-	const availableCompanies = ['Booking', 'Adyen', 'Mollie', 'WeTransfer'];
+	const {data: companies, isLoading, error} = useCompanies();
 
-	const handleCompanyChange = (company: string) => {
-		if (selectedCompanies.includes(company)) {
-			onCompaniesChange(selectedCompanies.filter(c => c !== company));
+	if (isLoading) {
+		return (
+			<div className="space-y-3">
+				<label className="block text-sm font-medium text-slate-300">
+					Loading companies...
+				</label>
+				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+					{[1, 2, 3, 4].map(i => (
+						<div
+							key={i}
+							className="h-10 bg-slate-700/30 animate-pulse rounded-lg"
+						/>
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="space-y-3">
+				<label className="block text-sm font-medium text-red-400">
+					Failed to load companies
+				</label>
+				<p className="text-sm text-slate-400">Please try again later</p>
+			</div>
+		);
+	}
+
+	const handleCompanyChange = (companyId: string) => {
+		if (selectedCompanies.includes(companyId)) {
+			onCompaniesChange(selectedCompanies.filter(id => id !== companyId));
 		} else {
-			onCompaniesChange([...selectedCompanies, company]);
+			onCompaniesChange([...selectedCompanies, companyId]);
 		}
 	};
 
@@ -26,18 +56,18 @@ export function CompanySelector({
 				Select Target Companies
 			</label>
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-				{availableCompanies.map(company => (
+				{companies?.map(company => (
 					<button
-						key={company}
+						key={company.companyID}
 						type="button"
-						onClick={() => handleCompanyChange(company)}
+						onClick={() => handleCompanyChange(company.companyID)}
 						className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-							selectedCompanies.includes(company)
+							selectedCompanies.includes(company.companyID)
 								? 'bg-purple-600 text-white hover:bg-purple-700'
 								: 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
 						}`}
 					>
-						{company}
+						{company.company}
 					</button>
 				))}
 			</div>
