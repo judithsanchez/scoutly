@@ -1,3 +1,5 @@
+'use client';
+
 import {signIn} from 'next-auth/react';
 import {Button} from '@/components/ui/button';
 
@@ -10,7 +12,7 @@ export default function SignIn() {
 					<p className="text-gray-600">Sign in to continue</p>
 				</div>
 				<Button
-					onClick={() => signIn('google', {callbackUrl: '/'})}
+					onClick={() => signIn('google', {callbackUrl: '/dashboard'})}
 					className="w-full"
 				>
 					Sign in with Google

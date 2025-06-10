@@ -12,15 +12,7 @@ export const authOptions: NextAuthOptions = {
 		}),
 	],
 	callbacks: {
-		async signIn({user, account, profile}) {
-			// Only store the email
-			if (user.email) {
-				return true;
-			}
-			return false;
-		},
 		async session({session, user}) {
-			// Only include email in the session
 			if (session.user) {
 				session.user = {
 					email: session.user.email,
