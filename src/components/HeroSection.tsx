@@ -11,7 +11,7 @@ export function HeroSection({onGetStartedClick}: HeroSectionProps) {
 				Stop searching. <br /> Start{' '}
 				<span className="gradient-text">matching.</span>
 			</h1>
-			<p className="max-w-2xl mx-auto text-lg text-muted-foreground mb-10">
+			<p className="max-w-2xl mx-auto text-lg text-slate-600 dark:text-slate-300 mb-10">
 				Scoutly was born from a simple frustration: job hunting is tedious. We
 				built an AI-powered scout that tirelessly scans the web for you,
 				matching your unique skills to the perfect opportunities, so you can
@@ -19,7 +19,7 @@ export function HeroSection({onGetStartedClick}: HeroSectionProps) {
 			</p>
 			<button
 				onClick={onGetStartedClick}
-				className="inline-block px-8 py-4 rounded-xl font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg transform hover:scale-105"
+				className="inline-block px-8 py-4 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-all shadow-lg transform hover:scale-105"
 			>
 				Get Started Free
 			</button>

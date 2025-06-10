@@ -71,9 +71,10 @@ export function HowItWorksSection() {
 	];
 
 	const iconColors = {
-		purple: 'bg-primary/20 text-primary',
-		pink: 'bg-secondary/20 text-secondary',
-		sky: 'bg-accent/20 text-accent',
+		purple:
+			'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300',
+		pink: 'bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-300',
+		sky: 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-300',
 	};
 
 	return (
@@ -83,7 +84,7 @@ export function HowItWorksSection() {
 				{features.map((feature, index) => (
 					<div
 						key={feature.title}
-						className="feature-card p-8 rounded-2xl border border-border/10 bg-card/20"
+						className="feature-card p-8 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20"
 						style={{animationDelay: `${index * 0.2 + 0.1}s`}}
 					>
 						<div
@@ -93,8 +94,12 @@ export function HowItWorksSection() {
 						>
 							{feature.icon}
 						</div>
-						<h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
-						<p className="text-muted-foreground">{feature.description}</p>
+						<h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-white">
+							{feature.title}
+						</h3>
+						<p className="text-slate-600 dark:text-slate-400">
+							{feature.description}
+						</p>
 					</div>
 				))}
 			</div>
