@@ -7,6 +7,7 @@ module.exports = {
 		'./app/**/*.{ts,tsx}',
 		'./src/**/*.{ts,tsx}',
 	],
+	safelist: ['bg-red-500', 'min-h-[60px]'],
 	theme: {
 		container: {
 			center: true,
