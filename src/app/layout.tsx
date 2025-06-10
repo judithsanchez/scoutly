@@ -14,18 +14,11 @@ export const metadata = {
 	title: 'Scoutly - Your AI Job Scout',
 	description:
 		'Let our AI-powered scout find the perfect job opportunities that match your unique skills and experience. Stop searching, start matching.',
-	openGraph: {
-		title: 'Scoutly - Your AI Job Scout',
-		description:
-			'Let our AI-powered scout find the perfect job opportunities that match your unique skills and experience.',
-		type: 'website',
-		locale: 'en_US',
-	},
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
 	return (
-		<html lang="en" className={inter.variable}>
+		<html lang="en" className={`${inter.variable} dark`}>
 			<body>
 				<Providers>{children}</Providers>
 			</body>
