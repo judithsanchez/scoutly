@@ -15,9 +15,12 @@ import {ICompany} from '@/models/Company';
 import {ScrapeHistoryService} from './scrapeHistoryService';
 import {SavedJob, ApplicationStatus} from '@/models/SavedJob';
 import {UserService} from './userService';
+import {TokenOperation} from '@/models/TokenUsage';
+import {TokenUsageService} from './tokenUsageService';
+import crypto from 'crypto';
 
 const logger = new Logger('JobMatchingOrchestrator');
-const MODEL_NAME = 'gemini-2.0-flash-lite';
+const MODEL_NAME = 'gemini-2.0-flash-lite'; // Must match modelName in rateLimits.ts
 const BATCH_SIZE = 5;
 
 interface JobAnalysisResult {
@@ -33,6 +36,8 @@ export class JobMatchingOrchestrator {
 	private genAI!: GoogleGenerativeAI;
 	private model!: any;
 	private modelLimits: IGeminiRateLimit;
+	private currentUserEmail: string = '';
+	private currentCompanyId: string = '';
 	private usageStats = {
 		minuteTokens: 0,
 		dayTokens: 0,
@@ -246,6 +251,8 @@ export class JobMatchingOrchestrator {
 		userEmail: string,
 	): Promise<JobAnalysisResult[]> {
 		try {
+			this.currentUserEmail = userEmail;
+			this.currentCompanyId = company.id;
 			const startTime = Date.now();
 			logger.info('🚀 Starting job matching pipeline');
 			this.resetPipelineState();
@@ -454,7 +461,10 @@ export class JobMatchingOrchestrator {
 			generationConfig,
 		});
 		if (result.response.usageMetadata) {
-			this.recordUsage(result.response.usageMetadata);
+			this.recordUsage(
+				result.response.usageMetadata,
+				TokenOperation.INITIAL_MATCHING,
+			);
 		}
 		const responseText = result.response.text();
 		return JSON.parse(responseText).recommendedPositions || [];
@@ -596,38 +606,72 @@ export class JobMatchingOrchestrator {
 		}
 	}
 
-	private recordUsage(usage: {
-		promptTokenCount: number;
-		candidatesTokenCount: number;
-		totalTokenCount: number;
-	}): void {
-		const now = new Date();
-		if (now.getTime() - this.usageStats.lastReset.getTime() > 86400000) {
-			this.usageStats.dayTokens = 0;
-			this.usageStats.lastDayCalls = 0;
-			this.usageStats.lastReset = now;
+	private async recordUsage(
+		usage: {
+			promptTokenCount: number;
+			candidatesTokenCount: number;
+			totalTokenCount: number;
+		},
+		operation: TokenOperation = TokenOperation.INITIAL_MATCHING,
+	): Promise<void> {
+		try {
+			const now = new Date();
+			if (now.getTime() - this.usageStats.lastReset.getTime() > 86400000) {
+				this.usageStats.dayTokens = 0;
+				this.usageStats.lastDayCalls = 0;
+				this.usageStats.lastReset = now;
+			}
+			this.usageStats.minuteTokens += usage.totalTokenCount;
+			this.usageStats.dayTokens += usage.totalTokenCount;
+			this.usageStats.totalTokens += usage.totalTokenCount;
+			this.usageStats.calls++;
+			this.usageStats.lastMinuteCalls++;
+			this.usageStats.lastDayCalls++;
+			// Record to database
+			if (this.currentUserEmail && this.currentCompanyId) {
+				const modelConfig = this.modelLimits;
+				const pricePerInputToken = (modelConfig.pricing?.input || 0) / 1000; // Convert from per 1K to per token
+				const pricePerOutputToken = (modelConfig.pricing?.output || 0) / 1000; // Convert from per 1K to per token
+
+				await TokenUsageService.recordUsage({
+					processId: crypto.randomUUID(),
+					operation,
+					estimatedTokens: usage.promptTokenCount + usage.candidatesTokenCount,
+					actualTokens: usage.totalTokenCount,
+					inputTokens: usage.promptTokenCount,
+					outputTokens: usage.candidatesTokenCount,
+					costEstimate: {
+						input: usage.promptTokenCount * pricePerInputToken,
+						output: usage.candidatesTokenCount * pricePerOutputToken,
+						total:
+							usage.promptTokenCount * pricePerInputToken +
+							usage.candidatesTokenCount * pricePerOutputToken,
+					},
+					userEmail: this.currentUserEmail,
+					companyId: this.currentCompanyId,
+				});
+			}
+
+			logger.debug('Updated token usage stats', {
+				current: {
+					minute: this.usageStats.minuteTokens,
+					day: this.usageStats.dayTokens,
+					total: this.usageStats.totalTokens,
+				},
+				limits: {
+					tpm: this.modelLimits.tpm,
+					tpd: this.modelLimits.tpd,
+				},
+			});
+
+			setTimeout(() => {
+				this.usageStats.minuteTokens = 0;
+				this.usageStats.lastMinuteCalls = 0;
+			}, 60000);
+		} catch (error) {
+			logger.error('Failed to record token usage:', error);
+			// Don't throw error to avoid disrupting the pipeline
 		}
-		this.usageStats.minuteTokens += usage.totalTokenCount;
-		this.usageStats.dayTokens += usage.totalTokenCount;
-		this.usageStats.totalTokens += usage.totalTokenCount;
-		this.usageStats.calls++;
-		this.usageStats.lastMinuteCalls++;
-		this.usageStats.lastDayCalls++;
-		logger.debug('Updated token usage stats', {
-			current: {
-				minute: this.usageStats.minuteTokens,
-				day: this.usageStats.dayTokens,
-				total: this.usageStats.totalTokens,
-			},
-			limits: {
-				tpm: this.modelLimits.tpm,
-				tpd: this.modelLimits.tpd,
-			},
-		});
-		setTimeout(() => {
-			this.usageStats.minuteTokens = 0;
-			this.usageStats.lastMinuteCalls = 0;
-		}, 60000);
 	}
 
 	private getUsageSummary(): string {
@@ -658,6 +702,8 @@ export class JobMatchingOrchestrator {
 		this.cvContent = '';
 		this.candidateXML = '';
 		this.candidateInfo = null;
+		this.currentUserEmail = '';
+		this.currentCompanyId = '';
 
 		// Save all collected logs to the database
 		await logger.saveBufferedLogs();
@@ -715,7 +761,10 @@ export class JobMatchingOrchestrator {
 		});
 
 		if (result.response.usageMetadata) {
-			this.recordUsage(result.response.usageMetadata);
+			this.recordUsage(
+				result.response.usageMetadata,
+				TokenOperation.DEEP_DIVE_ANALYSIS,
+			);
 		}
 
 		logger.info('  ↳ Received Gemini response, processing results...');
