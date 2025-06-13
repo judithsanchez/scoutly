@@ -651,9 +651,9 @@ export class JobMatchingOrchestrator {
 					inputTokens: usage.promptTokenCount,
 					outputTokens: usage.candidatesTokenCount,
 					costEstimate: {
-						input: Number(inputCost.toFixed(3)),
-						output: Number(outputCost.toFixed(3)),
-						total: Number(totalCost.toFixed(3)),
+						input: inputCost,
+						output: outputCost,
+						total: totalCost,
 						currency: 'USD',
 						isFreeUsage: true,
 					},
