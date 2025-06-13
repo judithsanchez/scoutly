@@ -8,7 +8,7 @@ interface FormState {
 	credentials: {
 		gmail: string;
 	};
-	companyNames: string[];
+	companyIds: string[];
 	cvUrl: string;
 	candidateInfo: Record<string, any>;
 	[key: string]: any;
@@ -18,7 +18,7 @@ const INITIAL_STATE: FormState = {
 	credentials: {
 		gmail: '',
 	},
-	companyNames: [],
+	companyIds: [],
 	cvUrl: '',
 	candidateInfo: {},
 };

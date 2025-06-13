@@ -57,7 +57,7 @@ export default function ProfilePage() {
 				// This will be replaced by the actual email from auth
 				gmail: 'judithv.sanchezc@gmail.com',
 			},
-			companyNames: ['Booking'], // For now hardcoded to match example
+			companyIds: ['Booking'], // For now hardcoded to match example
 			cvUrl: formData.cvUrl,
 			candidateInfo: formData.candidateInfo,
 		};
