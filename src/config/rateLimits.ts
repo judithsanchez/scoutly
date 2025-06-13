@@ -27,11 +27,15 @@ export interface IGeminiRateLimit {
 	 */
 	concurrentSessions?: number | null;
 	/**
-	 * Model pricing per 1K tokens
+	 * Model pricing per 1M tokens
+	 * Example calculation:
+	 * - Input tokens: 100,000 × ($0.075/1M) = $0.0075
+	 * - Output tokens: 50,000 × ($0.30/1M) = $0.015
+	 * - Total cost: $0.0225
 	 */
 	pricing?: {
-		input: number; // Price per 1K input tokens ($0.075)
-		output: number; // Price per 1K output tokens ($0.30)
+		input: number; // Price per 1M input tokens ($0.075 per 1M)
+		output: number; // Price per 1M output tokens ($0.30 per 1M)
 	};
 }
 
@@ -51,8 +55,8 @@ export class GeminiFreeTierLimits {
 			rpd: 1500,
 			tpm: 1000000,
 			pricing: {
-				input: 0.075, // $0.075 per 1K input tokens
-				output: 0.3, // $0.30 per 1K output tokens
+				input: 0.075, // $0.075 per 1M input tokens
+				output: 0.3, // $0.30 per 1M output tokens
 			},
 		},
 	];

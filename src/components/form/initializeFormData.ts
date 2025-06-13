@@ -2,7 +2,7 @@ const formData = {
 	credentials: {
 		gmail: 'judithv.sanchezc@gmail.com',
 	},
-	companyNames: [],
+	companyIds: [],
 	cvUrl:
 		'https://drive.google.com/file/d/1-0NUsEx0HmnTmcpMOjGSKdOJJ1Vd_uWL/view?usp=drive_link',
 	candidateInfo: {

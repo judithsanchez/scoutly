@@ -38,6 +38,7 @@ export class JobMatchingOrchestrator {
 	private modelLimits: IGeminiRateLimit;
 	private currentUserEmail: string = '';
 	private currentCompanyId: string = '';
+	private currentCompanyName: string = '';
 	private usageStats = {
 		minuteTokens: 0,
 		dayTokens: 0,
@@ -253,6 +254,7 @@ export class JobMatchingOrchestrator {
 		try {
 			this.currentUserEmail = userEmail;
 			this.currentCompanyId = company.id;
+			this.currentCompanyName = company.company;
 			const startTime = Date.now();
 			logger.info('🚀 Starting job matching pipeline');
 			this.resetPipelineState();
@@ -630,8 +632,16 @@ export class JobMatchingOrchestrator {
 			// Record to database
 			if (this.currentUserEmail && this.currentCompanyId) {
 				const modelConfig = this.modelLimits;
-				const pricePerInputToken = (modelConfig.pricing?.input || 0) / 1000; // Convert from per 1K to per token
-				const pricePerOutputToken = (modelConfig.pricing?.output || 0) / 1000; // Convert from per 1K to per token
+				// Convert pricing from per 1M tokens to per token
+				// Example: $0.075 per 1M tokens = $0.000000075 per token
+				const pricePerInputToken =
+					(modelConfig.pricing?.input || 0) / 1_000_000;
+				const pricePerOutputToken =
+					(modelConfig.pricing?.output || 0) / 1_000_000;
+
+				const inputCost = usage.promptTokenCount * pricePerInputToken;
+				const outputCost = usage.candidatesTokenCount * pricePerOutputToken;
+				const totalCost = inputCost + outputCost;
 
 				await TokenUsageService.recordUsage({
 					processId: crypto.randomUUID(),
@@ -641,14 +651,15 @@ export class JobMatchingOrchestrator {
 					inputTokens: usage.promptTokenCount,
 					outputTokens: usage.candidatesTokenCount,
 					costEstimate: {
-						input: usage.promptTokenCount * pricePerInputToken,
-						output: usage.candidatesTokenCount * pricePerOutputToken,
-						total:
-							usage.promptTokenCount * pricePerInputToken +
-							usage.candidatesTokenCount * pricePerOutputToken,
+						input: Number(inputCost.toFixed(3)),
+						output: Number(outputCost.toFixed(3)),
+						total: Number(totalCost.toFixed(3)),
+						currency: 'USD',
+						isFreeUsage: true,
 					},
 					userEmail: this.currentUserEmail,
 					companyId: this.currentCompanyId,
+					companyName: this.currentCompanyName,
 				});
 			}
 
@@ -704,6 +715,7 @@ export class JobMatchingOrchestrator {
 		this.candidateInfo = null;
 		this.currentUserEmail = '';
 		this.currentCompanyId = '';
+		this.currentCompanyName = '';
 
 		// Save all collected logs to the database
 		await logger.saveBufferedLogs();

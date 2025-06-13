@@ -18,9 +18,12 @@ export interface ITokenUsage extends Document {
 		input: number;
 		output: number;
 		total: number;
+		currency: string;
+		isFreeUsage: boolean;
 	};
 	userEmail: string;
 	companyId: string;
+	companyName: string;
 }
 
 const TokenUsageSchema = new Schema<ITokenUsage>(
@@ -40,7 +43,10 @@ const TokenUsageSchema = new Schema<ITokenUsage>(
 			input: {type: Number, required: true},
 			output: {type: Number, required: true},
 			total: {type: Number, required: true},
+			currency: {type: String, required: true, default: 'USD'},
+			isFreeUsage: {type: Boolean, required: true, default: true},
 		},
+		companyName: {type: String, required: true},
 		userEmail: {type: String, required: true},
 		companyId: {type: String, required: true},
 	},

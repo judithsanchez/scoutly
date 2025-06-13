@@ -1,5 +1,37 @@
 # Token Usage Documentation
 
+## Pricing Model (Gemini 2.0 Flash-Lite)
+
+### Base Rates (per 1M tokens)
+
+- Input tokens: $0.075 per 1M tokens
+- Output tokens: $0.30 per 1M tokens
+
+### Example Calculations
+
+1. Small Request (10K tokens):
+
+   - Input (8K): (8,000 / 1,000,000) × $0.075 = $0.0006
+   - Output (2K): (2,000 / 1,000,000) × $0.30 = $0.0006
+   - Total: $0.0012
+
+2. Medium Request (100K tokens):
+
+   - Input (80K): (80,000 / 1,000,000) × $0.075 = $0.006
+   - Output (20K): (20,000 / 1,000,000) × $0.30 = $0.006
+   - Total: $0.012
+
+3. Large Request (500K tokens):
+   - Input (400K): (400,000 / 1,000,000) × $0.075 = $0.03
+   - Output (100K): (100,000 / 1,000,000) × $0.30 = $0.03
+   - Total: $0.06
+
+### Rate Limits
+
+- Requests per Minute (RPM): 30
+- Requests per Day (RPD): 1,500
+- Tokens per Minute (TPM): 1,000,000
+
 ## Overview
 
 This document details the token usage patterns and implementation in the Scoutly application, which uses the `gemini-2.0-flash-lite` model.

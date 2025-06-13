@@ -31,9 +31,12 @@ interface TokenUsageInput {
 		input: number;
 		output: number;
 		total: number;
+		currency: string;
+		isFreeUsage: boolean;
 	};
 	userEmail: string;
 	companyId: string;
+	companyName: string;
 }
 
 interface TokenUsageStats {
