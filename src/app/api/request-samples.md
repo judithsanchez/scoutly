@@ -15,7 +15,7 @@
 	"credentials": {
 		"gmail": "user@gmail.com"
 	},
-	"companyNames": ["toptal"],
+	"companyIds": ["toptal"],
 	"cvUrl": "https://drive.google.com/file/d/your-cv-id/view",
 	"candidateInfo": {
 		"logistics": {

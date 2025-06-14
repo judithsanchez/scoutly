@@ -1,0 +1,58 @@
+graph TB
+    subgraph Input
+        A[CV Upload] --> B[Candidate Profile]
+        C[Company List] --> D[Multiple Career Pages]
+    end
+
+    subgraph Phase1[Initial Scraping]
+        D --> E[Parallel Web Scraping]
+        E --> F[Extract Job Links]
+        F --> G[Filter Non-Job Links]
+        G --> H[Check New Links]
+    end
+
+    subgraph Phase2[CV Processing]
+        A --> I[Download PDF]
+        I --> J[Extract Text]
+        B --> K[Convert to XML]
+    end
+
+    subgraph Phase3[Initial Matching]
+        H --> L[Batch AI Analysis]
+        J --> L
+        K --> L
+        L --> M[Filter Matched Jobs]
+    end
+
+    subgraph Phase4[Deep Dive]
+        M --> N[Scrape Job Details]
+        N --> O[Batch Processing]
+        O --> P[Deep Analysis]
+        P --> Q[Score & Sort]
+    end
+
+    subgraph Phase5[Results]
+        Q --> R[Store in Database]
+        R --> S[Group by Company]
+        S --> T[Update User Profile]
+    end
+
+    subgraph Monitoring
+        U[Rate Limiting]
+        V[Token Usage]
+        W[Error Handling]
+        X[Resource Cleanup]
+    end
+
+    L --> U
+    O --> U
+    U --> V
+    V --> W
+    W --> X
+
+    style Phase1 fill:#2d333b,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Phase2 fill:#22272e,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Phase3 fill:#1d2229,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Phase4 fill:#2d2b55,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Phase5 fill:#1a1f28,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Monitoring fill:#2b2d42,stroke:#adbac7,stroke-width:2px,color:#adbac7

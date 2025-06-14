@@ -50,7 +50,7 @@ export interface CandidateData {
 	credentials?: {
 		gmail: string;
 	};
-	companyNames?: string[];
+	companyIds?: string[];
 }
 
 // Props interfaces for form components
