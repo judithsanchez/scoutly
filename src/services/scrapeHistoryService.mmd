@@ -1,0 +1,39 @@
+graph TB
+    subgraph Inputs
+        A[Company ID] --> D[Service Methods]
+        B[User Email] --> D
+        C[Extracted Links] --> D
+    end
+
+    subgraph Service Methods
+        D{ScrapeHistoryService} --> E[getLastScrape]
+        D --> F[recordScrape]
+        D --> G[findNewLinks]
+    end
+
+    subgraph Database Operations
+        E --> H[Find Previous Scrape]
+        F --> I[Update/Insert Scrape]
+        G --> J[Compare & Filter Links]
+    end
+
+    subgraph Results
+        H --> K[Last Scrape Record]
+        I --> L[Updated History]
+        J --> M[New URLs Array]
+    end
+
+    subgraph Error Handling
+        N[MongoDB Errors]
+        O[Data Validation]
+        P[Type Conversion]
+    end
+
+    N --> Q[Error Response]
+    O --> Q
+    P --> Q
+
+    style D fill:#2d333b,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Inputs fill:#22272e,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Results fill:#1d2229,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Error Handling fill:#2d2b55,stroke:#adbac7,stroke-width:2px,color:#adbac7

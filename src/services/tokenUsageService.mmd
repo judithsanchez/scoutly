@@ -1,0 +1,47 @@
+graph TB
+    subgraph Input
+        A[Token Usage Operation] --> B[Record Usage]
+        B --> C[Store in Database]
+    end
+
+    subgraph Analysis
+        D[Usage Stats] --> E[User Stats]
+        D --> F[Company Stats]
+        D --> G[Operation Stats]
+        D --> H[Cost Breakdown]
+    end
+
+    subgraph Metrics
+        I[Performance Metrics] --> J[Accuracy]
+        I --> K[Cost Analysis]
+        I --> L[Usage Trends]
+    end
+
+    subgraph Time Analysis
+        M[Time Filters] --> N[Hourly]
+        M --> O[Daily]
+        M --> P[Weekly]
+        M --> Q[Monthly]
+    end
+
+    C --> D
+    C --> I
+    C --> M
+
+    subgraph Aggregation
+        R[Token Count]
+        S[Cost Calculation]
+        T[Accuracy Metrics]
+    end
+
+    E --> R
+    F --> R
+    G --> R
+    H --> S
+    J --> T
+
+    style Input fill:#2d333b,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Analysis fill:#22272e,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Metrics fill:#1d2229,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Aggregation fill:#2d2b55,stroke:#adbac7,stroke-width:2px,color:#adbac7
+    style Time Analysis fill:#2b2d42,stroke:#adbac7,stroke-width:2px,color:#adbac7
