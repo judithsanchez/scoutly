@@ -10,7 +10,6 @@ interface RegisterUserRequest {
 
 export async function POST(request: Request) {
 	try {
-		// Ensure database connection
 		await dbConnect();
 
 		const {email} = (await request.json()) as RegisterUserRequest;
@@ -34,10 +33,8 @@ export async function POST(request: Request) {
 	}
 }
 
-// Get all users
 export async function GET(request: Request) {
 	try {
-		// Ensure database connection
 		await dbConnect();
 
 		const users = await UserService.getAllUsers();

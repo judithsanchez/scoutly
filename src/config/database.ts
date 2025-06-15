@@ -19,7 +19,6 @@ export const connectDB = async () => {
 
 		await mongoose.connect(MONGODB_URI, options);
 
-		// Verify connection is ready
 		const db = mongoose.connection.db;
 		if (!db) {
 			throw new Error('Database connection not established');
