@@ -1,6 +1,6 @@
 import playwright from 'playwright';
 import * as cheerio from 'cheerio';
-import type {Element} from 'domhandler';
+import {CheerioAPI, Cheerio, Element} from 'cheerio';
 import {Logger} from './logger';
 import type {ICompany} from '../models/Company';
 
@@ -125,10 +125,7 @@ function cleanText(text: string): string {
 	return text.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim();
 }
 
-function extractContext(
-	$: cheerio.CheerioAPI,
-	$elem: cheerio.Cheerio<Element>,
-): string {
+function extractContext($: CheerioAPI, $elem: Cheerio<Element>): string {
 	const MAX_LENGTH = 100;
 	let context = '';
 	const linkText = $elem.text().trim();
@@ -160,7 +157,7 @@ function extractContext(
 	context = (prevText + ' ' + linkText + ' ' + nextText).trim();
 
 	if (context.length < 20 && $elem.parent().length) {
-		context = cleanText($elem.parent().text());
+		context = cleanText(($elem.parent() as Cheerio<Element>).text());
 	}
 	context = context
 		.replace(new RegExp(linkText, 'g'), '')
@@ -173,7 +170,7 @@ function extractContext(
 	return context;
 }
 
-function extractLinks($: cheerio.CheerioAPI, baseUrl: string): ExtractedLink[] {
+function extractLinks($: CheerioAPI, baseUrl: string): ExtractedLink[] {
 	const links: ExtractedLink[] = [];
 	$('a[href]').each((_, elem) => {
 		const $link = $(elem);
@@ -187,7 +184,8 @@ function extractLinks($: cheerio.CheerioAPI, baseUrl: string): ExtractedLink[] {
 						url: fullUrl,
 						text: linkText,
 						title: $link.attr('title'),
-						context: extractContext($, $link) || '',
+						context:
+							extractContext($, $link as unknown as Cheerio<Element>) || '',
 						isExternal: isExternalUrl(fullUrl, baseUrl),
 					});
 				}
