@@ -5,7 +5,6 @@ import {ICompany} from '@/models/Company';
 
 const logger = new Logger('ScrapeAPI');
 
-// Add CORS headers to the response
 function addCorsHeaders(response: NextResponse) {
 	response.headers.set('Access-Control-Allow-Origin', '*');
 	response.headers.set(
@@ -19,7 +18,6 @@ function addCorsHeaders(response: NextResponse) {
 	return response;
 }
 
-// Handle OPTIONS request for CORS
 export async function OPTIONS() {
 	return addCorsHeaders(new NextResponse(null, {status: 200}));
 }
@@ -29,8 +27,6 @@ export async function POST(request: NextRequest) {
 
 	try {
 		const body = await request.json();
-
-		// Support both single URL and batch company scraping
 		if (!body || (!body.url && !body.companies)) {
 			logger.warn('Missing required parameters in request body');
 			return addCorsHeaders(
@@ -41,7 +37,6 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Handle batch company scraping
 		if (body.companies) {
 			if (!Array.isArray(body.companies)) {
 				return addCorsHeaders(
@@ -94,7 +89,6 @@ export async function POST(request: NextRequest) {
 			return addCorsHeaders(NextResponse.json(results));
 		}
 
-		// Legacy single URL handling
 		const {url} = body;
 		logger.info(`Processing single URL scrape request for: ${url}`);
 

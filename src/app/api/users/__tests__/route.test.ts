@@ -3,7 +3,6 @@ import {POST, GET} from '../route';
 import {UserService} from '@/services/userService';
 import dbConnect from '@/middleware/database';
 
-// Mock the dependencies
 vi.mock('@/services/userService');
 vi.mock('@/middleware/database');
 vi.mock('@/utils/logger', () => ({
@@ -18,7 +17,6 @@ const mockDbConnect = vi.mocked(dbConnect);
 describe('/api/users', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Mock successful DB connection by default
 		mockDbConnect.mockResolvedValue({} as any);
 	});
 
