@@ -59,7 +59,7 @@ interface CandidateData {
 	credentials?: {
 		gmail: string;
 	};
-	companyNames?: string[];
+	companyIds?: string[];
 }
 
 // --- STYLING & ICONS ---
@@ -264,7 +264,7 @@ export default function DashboardPage() {
 							onClick={() => {
 								const requestBody = {
 									credentials: authInfo,
-									companyNames: selectedCompanies,
+									companyIds: selectedCompanies,
 									cvUrl,
 									candidateInfo: {
 										logistics,

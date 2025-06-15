@@ -1,0 +1,42 @@
+graph TB
+    subgraph "Rate Limits for gemini-2.0-flash-lite"
+        direction TB
+        A[Model: gemini-2.0-flash-lite]
+        
+        subgraph "Per Minute Limits"
+            B[Requests: 30 RPM]
+            C[Tokens: 1M TPM]
+        end
+        
+        subgraph "Per Day Limits"
+            D[Requests: 1500 RPD]
+            E[Tokens: No explicit limit]
+        end
+        
+        A --> B
+        A --> C
+        A --> D
+        A --> E
+
+        subgraph "System Implementation"
+            F[Rate Limit Tracking]
+            G[Token Usage Tracking]
+            H[Auto-Throttling]
+        end
+
+        B --> F
+        C --> G
+        D --> F
+        E --> G
+        F --> H
+        G --> H
+    end
+
+    style A fill:#2d2d30,stroke:#3c3c3c,color:#d4d4d4
+    style B fill:#2d2d30,stroke:#3c3c3c,color:#569cd6
+    style C fill:#2d2d30,stroke:#3c3c3c,color:#569cd6
+    style D fill:#2d2d30,stroke:#3c3c3c,color:#ce9178
+    style E fill:#2d2d30,stroke:#3c3c3c,color:#ce9178
+    style F fill:#2d2d30,stroke:#3c3c3c,color:#4ec9b0
+    style G fill:#2d2d30,stroke:#3c3c3c,color:#4ec9b0
+    style H fill:#2d2d30,stroke:#3c3c3c,color:#4ec9b0

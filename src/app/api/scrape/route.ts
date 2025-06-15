@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {scrapeWebsite} from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
+import {ICompany} from '@/models/Company';
 
 const logger = new Logger('ScrapeAPI');
 
@@ -29,15 +30,73 @@ export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
 
-		if (!body || !body.url) {
-			logger.warn('Missing URL in request body');
+		// Support both single URL and batch company scraping
+		if (!body || (!body.url && !body.companies)) {
+			logger.warn('Missing required parameters in request body');
 			return addCorsHeaders(
-				NextResponse.json({error: 'URL is required'}, {status: 400}),
+				NextResponse.json(
+					{error: 'URL or companies array is required'},
+					{status: 400},
+				),
 			);
 		}
 
+		// Handle batch company scraping
+		if (body.companies) {
+			if (!Array.isArray(body.companies)) {
+				return addCorsHeaders(
+					NextResponse.json(
+						{error: 'Companies must be an array'},
+						{status: 400},
+					),
+				);
+			}
+
+			const MAX_COMPANIES = 10;
+			if (body.companies.length > MAX_COMPANIES) {
+				return addCorsHeaders(
+					NextResponse.json(
+						{error: `Maximum of ${MAX_COMPANIES} companies per request`},
+						{status: 400},
+					),
+				);
+			}
+
+			logger.info(
+				`Processing batch scrape request for ${body.companies.length} companies`,
+			);
+			const results = await Promise.all(
+				body.companies.map(async (company: ICompany) => {
+					try {
+						const url = company.careers_url;
+						new URL(url);
+						const result = await scrapeWebsite({url}, company);
+						return {
+							companyId: company.id,
+							...result,
+						};
+					} catch (error) {
+						logger.error(`Failed to scrape company ${company.id}:`, error);
+						return {
+							companyId: company.id,
+							content: '',
+							links: [],
+							error: error instanceof Error ? error.message : 'Unknown error',
+							metadata: {
+								url: company.careers_url,
+								scrapedAt: new Date().toISOString(),
+							},
+						};
+					}
+				}),
+			);
+
+			return addCorsHeaders(NextResponse.json(results));
+		}
+
+		// Legacy single URL handling
 		const {url} = body;
-		logger.info(`Processing scrape request for URL: ${url}`);
+		logger.info(`Processing single URL scrape request for: ${url}`);
 
 		try {
 			new URL(url);

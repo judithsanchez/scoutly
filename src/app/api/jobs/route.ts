@@ -11,7 +11,7 @@ export interface JobAnalysisRequest {
 	credentials: {
 		gmail: string;
 	};
-	companyNames: string[];
+	companyIds: string[];
 	cvUrl: string;
 	candidateInfo: Record<string, any>;
 }
@@ -21,17 +21,17 @@ export async function POST(request: NextRequest) {
 		await dbConnect();
 
 		const body = (await request.json()) as JobAnalysisRequest;
-		const {credentials, companyNames, cvUrl, candidateInfo} = body;
+		const {credentials, companyIds, cvUrl, candidateInfo} = body;
 
 		if (
 			!credentials?.gmail ||
 			!cvUrl ||
 			!candidateInfo ||
-			!companyNames ||
-			companyNames.length === 0
+			!companyIds ||
+			companyIds.length === 0
 		) {
 			return NextResponse.json(
-				{error: 'gmail, cvUrl, candidateInfo, and companyNames are required.'},
+				{error: 'gmail, cvUrl, candidateInfo, and companyIds are required.'},
 				{status: 400},
 			);
 		}
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
 		// Process each company sequentially
 		const results = [];
-		for (const companyName of companyNames) {
+		for (const companyName of companyIds) {
 			try {
 				// Get the company details from the database
 				const companies = await CompanyService.findCompaniesByName([

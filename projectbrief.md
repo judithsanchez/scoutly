@@ -61,7 +61,7 @@ Request body:
   "credentials": {
     "gmail": "user@gmail.com"
   },
-  "companyNames": ["company1", "company2"],
+  "companyIds": ["company1", "company2"],
   "cvUrl": "https://drive.google.com/file/...",
   "candidateInfo": {
     "logistics": {
