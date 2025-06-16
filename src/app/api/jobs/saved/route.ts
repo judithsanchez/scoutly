@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
 		logger.info('Collections:', Object.keys(db.models));
 		logger.info('SavedJob model:', SavedJob.collection.name);
 
-		// Get gmail from query parameters
 		const searchParams = request.nextUrl.searchParams;
 		const gmail = searchParams.get('gmail');
 		logger.info('Received request for email:', gmail);
@@ -32,7 +31,6 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		// Find user by email
 		logger.info('Looking up user:', gmail?.toLowerCase());
 		const user = await User.findOne({email: gmail?.toLowerCase()});
 		logger.info('User query result:', user);
@@ -42,11 +40,10 @@ export async function GET(request: NextRequest) {
 		}
 		logger.info('Found user:', user._id.toString());
 
-		// Get total count for pagination
 		const total = await SavedJob.countDocuments({user: user._id});
 
 		logger.info('Finding saved jobs for user:', user._id.toString());
-		// Find all saved jobs for the user with pagination
+
 		const savedJobs = await SavedJob.find({user: user._id})
 			.populate(
 				'company',
