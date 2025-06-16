@@ -4,49 +4,47 @@
 
 @layer base {
 	:root {
-		/* Light theme */
-		--background: hsl(0 0% 100%);
-		--foreground: hsl(222.2 84% 4.9%);
-		--card: hsl(0 0% 100%);
-		--card-foreground: hsl(222.2 84% 4.9%);
-		--popover: hsl(0 0% 100%);
-		--popover-foreground: hsl(222.2 84% 4.9%);
-		--primary: hsl(222.2 47.4% 11.2%);
-		--primary-foreground: hsl(210 40% 98%);
-		--secondary: hsl(210 40% 96.1%);
-		--secondary-foreground: hsl(222.2 47.4% 11.2%);
-		--muted: hsl(210 40% 96.1%);
-		--muted-foreground: hsl(215.4 16.3% 46.9%);
-		--accent: hsl(210 40% 96.1%);
-		--accent-foreground: hsl(222.2 47.4% 11.2%);
-		--destructive: hsl(0 84.2% 60.2%);
-		--destructive-foreground: hsl(210 40% 98%);
-		--border: hsl(214.3 31.8% 91.4%);
-		--input: hsl(214.3 31.8% 91.4%);
-		--ring: hsl(222.2 84% 4.9%);
+		/* Light Theme */
+		--bg-color: #f8fafc;
+		--text-color: #0f172a;
+		--text-muted: #475569;
+		--nav-bg: rgba(255, 255, 255, 0.7);
+		--nav-border: #e2e8f0;
+		--card-bg: white;
+		--card-border: #e2e8f0;
+		--tech-card-bg: #f1f5f9;
+		--tech-card-border: #e2e8f0;
+		--btn-primary-bg: #1e293b;
+		--btn-primary-text: white;
+		--btn-primary-hover-bg: #334155;
+		--toggle-icon-color: #475569;
+		--modal-bg: white;
+		--modal-border: #e2e8f0;
+		--input-bg: #f8fafc;
+		--input-border: #cbd5e1;
+		--result-card-bg: #f1f5f9;
 		--radius: 0.5rem;
 	}
 
 	.dark {
-		--background: hsl(222.2 84% 4.9%);
-		--foreground: hsl(210 40% 98%);
-		--card: hsl(222.2 84% 4.9%);
-		--card-foreground: hsl(210 40% 98%);
-		--popover: hsl(222.2 84% 4.9%);
-		--popover-foreground: hsl(210 40% 98%);
-		--primary: hsl(210 40% 98%);
-		--primary-foreground: hsl(222.2 47.4% 11.2%);
-		--secondary: hsl(217.2 32.6% 17.5%);
-		--secondary-foreground: hsl(210 40% 98%);
-		--muted: hsl(217.2 32.6% 17.5%);
-		--muted-foreground: hsl(215 20.2% 65.1%);
-		--accent: hsl(217.2 32.6% 17.5%);
-		--accent-foreground: hsl(210 40% 98%);
-		--destructive: hsl(0 62.8% 30.6%);
-		--destructive-foreground: hsl(210 40% 98%);
-		--border: hsl(217.2 32.6% 17.5%);
-		--input: hsl(217.2 32.6% 17.5%);
-		--ring: hsl(212.7 26.8% 83.9%);
+		--bg-color: #020617;
+		--text-color: #f1f5f9;
+		--text-muted: #94a3b8;
+		--nav-bg: rgba(15, 23, 42, 0.7);
+		--nav-border: rgba(255, 255, 255, 0.2);
+		--card-bg: rgba(2, 6, 23, 0.5);
+		--card-border: rgba(255, 255, 255, 0.1);
+		--tech-card-bg: #1e293b;
+		--tech-card-border: #334155;
+		--btn-primary-bg: white;
+		--btn-primary-text: #0f172a;
+		--btn-primary-hover-bg: #e2e8f0;
+		--toggle-icon-color: #cbd5e1;
+		--modal-bg: #1e293b;
+		--modal-border: #334155;
+		--input-bg: #0f172a;
+		--input-border: #334155;
+		--result-card-bg: #0f172a;
 	}
 }
 
