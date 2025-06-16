@@ -88,6 +88,7 @@ const UserSchema = new Schema<IUser>(
 			{
 				type: String,
 				ref: 'Company',
+				refPath: 'companyID', // Reference the companyID field instead of _id
 			},
 		],
 		cvUrl: {

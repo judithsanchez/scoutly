@@ -1,115 +1,57 @@
-import {NextRequest, NextResponse} from 'next/server';
-import {getServerSession} from 'next-auth';
-import {connectToDatabase} from '@/lib/mongodb';
-import {User} from '@/models/User';
-import {Company} from '@/models/Company';
+import {UserService} from '@/services/userService';
+import {Logger} from '@/utils/logger';
+import dbConnect from '@/middleware/database';
+
+const logger = new Logger('TrackedCompaniesAPI');
 
 // GET /api/users/tracked-companies
 // Get user's tracked companies
-export async function GET() {
+export async function GET(request: Request) {
 	try {
-		// In development, use hardcoded email. In production, require auth
-		const userEmail =
-			process.env.NODE_ENV === 'development'
-				? 'judithv.sanchezc@gmail.com'
-				: (await getServerSession())?.user?.email;
+		await dbConnect();
 
-		if (!userEmail) {
-			return NextResponse.json(
-				{error: 'Authentication required'},
-				{status: 401},
-			);
+		// For development, use the test email
+		const email = 'judithv.sanchezc@gmail.com';
+
+		const user = await UserService.getUserByEmail(email);
+		if (!user) {
+			return Response.json({companies: []});
 		}
 
-		await connectToDatabase();
-
-		let user = await User.findOne({email: userEmail}).populate(
-			'trackedCompanies',
+		return Response.json({companies: user.trackedCompanies || []});
+	} catch (error: any) {
+		logger.error('Error fetching tracked companies:', error);
+		return Response.json(
+			{error: error.message || 'Internal server error'},
+			{status: 500},
 		);
-
-		// In development, create the user if they don't exist
-		if (!user && process.env.NODE_ENV === 'development') {
-			user = await User.create({
-				email: userEmail,
-				trackedCompanies: [],
-			});
-		} else if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		return NextResponse.json({companies: user.trackedCompanies});
-	} catch (error) {
-		console.error('Error fetching tracked companies:', error);
-		return NextResponse.json({error: 'Internal server error'}, {status: 500});
 	}
 }
 
 // POST /api/users/tracked-companies
 // Start tracking a company
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
 	try {
-		// In development, use hardcoded email. In production, require auth
-		const userEmail =
-			process.env.NODE_ENV === 'development'
-				? 'judithv.sanchezc@gmail.com'
-				: (await getServerSession())?.user?.email;
-
-		if (!userEmail) {
-			return NextResponse.json(
-				{error: 'Authentication required'},
-				{status: 401},
-			);
-		}
+		await dbConnect();
 
 		const {companyId} = await request.json();
+		const email = 'judithv.sanchezc@gmail.com'; // For development
+
 		if (!companyId) {
-			return NextResponse.json(
-				{error: 'Company ID is required'},
-				{status: 400},
-			);
+			return Response.json({error: 'Company ID is required'}, {status: 400});
 		}
 
-		await connectToDatabase();
-
-		// Verify company exists
-		const company = await Company.findOne({companyID: companyId});
-		if (!company) {
-			return NextResponse.json({error: 'Company not found'}, {status: 404});
-		}
-
-		// In development, create the user if they don't exist
-		let user = await User.findOne({email: userEmail});
-		if (!user && process.env.NODE_ENV === 'development') {
-			user = await User.create({
-				email: userEmail,
-				trackedCompanies: [],
-			});
-		} else if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		// Add company to user's tracked companies if not already tracking
-		const updated = await User.findOneAndUpdate(
-			{
-				email: userEmail,
-				trackedCompanies: {$ne: companyId},
-			},
-			{
-				$addToSet: {trackedCompanies: companyId},
-			},
-			{new: true},
+		const user = await UserService.addTrackedCompany(email, companyId);
+		return Response.json({
+			success: true,
+			companies: user.trackedCompanies,
+			message: 'Company tracked successfully',
+		});
+	} catch (error: any) {
+		logger.error('Error tracking company:', error);
+		return Response.json(
+			{error: error.message || 'Internal server error'},
+			{status: 500},
 		);
-
-		if (!updated) {
-			return NextResponse.json(
-				{error: 'Already tracking this company'},
-				{status: 400},
-			);
-		}
-
-		return NextResponse.json({success: true});
-	} catch (error) {
-		console.error('Error tracking company:', error);
-		return NextResponse.json({error: 'Internal server error'}, {status: 500});
 	}
 }

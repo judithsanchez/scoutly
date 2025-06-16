@@ -1,62 +1,30 @@
-import {NextRequest, NextResponse} from 'next/server';
-import {getServerSession} from 'next-auth';
-import {connectToDatabase} from '@/lib/mongodb';
-import {User} from '@/models/User';
-import {Company} from '@/models/Company';
+import {UserService} from '@/services/userService';
+import {Logger} from '@/utils/logger';
+import dbConnect from '@/middleware/database';
 
-// DELETE /api/users/tracked-companies/[companyId]
-// Stop tracking a company
+const logger = new Logger('UntrackCompanyAPI');
+
 export async function DELETE(
-	request: NextRequest,
+	request: Request,
 	{params}: {params: {companyId: string}},
 ) {
 	try {
-		const session = await getServerSession();
-		if (!session?.user?.email) {
-			return NextResponse.json(
-				{error: 'Authentication required'},
-				{status: 401},
-			);
-		}
+		await dbConnect();
 
 		const {companyId} = params;
-		if (!companyId) {
-			return NextResponse.json(
-				{error: 'Company ID is required'},
-				{status: 400},
-			);
-		}
+		const email = 'judithv.sanchezc@gmail.com'; // For development
 
-		await connectToDatabase();
-
-		// Verify company exists
-		const company = await Company.findOne({companyID: companyId});
-		if (!company) {
-			return NextResponse.json({error: 'Company not found'}, {status: 404});
-		}
-
-		// Remove company from user's tracked companies
-		const updated = await User.findOneAndUpdate(
-			{
-				email: session.user.email,
-				trackedCompanies: companyId,
-			},
-			{
-				$pull: {trackedCompanies: companyId},
-			},
-			{new: true},
+		const user = await UserService.removeTrackedCompany(email, companyId);
+		return Response.json({
+			success: true,
+			companies: user.trackedCompanies,
+			message: 'Company untracked successfully',
+		});
+	} catch (error: any) {
+		logger.error('Error untracking company:', error);
+		return Response.json(
+			{error: error.message || 'Internal server error'},
+			{status: 500},
 		);
-
-		if (!updated) {
-			return NextResponse.json(
-				{error: 'Company not being tracked'},
-				{status: 400},
-			);
-		}
-
-		return NextResponse.json({success: true});
-	} catch (error) {
-		console.error('Error untracking company:', error);
-		return NextResponse.json({error: 'Internal server error'}, {status: 500});
 	}
 }
