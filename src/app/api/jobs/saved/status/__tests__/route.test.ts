@@ -5,7 +5,6 @@ import {SavedJob, ApplicationStatus} from '@/models/SavedJob';
 import dbConnect from '@/middleware/database';
 import {NextRequest} from 'next/server';
 
-// Mock the dependencies
 vi.mock('@/models/User');
 vi.mock('@/models/SavedJob');
 vi.mock('@/middleware/database');
@@ -24,13 +23,10 @@ const mockDbConnect = vi.mocked(dbConnect);
 describe('/api/jobs/saved/status', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Mock successful DB connection by default
 		mockDbConnect.mockResolvedValue({} as any);
 
-		// Ensure User methods are properly mocked
 		mockUser.findOne = vi.fn();
 
-		// Ensure SavedJob methods are properly mocked
 		mockSavedJob.findOneAndUpdate = vi.fn();
 		mockSavedJob.countDocuments = vi.fn();
 		mockSavedJob.find = vi.fn();
@@ -68,10 +64,8 @@ describe('/api/jobs/saved/status', () => {
 				gmail: 'test@example.com',
 			};
 
-			// Mock User.findOne to return the user
 			(mockUser.findOne as any).mockResolvedValue(mockUserData);
 
-			// Mock SavedJob.findOneAndUpdate to return the updated job
 			(mockSavedJob.findOneAndUpdate as any).mockReturnValue({
 				populate: vi.fn().mockResolvedValue(mockUpdatedJob),
 			});
@@ -107,7 +101,6 @@ describe('/api/jobs/saved/status', () => {
 		it('should return 400 for missing required fields', async () => {
 			const requestBody = {
 				jobId: '507f1f77bcf86cd799439012',
-				// Missing status and gmail
 			};
 
 			const request = new NextRequest(
@@ -162,7 +155,6 @@ describe('/api/jobs/saved/status', () => {
 				gmail: 'nonexistent@example.com',
 			};
 
-			// Mock User.findOne to return null (user not found)
 			(mockUser.findOne as any).mockResolvedValue(null);
 
 			const request = new NextRequest(
@@ -197,10 +189,8 @@ describe('/api/jobs/saved/status', () => {
 				gmail: 'test@example.com',
 			};
 
-			// Mock User.findOne to return the user
 			(mockUser.findOne as any).mockResolvedValue(mockUserData);
 
-			// Mock SavedJob.findOneAndUpdate to return null (job not found)
 			(mockSavedJob.findOneAndUpdate as any).mockReturnValue({
 				populate: vi.fn().mockResolvedValue(null),
 			});
@@ -254,13 +244,10 @@ describe('/api/jobs/saved/status', () => {
 				},
 			];
 
-			// Mock User.findOne to return the user
 			(mockUser.findOne as any).mockResolvedValue(mockUserData);
 
-			// Mock SavedJob.countDocuments to return total count
 			(mockSavedJob.countDocuments as any).mockResolvedValue(1);
 
-			// Mock SavedJob.find chain
 			const mockQuery = {
 				populate: vi.fn().mockReturnThis(),
 				sort: vi.fn().mockReturnThis(),
@@ -303,7 +290,7 @@ describe('/api/jobs/saved/status', () => {
 			const url = new URL(
 				'http://localhost:3000/api/jobs/saved/status?gmail=test@example.com',
 			);
-			// Missing status parameter
+
 			const request = new NextRequest(url);
 
 			const response = await GET(request);
@@ -329,7 +316,6 @@ describe('/api/jobs/saved/status', () => {
 		});
 
 		it('should return 404 when user is not found', async () => {
-			// Mock User.findOne to return null (user not found)
 			(mockUser.findOne as any).mockResolvedValue(null);
 
 			const url = new URL(
@@ -352,13 +338,10 @@ describe('/api/jobs/saved/status', () => {
 				email: 'test@example.com',
 			};
 
-			// Mock User.findOne to return the user
 			(mockUser.findOne as any).mockResolvedValue(mockUserData);
 
-			// Mock SavedJob.countDocuments to return total count
 			(mockSavedJob.countDocuments as any).mockResolvedValue(25);
 
-			// Mock SavedJob.find chain
 			const mockQuery = {
 				populate: vi.fn().mockReturnThis(),
 				sort: vi.fn().mockReturnThis(),
@@ -386,13 +369,10 @@ describe('/api/jobs/saved/status', () => {
 				email: 'test@example.com',
 			};
 
-			// Mock User.findOne to return the user
 			(mockUser.findOne as any).mockResolvedValue(mockUserData);
 
-			// Mock SavedJob.countDocuments to return total count
 			(mockSavedJob.countDocuments as any).mockResolvedValue(5);
 
-			// Mock SavedJob.find chain
 			const mockQuery = {
 				populate: vi.fn().mockReturnThis(),
 				sort: vi.fn().mockReturnThis(),
