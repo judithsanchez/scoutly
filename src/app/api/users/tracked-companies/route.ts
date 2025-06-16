@@ -8,8 +8,13 @@ import {Company} from '@/models/Company';
 // Get user's tracked companies
 export async function GET() {
 	try {
-		const session = await getServerSession();
-		if (!session?.user?.email) {
+		// In development, use hardcoded email. In production, require auth
+		const userEmail =
+			process.env.NODE_ENV === 'development'
+				? 'judithv.sanchezc@gmail.com'
+				: (await getServerSession())?.user?.email;
+
+		if (!userEmail) {
 			return NextResponse.json(
 				{error: 'Authentication required'},
 				{status: 401},
@@ -18,10 +23,17 @@ export async function GET() {
 
 		await connectToDatabase();
 
-		const user = await User.findOne({email: session.user.email}).populate(
+		let user = await User.findOne({email: userEmail}).populate(
 			'trackedCompanies',
 		);
-		if (!user) {
+
+		// In development, create the user if they don't exist
+		if (!user && process.env.NODE_ENV === 'development') {
+			user = await User.create({
+				email: userEmail,
+				trackedCompanies: [],
+			});
+		} else if (!user) {
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
 
@@ -36,8 +48,13 @@ export async function GET() {
 // Start tracking a company
 export async function POST(request: NextRequest) {
 	try {
-		const session = await getServerSession();
-		if (!session?.user?.email) {
+		// In development, use hardcoded email. In production, require auth
+		const userEmail =
+			process.env.NODE_ENV === 'development'
+				? 'judithv.sanchezc@gmail.com'
+				: (await getServerSession())?.user?.email;
+
+		if (!userEmail) {
 			return NextResponse.json(
 				{error: 'Authentication required'},
 				{status: 401},
@@ -60,10 +77,21 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
 
+		// In development, create the user if they don't exist
+		let user = await User.findOne({email: userEmail});
+		if (!user && process.env.NODE_ENV === 'development') {
+			user = await User.create({
+				email: userEmail,
+				trackedCompanies: [],
+			});
+		} else if (!user) {
+			return NextResponse.json({error: 'User not found'}, {status: 404});
+		}
+
 		// Add company to user's tracked companies if not already tracking
 		const updated = await User.findOneAndUpdate(
 			{
-				email: session.user.email,
+				email: userEmail,
 				trackedCompanies: {$ne: companyId},
 			},
 			{

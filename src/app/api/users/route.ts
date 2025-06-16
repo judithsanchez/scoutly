@@ -4,21 +4,26 @@ import dbConnect from '@/middleware/database';
 
 const logger = new Logger('UsersAPI');
 
+import {IUser} from '@/models/User'; // Import IUser interface
+
 interface RegisterUserRequest {
 	email: string;
+	cvUrl?: string;
+	candidateInfo?: IUser['candidateInfo']; // Use the type from IUser
 }
 
 export async function POST(request: Request) {
 	try {
 		await dbConnect();
 
-		const {email} = (await request.json()) as RegisterUserRequest;
+		const {email, cvUrl, candidateInfo} =
+			(await request.json()) as RegisterUserRequest;
 
 		if (!email) {
 			return Response.json({error: 'Email is required'}, {status: 400});
 		}
 
-		const user = await UserService.getOrCreateUser(email);
+		const user = await UserService.getOrCreateUser(email, cvUrl, candidateInfo);
 		return Response.json({
 			success: true,
 			user,

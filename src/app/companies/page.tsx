@@ -1,127 +1,101 @@
 'use client';
 
 import './companies.css';
-import {useState} from 'react';
+import {useState, useEffect} from 'react'; // Added useEffect
 import {useCompanies} from '@/hooks/useCompanies';
 import {Navbar} from '@/components/Navbar';
+import {ICompany, WorkModel} from '@/models/Company'; // Import ICompany
+// Mock data removed, will use data from useCompanies hook
+// type Company = (typeof companies)[0] & {companyID: string}; // This type will be replaced by ICompany
 
-// Temporary mock data - will be replaced with real API data
-const companies = [
-	{
-		id: 'ashby',
-		companyID: 'ashby',
-		name: 'Ashby',
-		field: 'Recruiting & HR Tech',
-		workModel: 'FULLY_REMOTE',
-		ranking: 95,
-		tracked: true,
-	},
-	{
-		id: 'stripe',
-		companyID: 'stripe',
-		name: 'Stripe',
-		field: 'Fintech & Payments',
-		workModel: 'HYBRID',
-		ranking: 92,
-		tracked: false,
-	},
-	{
-		id: 'google',
-		companyID: 'google',
-		name: 'Google',
-		field: 'Search & Cloud',
-		workModel: 'HYBRID',
-		ranking: 98,
-		tracked: true,
-	},
-	{
-		id: 'netlify',
-		companyID: 'netlify',
-		name: 'Netlify',
-		field: 'Web Development',
-		workModel: 'FULLY_REMOTE',
-		ranking: 88,
-		tracked: false,
-	},
-	{
-		id: 'apple',
-		companyID: 'apple',
-		name: 'Apple',
-		field: 'Consumer Electronics',
-		workModel: 'IN_OFFICE',
-		ranking: 97,
-		tracked: false,
-	},
-	{
-		id: 'doist',
-		companyID: 'doist',
-		name: 'Doist',
-		field: 'Productivity',
-		workModel: 'FULLY_REMOTE',
-		ranking: 85,
-		tracked: true,
-	},
-	{
-		id: 'miro',
-		companyID: 'miro',
-		name: 'Miro',
-		field: 'Collaboration',
-		workModel: 'HYBRID',
-		ranking: 90,
-		tracked: false,
-	},
-	{
-		id: 'zapier',
-		companyID: 'zapier',
-		name: 'Zapier',
-		field: 'Automation',
-		workModel: 'FULLY_REMOTE',
-		ranking: 93,
-		tracked: true,
-	},
-];
+const CompanyCard = ({company}: {company: ICompany}) => {
+	// Use ICompany
+	const {
+		trackedCompanies,
+		trackCompany,
+		untrackCompany,
+		isLoading: isTrackingHookLoading, // Renamed to avoid conflict
+	} = useCompanies();
 
-type Company = (typeof companies)[0] & {companyID: string};
+	// Determine if the company is tracked by checking against the companyID from ICompany
+	const isActuallyTracked =
+		(Array.isArray(trackedCompanies) &&
+			trackedCompanies.some(
+				(trackedCompanyId: string) => trackedCompanyId === company.companyID,
+			)) ||
+		false;
 
-const CompanyCard = ({company}: {company: Company}) => {
-	const {trackedCompanies, trackCompany, untrackCompany} = useCompanies();
-	const isTracked = trackedCompanies.includes(company.companyID);
+	// Local state for optimistic UI and loading state for the toggle itself
+	const [optimisticIsTracked, setOptimisticIsTracked] =
+		useState(isActuallyTracked);
+	const [isToggleLoading, setIsToggleLoading] = useState(false);
 
-	const handleTrackingToggle = () => {
-		if (isTracked) {
-			untrackCompany(company.companyID);
-		} else {
-			trackCompany(company.companyID);
+	// Effect to sync optimisticIsTracked when isActuallyTracked changes (e.g., after initial load or external update)
+	useEffect(() => {
+		setOptimisticIsTracked(isActuallyTracked);
+	}, [isActuallyTracked]);
+
+	const handleTrackingToggle = async () => {
+		setIsToggleLoading(true);
+		setOptimisticIsTracked(!optimisticIsTracked); // Optimistic update
+
+		try {
+			if (optimisticIsTracked) {
+				// If it was tracked, now we untrack
+				await untrackCompany(company.companyID);
+			} else {
+				// If it was not tracked, now we track
+				await trackCompany(company.companyID);
+			}
+			// onSuccess in useMutation will invalidate and refetch,
+			// which will trigger the useEffect above to sync isActuallyTracked
+		} catch (error) {
+			console.error('Failed to update tracking status', error);
+			setOptimisticIsTracked(optimisticIsTracked); // Revert optimistic update on error
+		} finally {
+			setIsToggleLoading(false);
 		}
 	};
 
 	return (
 		<div
 			className="company-card border rounded-2xl p-5 flex flex-col justify-between bg-[var(--card-bg)] border-[var(--card-border)]"
-			data-name={company.name.toLowerCase()}
-			data-work-model={company.workModel}
+			data-name={company.company.toLowerCase()} // Use company.company for name
+			data-work-model={company.work_model} // Use company.work_model
 			data-ranking={company.ranking}
 		>
 			<div>
 				<h3 className="font-bold text-lg text-[var(--text-color)]">
-					{company.name}
+					{company.company} {/* Use company.company for name */}
 				</h3>
-				<p className="text-[var(--text-muted)] text-sm mt-1">{company.field}</p>
+				{/* Display fields, joining if it's an array */}
+				<p className="text-[var(--text-muted)] text-sm mt-1">
+					{Array.isArray(company.fields) && company.fields.length > 0
+						? company.fields.join(', ')
+						: typeof company.fields === 'string'
+						? company.fields
+						: 'N/A'}
+				</p>
 			</div>
 			<div className="mt-4 flex items-center justify-between">
 				<span
 					className={`text-sm font-medium ${
-						isTracked ? 'text-green-500' : 'text-[var(--text-muted)]'
+						optimisticIsTracked ? 'text-green-500' : 'text-[var(--text-muted)]'
 					}`}
 				>
-					{isTracked ? 'Tracking' : 'Not Tracking'}
+					{isToggleLoading
+						? 'Updating...'
+						: optimisticIsTracked
+						? 'Tracking'
+						: 'Not Tracking'}
 				</span>
 				<label className="inline-flex items-center cursor-pointer">
 					<input
 						type="checkbox"
 						className="sr-only peer"
-						checked={isTracked}
+						checked={optimisticIsTracked}
 						onChange={handleTrackingToggle}
+						disabled={isToggleLoading} // Disable while loading
 					/>
 					<div
 						className="relative w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full 
@@ -131,7 +105,11 @@ const CompanyCard = ({company}: {company: Company}) => {
 					>
 						<div
 							className={`absolute top-0.5 left-[2px] bg-white h-5 w-5 rounded-full transition-transform duration-200 ease-in-out
-                        ${isTracked ? 'translate-x-5' : 'translate-x-0'}`}
+                        ${
+													optimisticIsTracked
+														? 'translate-x-5'
+														: 'translate-x-0'
+												}`}
 						></div>
 					</div>
 				</label>
@@ -255,27 +233,36 @@ export default function CompaniesPage() {
 	const [filters, setFilters] = useState<FiltersState>({
 		search: '',
 		workModel: 'all',
-		ranking: 50,
+		ranking: 0, // Default to 0 to show all companies initially
 		sort: 'name-asc',
 	});
 
+	const {
+		companies: allCompanies, // Renamed to avoid conflict with filteredCompanies
+		isLoading: isLoadingCompanies,
+		isError: isErrorCompanies,
+		error: companiesError,
+		refetch: refetchCompanies,
+		// trackedCompanies, trackCompany, untrackCompany are used in CompanyCard
+	} = useCompanies();
+
 	// Filter and sort companies
-	const filteredCompanies = companies
-		.filter(company => {
-			const searchMatch = company.name
+	const filteredCompanies = (allCompanies ?? ([] as ICompany[])) // Ensure allCompanies is an array with correct type
+		.filter((company: ICompany) => {
+			const searchMatch = company.company // Use company.company for name
 				.toLowerCase()
 				.includes(filters.search.toLowerCase());
 			const workModelMatch =
-				filters.workModel === 'all' || company.workModel === filters.workModel;
+				filters.workModel === 'all' || company.work_model === filters.workModel; // Use company.work_model
 			const rankingMatch = company.ranking >= filters.ranking;
 			return searchMatch && workModelMatch && rankingMatch;
 		})
-		.sort((a, b) => {
+		.sort((a: ICompany, b: ICompany) => {
 			switch (filters.sort) {
 				case 'name-asc':
-					return a.name.localeCompare(b.name);
+					return a.company.localeCompare(b.company); // Use company.company for name
 				case 'name-desc':
-					return b.name.localeCompare(a.name);
+					return b.company.localeCompare(a.company); // Use company.company for name
 				case 'ranking-desc':
 					return b.ranking - a.ranking;
 				case 'ranking-asc':
@@ -309,11 +296,43 @@ export default function CompaniesPage() {
 						currentFilters={filters}
 					/>
 
-					<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-						{filteredCompanies.map(company => (
-							<CompanyCard key={company.id} company={company} />
-						))}
-					</div>
+					{isLoadingCompanies && (
+						<div className="text-center py-10 text-[var(--text-muted)]">
+							Loading companies...
+						</div>
+					)}
+					{isErrorCompanies && (
+						<div className="text-center py-10 space-y-4">
+							<p className="text-red-500 font-medium">
+								{companiesError instanceof Error
+									? companiesError.message.includes('timeout')
+										? 'The request took too long to complete. Please try again.'
+										: companiesError.message.includes('Database connection')
+										? 'Unable to connect to the database. Please try again later.'
+										: 'Error loading companies. Please try again later.'
+									: 'An unexpected error occurred. Please try again later.'}
+							</p>
+							<button
+								onClick={() => refetchCompanies()}
+								className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+							>
+								Try Again
+							</button>
+						</div>
+					)}
+					{!isLoadingCompanies && !isErrorCompanies && (
+						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+							{filteredCompanies.length > 0 ? (
+								filteredCompanies.map((company: ICompany) => (
+									<CompanyCard key={company.companyID} company={company} /> // Use companyID as key
+								))
+							) : (
+								<p className="text-center col-span-full py-10 text-[var(--text-muted)]">
+									No companies match your current filters.
+								</p>
+							)}
+						</div>
+					)}
 				</div>
 			</main>
 		</div>

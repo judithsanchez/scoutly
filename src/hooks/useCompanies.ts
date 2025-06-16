@@ -49,14 +49,37 @@ async function untrackCompany(companyId: string) {
 export function useCompanies() {
 	const queryClient = useQueryClient();
 
-	const companiesQuery = useQuery({
+	const companiesQuery = useQuery<ICompany[], Error>({
 		queryKey: ['companies'],
 		queryFn: fetchCompanies,
+		retry: (failureCount, error) => {
+			// Don't retry on specific error messages that indicate permanent failures
+			if (error instanceof Error) {
+				if (error.message.includes('Database connection error')) {
+					return false;
+				}
+			}
+			return failureCount < 3;
+		},
+		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+		staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+		gcTime: 1000 * 60 * 30, // Keep data in cache for 30 minutes
 	});
 
-	const trackedCompaniesQuery = useQuery({
+	const trackedCompaniesQuery = useQuery<string[], Error>({
 		queryKey: ['trackedCompanies'],
 		queryFn: fetchTrackedCompanies,
+		retry: (failureCount, error) => {
+			if (error instanceof Error) {
+				if (error.message.includes('Database connection error')) {
+					return false;
+				}
+			}
+			return failureCount < 3;
+		},
+		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+		staleTime: 1000 * 60 * 5,
+		gcTime: 1000 * 60 * 30,
 	});
 
 	const trackMutation = useMutation({
@@ -74,10 +97,17 @@ export function useCompanies() {
 	});
 
 	return {
-		companies: companiesQuery.data || [],
-		trackedCompanies: trackedCompaniesQuery.data || [],
+		companies: companiesQuery.data || ([] as ICompany[]),
+		trackedCompanies: trackedCompaniesQuery.data || ([] as string[]),
 		isLoading: companiesQuery.isLoading || trackedCompaniesQuery.isLoading,
 		isError: companiesQuery.isError || trackedCompaniesQuery.isError,
+		error: companiesQuery.error || trackedCompaniesQuery.error,
+		isRefetching:
+			companiesQuery.isRefetching || trackedCompaniesQuery.isRefetching,
+		refetch: () => {
+			companiesQuery.refetch();
+			trackedCompaniesQuery.refetch();
+		},
 		trackCompany: trackMutation.mutate,
 		untrackCompany: untrackMutation.mutate,
 	};

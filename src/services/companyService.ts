@@ -22,8 +22,11 @@ export class CompanyService {
 
 	static async getAllCompanies(): Promise<ICompany[]> {
 		try {
-			return await Company.find();
+			return await Company.find().exec();
 		} catch (error: any) {
+			if (error.name === 'MongooseError' || error.name === 'MongoError') {
+				throw new Error('Database connection error. Please try again later.');
+			}
 			throw new Error(`Error fetching companies: ${error.message}`);
 		}
 	}

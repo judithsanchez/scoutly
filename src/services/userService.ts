@@ -4,13 +4,17 @@ import {Logger} from '../utils/logger';
 const logger = new Logger('UserService');
 
 export class UserService {
-	static async getOrCreateUser(email: string): Promise<IUser> {
+	static async getOrCreateUser(
+		email: string,
+		cvUrl?: string,
+		candidateInfo?: IUser['candidateInfo'],
+	): Promise<IUser> {
 		try {
 			let user = await User.findOne({email});
 
 			if (!user) {
 				logger.info(`Creating new user with email: ${email}`);
-				user = await User.create({email});
+				user = await User.create({email, cvUrl, candidateInfo});
 			}
 
 			return user;
