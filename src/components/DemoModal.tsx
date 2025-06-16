@@ -58,6 +58,29 @@ export function DemoModal({isOpen, onClose}: DemoModalProps) {
 				{/* Input Step */}
 				{step === 'input' && (
 					<div className="modal-content-enter relative w-full max-w-lg rounded-2xl shadow-xl p-8 border bg-[var(--modal-bg)] border-[var(--modal-border)]">
+						{/* Close Button */}
+						<button
+							onClick={onClose}
+							className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+							aria-label="Close modal"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+							>
+								<path d="m18 6-12 12" />
+								<path d="m6 6 12 12" />
+							</svg>
+						</button>
+
 						<div className="text-center mb-6">
 							<div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-500/20 mb-4">
 								<svg
@@ -163,6 +186,29 @@ export function DemoModal({isOpen, onClose}: DemoModalProps) {
 				{/* Processing Step */}
 				{step === 'processing' && (
 					<div className="modal-content-enter relative w-full max-w-lg rounded-2xl shadow-xl p-8 border bg-[var(--modal-bg)] border-[var(--modal-border)]">
+						{/* Close Button */}
+						<button
+							onClick={onClose}
+							className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+							aria-label="Close modal"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+							>
+								<path d="m18 6-12 12" />
+								<path d="m6 6 12 12" />
+							</svg>
+						</button>
+
 						<div className="text-center">
 							<h2 className="text-2xl font-bold mb-4">AI Scout at Work...</h2>
 							<div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
@@ -184,6 +230,29 @@ export function DemoModal({isOpen, onClose}: DemoModalProps) {
 				{/* Results Step */}
 				{step === 'results' && (
 					<div className="modal-content-enter relative w-full max-w-3xl rounded-2xl shadow-xl p-8 border bg-[var(--modal-bg)] border-[var(--modal-border)]">
+						{/* Close Button */}
+						<button
+							onClick={onClose}
+							className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+							aria-label="Close modal"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+							>
+								<path d="m18 6-12 12" />
+								<path d="m6 6 12 12" />
+							</svg>
+						</button>
+
 						<div className="text-center mb-6">
 							<h2 className="text-2xl font-bold mb-2">Demo Results</h2>
 							<p className="text-[var(--text-muted)]">

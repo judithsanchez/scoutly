@@ -24,6 +24,27 @@
 		--input-border: #cbd5e1;
 		--result-card-bg: #f1f5f9;
 		--radius: 0.5rem;
+
+		/* Tailwind CSS variables for light theme */
+		--background: 248 250 252; /* slate-50 */
+		--foreground: 15 23 42; /* slate-900 */
+		--card: 255 255 255; /* white */
+		--card-foreground: 15 23 42; /* slate-900 */
+		--popover: 255 255 255; /* white */
+		--popover-foreground: 15 23 42; /* slate-900 */
+		--primary: 30 41 59; /* slate-800 */
+		--primary-foreground: 248 250 252; /* slate-50 */
+		--secondary: 241 245 249; /* slate-100 */
+		--secondary-foreground: 30 41 59; /* slate-800 */
+		--muted: 241 245 249; /* slate-100 */
+		--muted-foreground: 100 116 139; /* slate-500 */
+		--accent: 241 245 249; /* slate-100 */
+		--accent-foreground: 30 41 59; /* slate-800 */
+		--destructive: 239 68 68; /* red-500 */
+		--destructive-foreground: 248 250 252; /* slate-50 */
+		--border: 226 232 240; /* slate-200 */
+		--input: 226 232 240; /* slate-200 */
+		--ring: 148 163 184; /* slate-400 */
 	}
 
 	.dark {
@@ -45,6 +66,27 @@
 		--input-bg: #0f172a;
 		--input-border: #334155;
 		--result-card-bg: #0f172a;
+
+		/* Tailwind CSS variables for dark theme */
+		--background: 2 6 23; /* slate-950 */
+		--foreground: 241 245 249; /* slate-100 */
+		--card: 30 41 59; /* slate-800 */
+		--card-foreground: 241 245 249; /* slate-100 */
+		--popover: 30 41 59; /* slate-800 */
+		--popover-foreground: 241 245 249; /* slate-100 */
+		--primary: 241 245 249; /* slate-100 */
+		--primary-foreground: 30 41 59; /* slate-800 */
+		--secondary: 51 65 85; /* slate-700 */
+		--secondary-foreground: 241 245 249; /* slate-100 */
+		--muted: 51 65 85; /* slate-700 */
+		--muted-foreground: 148 163 184; /* slate-400 */
+		--accent: 51 65 85; /* slate-700 */
+		--accent-foreground: 241 245 249; /* slate-100 */
+		--destructive: 239 68 68; /* red-500 */
+		--destructive-foreground: 241 245 249; /* slate-100 */
+		--border: 51 65 85; /* slate-700 */
+		--input: 51 65 85; /* slate-700 */
+		--ring: 148 163 184; /* slate-400 */
 	}
 }
 
@@ -57,6 +99,9 @@
 		font-family: 'Inter', sans-serif;
 		position: relative;
 		min-height: 100vh;
+		background-color: var(--bg-color);
+		color: var(--text-color);
+		transition: background-color 0.3s ease, color 0.3s ease;
 	}
 }
 
@@ -189,4 +234,39 @@
 
 .mobile-menu.open {
 	max-height: 500px;
+}
+
+/* Global theme-aware component styles */
+@layer components {
+	.card {
+		@apply bg-card text-card-foreground border border-border;
+		background-color: var(--card-bg);
+		border-color: var(--card-border);
+		color: var(--text-color);
+	}
+
+	.btn-primary {
+		background-color: var(--btn-primary-bg);
+		color: var(--btn-primary-text);
+	}
+
+	.btn-primary:hover {
+		background-color: var(--btn-primary-hover-bg);
+	}
+
+	.input {
+		background-color: var(--input-bg);
+		border-color: var(--input-border);
+		color: var(--text-color);
+	}
+
+	.modal {
+		background-color: var(--modal-bg);
+		border-color: var(--modal-border);
+		color: var(--text-color);
+	}
+
+	.text-muted {
+		color: var(--text-muted);
+	}
 }
