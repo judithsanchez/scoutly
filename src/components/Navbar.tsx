@@ -80,6 +80,16 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								>
 									Companies
 								</a>
+								<a
+									href="/profile"
+									className={`hover:text-[var(--text-color)] transition-colors ${
+										pathname === '/profile'
+											? 'text-[var(--text-color)] font-semibold'
+											: ''
+									}`}
+								>
+									Profile
+								</a>
 							</>
 						) : (
 							// Landing Page Navigation
@@ -127,8 +137,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						<ThemeToggle />
 
 						{isDashboard ? (
-							// Dashboard User Profile
-							<button
+							// Dashboard User Profile - Now links to profile page
+							<a
+								href="/profile"
 								className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:hover:bg-white/20 transition-colors"
 								aria-label="User profile"
 							>
@@ -147,7 +158,7 @@ export function Navbar({onDemoClick}: NavbarProps) {
 									<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
 									<circle cx="12" cy="7" r="4"></circle>
 								</svg>
-							</button>
+							</a>
 						) : (
 							// Landing Page Launch Demo Button
 							onDemoClick && (
@@ -228,7 +239,19 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						>
 							Companies
 						</a>
-						<button
+						<a
+							href="/profile"
+							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
+								pathname === '/profile'
+									? 'text-[var(--text-color)] font-semibold'
+									: ''
+							}`}
+							onClick={() => setIsMobileMenuOpen(false)}
+						>
+							Profile
+						</a>
+						<a
+							href="/profile"
 							className="w-full mt-4 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] transition-colors shadow-md flex items-center justify-center gap-2"
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
@@ -247,7 +270,7 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								<circle cx="12" cy="7" r="4"></circle>
 							</svg>
 							User Profile
-						</button>
+						</a>
 					</>
 				) : (
 					// Landing Page Mobile Menu
