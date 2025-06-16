@@ -76,14 +76,22 @@
             width: 100vw;
             height: 100vh;
             background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 20%,rgba(168, 85, 247, 0.1),transparent 50%),radial-gradient(circle at 80% 90%,rgba(236, 72, 153, 0.1),transparent 55%),radial-gradient(circle at 50% 50%,rgba(79, 70, 229, 0.08),transparent 50%);
             transition: background-color 0.3s ease;
             z-index: -1;
+            animation: move-glows 25s linear infinite;
         }
-        .light .background-glows {
-             background-image: radial-gradient(circle at 10% 20%,rgba(168, 85, 247, 0.1),transparent 50%),radial-gradient(circle at 80% 90%,rgba(236, 72, 153, 0.1),transparent 55%),radial-gradient(circle at 50% 50%,rgba(79, 70, 229, 0.08),transparent 50%);
-        }
+
         .dark .background-glows {
             background-image: radial-gradient(circle at 10% 20%,rgba(168, 85, 247, 0.2),transparent 40%),radial-gradient(circle at 80% 90%,rgba(236, 72, 153, 0.2),transparent 45%),radial-gradient(circle at 50% 50%,rgba(79, 70, 229, 0.15),transparent 40%);
+        }
+
+        @keyframes move-glows {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1.2); }
+            25% { transform: translate(10vw, -10vh) rotate(15deg) scale(1.3); }
+            50% { transform: translate(5vw, 15vh) rotate(-10deg) scale(1.2); }
+            75% { transform: translate(-10vw, 5vh) rotate(10deg) scale(1.4); }
+            100% { transform: translate(0, 0) rotate(0deg) scale(1.2); }
         }
 
         .gradient-text { background: linear-gradient(90deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
