@@ -1,5 +1,6 @@
 'use client';
 
+import {useState} from 'react';
 import {ThemeToggle} from './ThemeToggle';
 
 interface NavbarProps {
@@ -7,6 +8,12 @@ interface NavbarProps {
 }
 
 export function Navbar({onDemoClick}: NavbarProps) {
+	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+	const toggleMobileMenu = () => {
+		setIsMobileMenuOpen(!isMobileMenuOpen);
+	};
+
 	return (
 		<nav className="fixed top-0 left-0 right-0 px-4 mt-4 z-40">
 			<div className="nav-card mx-auto p-3 rounded-2xl border shadow-lg backdrop-blur-xl max-w-7xl bg-[var(--nav-bg)] border-[var(--nav-border)]">
@@ -27,7 +34,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 							<circle cx="12" cy="12" r="2"></circle>
 							<path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
 						</svg>
-						<span className="text-2xl font-bold tracking-tighter">Scoutly</span>
+						<span className="text-2xl font-bold tracking-tighter text-[var(--text-color)]">
+							Scoutly
+						</span>
 					</a>
 
 					<div className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--text-muted)]">
@@ -77,6 +86,7 @@ export function Navbar({onDemoClick}: NavbarProps) {
 							Launch Demo
 						</button>
 						<button
+							onClick={toggleMobileMenu}
 							className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:hover:bg-white/20 transition-colors"
 							aria-label="Open menu"
 						>
@@ -99,6 +109,46 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						</button>
 					</div>
 				</div>
+			</div>
+
+			{/* Mobile Menu */}
+			<div
+				className={`mobile-menu md:hidden mt-2 bg-[var(--nav-bg)] border-[var(--nav-border)] rounded-2xl border shadow-lg backdrop-blur-xl p-4 ${
+					isMobileMenuOpen ? 'open' : ''
+				}`}
+			>
+				<a
+					href="#how-it-works"
+					className="block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+					onClick={() => setIsMobileMenuOpen(false)}
+				>
+					How It Works
+				</a>
+				<a
+					href="#about-project"
+					className="block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+					onClick={() => setIsMobileMenuOpen(false)}
+				>
+					About this Project
+				</a>
+				<a
+					href="https://github.com/judithsanchez/scoutly"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+					onClick={() => setIsMobileMenuOpen(false)}
+				>
+					GitHub
+				</a>
+				<button
+					onClick={() => {
+						onDemoClick();
+						setIsMobileMenuOpen(false);
+					}}
+					className="w-full mt-4 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] transition-colors shadow-md"
+				>
+					Launch Demo
+				</button>
 			</div>
 		</nav>
 	);
