@@ -1,19 +1,42 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {TokenUsageService} from '../tokenUsageService';
-import {TokenUsage} from '@/models/TokenUsage';
+import {TokenUsage, TokenOperation} from '@/models/TokenUsage';
 import {Logger} from '@/utils/logger';
+import type {Document} from 'mongoose';
 
-// Mock dependencies
-enum TokenOperation {
-	INITIAL_MATCHING = 'initial_matching',
-	DEEP_DIVE_ANALYSIS = 'deep_dive_analysis',
-	JOB_BATCH_ANALYSIS = 'job_batch_analysis',
+interface TokenAggregateResult {
+	_id: null;
+	totalTokens: number;
+	totalCost: number;
+	totalCalls: number;
+	totalEstimated: number;
+	totalActual: number;
+}
+
+interface MockTokenUsageDocument extends Document {
+	processId: string;
+	operation: TokenOperation;
+	timestamp: Date;
+	estimatedTokens: number;
+	actualTokens: number;
+	inputTokens: number;
+	outputTokens: number;
+	costEstimate: {
+		input: number;
+		output: number;
+		total: number;
+		currency: string;
+		isFreeUsage: boolean;
+	};
+	userEmail: string;
+	companyId: string;
+	companyName: string;
 }
 
 vi.mock('@/models/TokenUsage', () => ({
 	TokenOperation,
 	TokenUsage: {
-		create: vi.fn(),
+		create: vi.fn().mockImplementation(doc => Promise.resolve(doc)),
 		aggregate: vi.fn(),
 	},
 }));
@@ -56,9 +79,8 @@ describe('TokenUsageService', () => {
 			const expectedResult = {
 				...usage,
 				timestamp: expect.any(Date),
-			} as any;
-
-			mockTokenUsage.create.mockResolvedValueOnce(expectedResult);
+				_id: 'mock-id',
+			};
 
 			const result = await TokenUsageService.recordUsage(usage);
 
@@ -85,7 +107,7 @@ describe('TokenUsageService', () => {
 					totalCalls: 10,
 					totalEstimated: 1050,
 					totalActual: 1000,
-				},
+				} as TokenAggregateResult,
 			]);
 
 			const result = await TokenUsageService.getUserStats('test@example.com');
@@ -132,7 +154,7 @@ describe('TokenUsageService', () => {
 					totalCalls: 10,
 					totalEstimated: 2040,
 					totalActual: 2000,
-				},
+				} as TokenAggregateResult,
 			]);
 
 			const result = await TokenUsageService.getCompanyStats('12345');
@@ -165,7 +187,7 @@ describe('TokenUsageService', () => {
 					totalCalls: 5,
 					totalEstimated: 515,
 					totalActual: 500,
-				},
+				} as TokenAggregateResult,
 			]);
 
 			const result = await TokenUsageService.getOperationStats(

@@ -21,11 +21,25 @@ export default function SavedJobCard({
 		}
 	};
 
+	// Get status-specific styles
+	const getStatusStyles = () => {
+		switch (job.status) {
+			case ApplicationStatus.WANT_TO_APPLY:
+				return 'border-l-yellow-400 hover:bg-yellow-400/10';
+			case ApplicationStatus.APPLIED:
+				return 'border-l-green-400 hover:bg-green-400/10';
+			case ApplicationStatus.DISCARDED:
+				return 'border-l-red-500 hover:bg-red-500/10';
+			default:
+				return 'border-l-slate-400 hover:bg-slate-700';
+		}
+	};
+
 	return (
 		<div
-			className={`bg-slate-800 rounded-lg ${
+			className={`bg-slate-800/80 rounded-lg ${
 				compact ? 'p-4' : 'p-6'
-			} mb-4 shadow-lg ${compact ? 'text-sm' : ''} ${
+			} mb-6 shadow-lg border-l-4 ${getStatusStyles()} transition-all duration-300 ease-in-out transform hover:scale-[1.02] ${
 				job.status === ApplicationStatus.DISCARDED ? 'opacity-60' : ''
 			}`}
 		>
@@ -34,15 +48,15 @@ export default function SavedJobCard({
 					compact ? 'mb-2' : 'mb-4'
 				}`}
 			>
-				<div>
+				<div className="flex-grow">
 					<h3
 						className={`${
 							compact ? 'text-base' : 'text-xl'
-						} font-semibold text-white mb-2`}
+						} font-bold text-white mb-1`}
 					>
 						{job.title}
 					</h3>
-					<p className="text-slate-400">
+					<p className="text-slate-400 font-medium">
 						{job.company &&
 						typeof job.company === 'object' &&
 						'company' in job.company
@@ -50,21 +64,24 @@ export default function SavedJobCard({
 							: 'Company not specified'}
 					</p>
 					{job.location && (
-						<p className="text-slate-400 text-sm mt-1">{job.location}</p>
+						<p className="text-slate-500 text-sm mt-1">{job.location}</p>
 					)}
 				</div>
-				<div className="flex flex-col items-end gap-2">
+				<div className="flex flex-col items-end gap-3 shrink-0 ml-4">
+					<div className="text-3xl font-bold text-green-400">
+						{job.suitabilityScore}%
+					</div>
 					<div className="flex items-center gap-2">
 						<button
 							onClick={() =>
 								handleStatusChange(ApplicationStatus.WANT_TO_APPLY)
 							}
-							className={`p-1.5 rounded-full hover:bg-slate-700 transition-colors ${
+							className={`status-btn p-2 rounded-full transition-colors ${
 								job.status === ApplicationStatus.WANT_TO_APPLY
-									? 'text-yellow-400'
-									: 'text-slate-400'
+									? 'bg-yellow-400/20 text-yellow-400'
+									: 'text-slate-400 hover:bg-slate-700'
 							}`}
-							title="Favorite"
+							title="Want to Apply"
 						>
 							<StarIcon
 								filled={job.status === ApplicationStatus.WANT_TO_APPLY}
@@ -72,10 +89,10 @@ export default function SavedJobCard({
 						</button>
 						<button
 							onClick={() => handleStatusChange(ApplicationStatus.APPLIED)}
-							className={`p-1.5 rounded-full hover:bg-slate-700 transition-colors ${
+							className={`status-btn p-2 rounded-full transition-colors ${
 								job.status === ApplicationStatus.APPLIED
-									? 'text-green-400'
-									: 'text-slate-400'
+									? 'bg-green-400/20 text-green-400'
+									: 'text-slate-400 hover:bg-slate-700'
 							}`}
 							title="Mark as Applied"
 						>
@@ -83,18 +100,15 @@ export default function SavedJobCard({
 						</button>
 						<button
 							onClick={() => handleStatusChange(ApplicationStatus.DISCARDED)}
-							className={`p-1.5 rounded-full hover:bg-slate-700 transition-colors ${
+							className={`status-btn p-2 rounded-full transition-colors ${
 								job.status === ApplicationStatus.DISCARDED
-									? 'text-red-400'
-									: 'text-slate-400'
+									? 'bg-red-500/20 text-red-400'
+									: 'text-slate-400 hover:bg-slate-700'
 							}`}
-							title="Archive"
+							title="Discard"
 						>
 							<ArchiveIcon />
 						</button>
-					</div>
-					<div className="text-lg font-bold text-green-400">
-						{job.suitabilityScore}%
 					</div>
 				</div>
 			</div>
@@ -105,7 +119,7 @@ export default function SavedJobCard({
 					{job.techStack.map((tech, index) => (
 						<span
 							key={index}
-							className="bg-slate-700 text-slate-200 px-2 py-1 rounded-md text-sm"
+							className="bg-slate-700 text-slate-200 px-2.5 py-1 rounded-full text-xs font-medium"
 						>
 							{tech}
 						</span>
@@ -113,38 +127,42 @@ export default function SavedJobCard({
 				</div>
 			)}
 
-			{/* Expand/Collapse Button */}
-			<button
-				onClick={() => setIsExpanded(!isExpanded)}
-				className="text-slate-400 hover:text-white text-sm font-medium flex items-center gap-1"
-			>
-				{isExpanded ? 'Show Less' : 'Show AI Evaluation'}
-				<svg
-					className={`w-4 h-4 transform transition-transform ${
-						isExpanded ? 'rotate-180' : ''
-					}`}
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
+			<div className="border-t border-slate-700 pt-4">
+				<button
+					onClick={() => setIsExpanded(!isExpanded)}
+					className="expand-btn text-slate-400 hover:text-white text-sm font-semibold flex items-center gap-2 w-full text-left"
 				>
-					<path
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						strokeWidth={2}
-						d="M19 9l-7 7-7-7"
-					/>
-				</svg>
-			</button>
+					<span>
+						{isExpanded ? 'Hide AI Evaluation' : 'Show AI Evaluation'}
+					</span>
+					<svg
+						className={`w-4 h-4 transform transition-transform duration-300 ${
+							isExpanded ? 'rotate-180' : ''
+						}`}
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M19 9l-7 7-7-7"
+						/>
+					</svg>
+				</button>
 
-			{/* Expandable Content */}
-			{isExpanded && (
-				<div className="mt-4 space-y-4 text-sm">
+				<div
+					className={`accordion-content mt-4 space-y-4 text-sm ${
+						isExpanded ? 'expanded' : ''
+					}`}
+				>
 					{job.goodFitReasons.length > 0 && (
 						<div>
-							<h4 className="font-medium text-green-400 mb-2">
-								Good Fit Reasons
+							<h4 className="font-semibold text-green-400 mb-2">
+								✅ Good Fit Reasons
 							</h4>
-							<ul className="list-disc list-inside text-slate-300 space-y-1">
+							<ul className="list-disc list-inside text-slate-300 space-y-1.5">
 								{job.goodFitReasons.map((reason, index) => (
 									<li key={index}>{reason}</li>
 								))}
@@ -154,10 +172,10 @@ export default function SavedJobCard({
 
 					{job.considerationPoints.length > 0 && (
 						<div>
-							<h4 className="font-medium text-yellow-400 mb-2">
-								Points to Consider
+							<h4 className="font-semibold text-yellow-400 mb-2">
+								⚠️ Points to Consider
 							</h4>
-							<ul className="list-disc list-inside text-slate-300 space-y-1">
+							<ul className="list-disc list-inside text-slate-300 space-y-1.5">
 								{job.considerationPoints.map((point, index) => (
 									<li key={index}>{point}</li>
 								))}
@@ -167,40 +185,41 @@ export default function SavedJobCard({
 
 					{job.stretchGoals.length > 0 && (
 						<div>
-							<h4 className="font-medium text-blue-400 mb-2">Stretch Goals</h4>
-							<ul className="list-disc list-inside text-slate-300 space-y-1">
+							<h4 className="font-semibold text-blue-400 mb-2">
+								🚀 Stretch Goals
+							</h4>
+							<ul className="list-disc list-inside text-slate-300 space-y-1.5">
 								{job.stretchGoals.map((goal, index) => (
 									<li key={index}>{goal}</li>
 								))}
 							</ul>
 						</div>
 					)}
-				</div>
-			)}
 
-			{/* External Link */}
-			<div className="mt-4">
-				<a
-					href={job.url}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
-				>
-					View Job Posting
-					<svg
-						className="w-4 h-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2}
-							d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-						/>
-					</svg>
-				</a>
+					<div className="pt-2">
+						<a
+							href={job.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-purple-400 hover:text-purple-300 font-semibold text-sm inline-flex items-center gap-1.5"
+						>
+							View Original Job Posting
+							<svg
+								className="w-4 h-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+								/>
+							</svg>
+						</a>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
