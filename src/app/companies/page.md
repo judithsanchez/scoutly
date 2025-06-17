@@ -13,6 +13,7 @@ This page displays a list of companies that users can track. Users can search, f
   - Users can filter companies by name (search input), work model (Remote, Hybrid, On-Site), and tracking status.
   - Users can sort companies by name (ascending/descending) and by user-specific ranking (high-to-low/low-to-high).
   - Each company has a user-specific ranking that can be edited via a slider interface.
+  - The page defaults to showing tracked companies when they exist, with a visually highlighted toggle.
 - **Error Handling**: The `useCompanies` hook includes basic retry logic for fetching data. The `CompanyCard` component reverts optimistic updates if an API call to track/untrack fails.
 
 ## Key Components
@@ -34,6 +35,9 @@ This page displays a list of companies that users can track. Users can search, f
 - Updated the `useCompanies` hook to include a `updateRanking` mutation for modifying company rankings.
 - Added "On-Site" filter option for companies with IN_OFFICE work model.
 - Added "Add Company" button and modal that allows users to create new companies and optionally track them with a custom ranking.
+- Modified the default filter state to show tracked companies by default, with a fallback to showing all companies if the user has no tracked companies yet.
+- Enhanced the "Show Tracked Only" toggle with visual highlighting to make it more prominent.
+- Added automatic filter behavior that shows tracked companies by default when available, and falls back to showing all companies when no tracked companies exist.
 
 ## Status
 

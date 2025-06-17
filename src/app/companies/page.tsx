@@ -231,7 +231,13 @@ const CompanyFilters = ({
 					/>
 				</div>
 
-				<div>
+				<div
+					className={`${
+						currentFilters.showTrackedOnly
+							? 'bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg'
+							: ''
+					}`}
+				>
 					<label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
 						Show Tracked Only
 					</label>
@@ -251,9 +257,15 @@ const CompanyFilters = ({
 								}`}
 							></div>
 						</div>
-						<span className="ml-2 text-[var(--text-color)]">
+						<span
+							className={`ml-2 ${
+								currentFilters.showTrackedOnly
+									? 'text-purple-700 dark:text-purple-300 font-semibold'
+									: 'text-[var(--text-color)]'
+							}`}
+						>
 							{currentFilters.showTrackedOnly
-								? 'Tracking Only'
+								? 'Showing Tracked Only'
 								: 'All Companies'}
 						</span>
 					</label>
@@ -350,9 +362,23 @@ export default function CompaniesPage() {
 		search: '',
 		workModel: 'all',
 		sort: 'name-asc',
-		showTrackedOnly: false,
+		showTrackedOnly: true, // Default to showing tracked companies only
 		ranking: 0,
 	});
+
+	// Effect to ensure tracked companies are shown by default if there are any
+	useEffect(() => {
+		if (!isLoading && trackedCompanies && trackedCompanies.length > 0) {
+			setFilters(prev => ({...prev, showTrackedOnly: true}));
+		} else if (
+			!isLoading &&
+			trackedCompanies &&
+			trackedCompanies.length === 0
+		) {
+			// If there are no tracked companies, show all companies
+			setFilters(prev => ({...prev, showTrackedOnly: false}));
+		}
+	}, [isLoading, trackedCompanies]);
 
 	// Helper function to get company ranking
 	const getCompanyRanking = (companyId: string): number => {
@@ -394,6 +420,14 @@ export default function CompaniesPage() {
 					return 0;
 			}
 		});
+
+	// Add useEffect to check if there are tracked companies and adjust filter accordingly
+	useEffect(() => {
+		// If there are no tracked companies, show all companies instead
+		if (trackedCompanies && trackedCompanies.length === 0) {
+			setFilters(prev => ({...prev, showTrackedOnly: false}));
+		}
+	}, [trackedCompanies]);
 
 	// Update CompanyFilters props to remove ranking-related props
 	return (
