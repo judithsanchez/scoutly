@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {ThemeToggle} from './ThemeToggle';
+import Link from 'next/link';
+import './navbar.css';
 
 interface NavbarProps {
 	onDemoClick?: () => void;
@@ -11,7 +13,18 @@ interface NavbarProps {
 export function Navbar({onDemoClick}: NavbarProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const pathname = usePathname();
-	const isDashboard = pathname === '/dashboard';
+
+	// Check if we're on the homepage vs internal pages
+	const isHomepage = pathname === '/';
+
+	// Check if we're on an internal page
+	const isInternalPage =
+		!isHomepage && pathname !== '/auth/signin' && pathname !== '/auth/signup';
+
+	// For internal navigation active state
+	const isActive = (path: string) => {
+		return pathname === path || pathname?.startsWith(path + '/');
+	};
 
 	const toggleMobileMenu = () => {
 		setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -21,8 +34,8 @@ export function Navbar({onDemoClick}: NavbarProps) {
 		<nav className="fixed top-0 left-0 right-0 px-4 mt-4 z-40">
 			<div className="nav-card mx-auto p-3 rounded-2xl border shadow-lg backdrop-blur-xl max-w-7xl bg-[var(--nav-bg)] border-[var(--nav-border)]">
 				<div className="flex justify-between items-center">
-					<a
-						href={isDashboard ? '/dashboard' : '/'}
+					<Link
+						href={isInternalPage ? '/dashboard' : '/'}
 						className="flex items-center gap-2"
 					>
 						<svg
@@ -43,56 +56,56 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						<span className="text-2xl font-bold tracking-tighter text-[var(--text-color)]">
 							Scoutly
 						</span>
-					</a>
+					</Link>
 
 					{/* Desktop Navigation */}
 					<div className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--text-muted)]">
-						{isDashboard ? (
-							// Dashboard Navigation
+						{isInternalPage ? (
+							// Internal pages navigation
 							<>
-								<a
+								<Link
 									href="/dashboard"
 									className={`hover:text-[var(--text-color)] transition-colors ${
-										pathname === '/dashboard'
+										isActive('/dashboard') && pathname === '/dashboard'
 											? 'text-[var(--text-color)] font-semibold'
 											: ''
 									}`}
 								>
 									Dashboard
-								</a>
-								<a
-									href="/dashboard/saved-jobs"
+								</Link>
+								<Link
+									href="/saved-jobs"
 									className={`hover:text-[var(--text-color)] transition-colors ${
-										pathname === '/dashboard/saved-jobs'
+										isActive('/saved-jobs')
 											? 'text-[var(--text-color)] font-semibold'
 											: ''
 									}`}
 								>
 									Saved Jobs
-								</a>
-								<a
-									href="/dashboard/companies"
+								</Link>
+								<Link
+									href="/companies"
 									className={`hover:text-[var(--text-color)] transition-colors ${
-										pathname === '/dashboard/companies'
+										isActive('/companies')
 											? 'text-[var(--text-color)] font-semibold'
 											: ''
 									}`}
 								>
 									Companies
-								</a>
-								<a
+								</Link>
+								<Link
 									href="/profile"
 									className={`hover:text-[var(--text-color)] transition-colors ${
-										pathname === '/profile'
+										isActive('/profile')
 											? 'text-[var(--text-color)] font-semibold'
 											: ''
 									}`}
 								>
 									Profile
-								</a>
+								</Link>
 							</>
 						) : (
-							// Landing Page Navigation
+							// Homepage navigation
 							<>
 								<a
 									href="#how-it-works"
@@ -136,9 +149,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 					<div className="flex items-center gap-2">
 						<ThemeToggle />
 
-						{isDashboard ? (
-							// Dashboard User Profile - Now links to profile page
-							<a
+						{isInternalPage ? (
+							// Profile icon on internal pages
+							<Link
 								href="/profile"
 								className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:hover:bg-white/20 transition-colors"
 								aria-label="User profile"
@@ -158,9 +171,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 									<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
 									<circle cx="12" cy="7" r="4"></circle>
 								</svg>
-							</a>
+							</Link>
 						) : (
-							// Landing Page Launch Demo Button
+							// Demo button on homepage
 							onDemoClick && (
 								<button
 									onClick={onDemoClick}
@@ -197,83 +210,62 @@ export function Navbar({onDemoClick}: NavbarProps) {
 				</div>
 			</div>
 
-			{/* Mobile Menu */}
+			{/* Mobile Menu (slides in from top) */}
 			<div
 				className={`mobile-menu md:hidden mt-2 bg-[var(--nav-bg)] border-[var(--nav-border)] rounded-2xl border shadow-lg backdrop-blur-xl p-4 ${
 					isMobileMenuOpen ? 'open' : ''
 				}`}
 			>
-				{isDashboard ? (
-					// Dashboard Mobile Menu
+				{isInternalPage ? (
+					// Internal pages mobile navigation
 					<>
-						<a
+						<Link
 							href="/dashboard"
 							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
-								pathname === '/dashboard'
+								isActive('/dashboard') && pathname === '/dashboard'
 									? 'text-[var(--text-color)] font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							Dashboard
-						</a>
-						<a
-							href="/dashboard/saved-jobs"
+						</Link>
+						<Link
+							href="/saved-jobs"
 							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
-								pathname === '/dashboard/saved-jobs'
+								isActive('/saved-jobs')
 									? 'text-[var(--text-color)] font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							Saved Jobs
-						</a>
-						<a
-							href="/dashboard/companies"
+						</Link>
+						<Link
+							href="/companies"
 							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
-								pathname === '/dashboard/companies'
+								isActive('/companies')
 									? 'text-[var(--text-color)] font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							Companies
-						</a>
-						<a
+						</Link>
+						<Link
 							href="/profile"
 							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
-								pathname === '/profile'
+								isActive('/profile')
 									? 'text-[var(--text-color)] font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							Profile
-						</a>
-						<a
-							href="/profile"
-							className="w-full mt-4 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] transition-colors shadow-md flex items-center justify-center gap-2"
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							>
-								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-								<circle cx="12" cy="7" r="4"></circle>
-							</svg>
-							User Profile
-						</a>
+						</Link>
 					</>
 				) : (
-					// Landing Page Mobile Menu
+					// Homepage mobile navigation
 					<>
 						<a
 							href="#how-it-works"

@@ -1,34 +1,31 @@
 'use client';
 
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {Navbar} from '@/components/Navbar';
 import {LoginModal} from '@/components/LoginModal';
+import {DemoModal} from '@/components/DemoModal';
+import {usePathname} from 'next/navigation';
 
 export function RootLayoutContent({children}: {children: React.ReactNode}) {
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
+	const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+	const pathname = usePathname();
 
-	useEffect(() => {
-		// For test purposes, check if we're logged in using the endpoint
-		fetch('/api/users/check-auth')
-			.then(res => res.json())
-			.then(data => {
-				setIsLoggedIn(data.isAuthorized);
-			})
-			.catch(() => {
-				setIsLoggedIn(false);
-			});
-	}, []);
+	// Only show demo button on homepage
+	const isHomepage = pathname === '/';
 
 	return (
 		<>
 			<Navbar
-				onLoginClick={() => setIsLoginModalOpen(true)}
-				isLoggedIn={isLoggedIn}
+				onDemoClick={isHomepage ? () => setIsDemoModalOpen(true) : undefined}
 			/>
 			<LoginModal
 				isOpen={isLoginModalOpen}
 				onClose={() => setIsLoginModalOpen(false)}
+			/>
+			<DemoModal
+				isOpen={isDemoModalOpen}
+				onClose={() => setIsDemoModalOpen(false)}
 			/>
 			{children}
 		</>
