@@ -10,7 +10,7 @@ export default function Home() {
 	const [isDemoOpen, setIsDemoOpen] = useState(false);
 
 	return (
-		<div className="text-[var(--text-color)] overflow-x-hidden relative min-h-screen">
+		<div className="text-[var(--text-color)] overflow-x-hidden relative min-h-screen bg-[var(--bg-color)]">
 			{/* Direct inclusion of background component */}
 			<HomepageBackground />
 
