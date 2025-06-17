@@ -19,16 +19,10 @@ export interface ICompany extends Document {
 	lastSuccessfulScrape?: Date;
 	isProblematic: boolean;
 	scrapeErrors: mongoose.Schema.Types.ObjectId[];
-	ranking: number;
 }
 
 const CompanySchema = new Schema<ICompany>(
 	{
-		ranking: {
-			type: Number,
-			default: 75,
-			required: true,
-		},
 		companyID: {
 			type: String,
 			required: true,

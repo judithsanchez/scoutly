@@ -18,6 +18,7 @@ export async function GET(request: Request) {
 			return Response.json({companies: []});
 		}
 
+		// Return the full tracked companies array with companyID and ranking
 		return Response.json({companies: user.trackedCompanies || []});
 	} catch (error: any) {
 		logger.error('Error fetching tracked companies:', error);
@@ -30,18 +31,23 @@ export async function GET(request: Request) {
 
 // POST /api/users/tracked-companies
 // Start tracking a company
+// Update POST method to ensure ranking is saved
+// Update POST method to ensure ranking is saved
 export async function POST(request: Request) {
 	try {
 		await dbConnect();
 
-		const {companyId} = await request.json();
+		// Extract request data and ensure we have the correct property names
+		const requestData = await request.json();
+		const companyId = requestData.companyId;
+		const ranking = requestData.ranking || 75;
 		const email = 'judithv.sanchezc@gmail.com'; // For development
 
 		if (!companyId) {
 			return Response.json({error: 'Company ID is required'}, {status: 400});
 		}
 
-		const user = await UserService.addTrackedCompany(email, companyId);
+		const user = await UserService.addTrackedCompany(email, companyId, ranking);
 		return Response.json({
 			success: true,
 			companies: user.trackedCompanies,

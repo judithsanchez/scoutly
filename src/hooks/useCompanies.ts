@@ -2,7 +2,10 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {ICompany} from '@/models/Company';
 
 interface TrackedCompaniesResponse {
-	companies: string[];
+	companies: Array<{
+		companyID: string;
+		ranking: number;
+	}>;
 }
 
 async function fetchCompanies() {
@@ -13,7 +16,9 @@ async function fetchCompanies() {
 	return response.json();
 }
 
-async function fetchTrackedCompanies(): Promise<string[]> {
+async function fetchTrackedCompanies(): Promise<
+	Array<{companyID: string; ranking: number}>
+> {
 	const response = await fetch('/api/users/tracked-companies');
 	if (!response.ok) {
 		throw new Error('Failed to fetch tracked companies');
@@ -22,13 +27,26 @@ async function fetchTrackedCompanies(): Promise<string[]> {
 	return data.companies;
 }
 
-async function trackCompany(companyId: string) {
+async function trackCompany(
+	companyIdOrParams: string | {companyId: string; ranking?: number},
+) {
+	let companyId: string;
+	let ranking: number = 75;
+
+	// Handle both parameter styles
+	if (typeof companyIdOrParams === 'string') {
+		companyId = companyIdOrParams;
+	} else {
+		companyId = companyIdOrParams.companyId;
+		ranking = companyIdOrParams.ranking ?? 75;
+	}
+
 	const response = await fetch('/api/users/tracked-companies', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({companyId}),
+		body: JSON.stringify({companyId, ranking}),
 	});
 	if (!response.ok) {
 		throw new Error('Failed to track company');
@@ -66,7 +84,10 @@ export function useCompanies() {
 		gcTime: 1000 * 60 * 30, // Keep data in cache for 30 minutes
 	});
 
-	const trackedCompaniesQuery = useQuery<string[], Error>({
+	const trackedCompaniesQuery = useQuery<
+		Array<{companyID: string; ranking: number}>,
+		Error
+	>({
 		queryKey: ['trackedCompanies'],
 		queryFn: fetchTrackedCompanies,
 		retry: (failureCount, error) => {
@@ -98,7 +119,7 @@ export function useCompanies() {
 
 	return {
 		companies: companiesQuery.data || ([] as ICompany[]),
-		trackedCompanies: trackedCompaniesQuery.data || ([] as string[]),
+		trackedCompanies: trackedCompaniesQuery.data || [],
 		isLoading: companiesQuery.isLoading || trackedCompaniesQuery.isLoading,
 		isError: companiesQuery.isError || trackedCompaniesQuery.isError,
 		error: companiesQuery.error || trackedCompaniesQuery.error,
@@ -108,7 +129,8 @@ export function useCompanies() {
 			companiesQuery.refetch();
 			trackedCompaniesQuery.refetch();
 		},
-		trackCompany: trackMutation.mutate,
+		trackCompany: (companyId: string, ranking?: number) =>
+			trackMutation.mutate({companyId, ranking}),
 		untrackCompany: untrackMutation.mutate,
 	};
 }

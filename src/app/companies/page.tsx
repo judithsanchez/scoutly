@@ -1,74 +1,64 @@
 'use client';
 
-import './companies.css';
-import {useState, useEffect} from 'react'; // Added useEffect
-import {useCompanies} from '@/hooks/useCompanies';
 import {Navbar} from '@/components/Navbar';
-import {ICompany, WorkModel} from '@/models/Company'; // Import ICompany
-// Mock data removed, will use data from useCompanies hook
-// type Company = (typeof companies)[0] & {companyID: string}; // This type will be replaced by ICompany
+import {useCompanies} from '@/hooks/useCompanies';
+import {ICompany} from '@/models/Company';
+import {useEffect, useState} from 'react';
 
 const CompanyCard = ({company}: {company: ICompany}) => {
-	// Use ICompany
 	const {
 		trackedCompanies,
 		trackCompany,
 		untrackCompany,
-		isLoading: isTrackingHookLoading, // Renamed to avoid conflict
+		isLoading: isTrackingHookLoading,
 	} = useCompanies();
 
-	// Determine if the company is tracked by checking against the companyID from ICompany
+	// Update to work with new structure: array of {companyID, ranking}
 	const isActuallyTracked =
-		(Array.isArray(trackedCompanies) &&
-			trackedCompanies.some(
-				(trackedCompanyId: string) => trackedCompanyId === company.companyID,
-			)) ||
-		false;
+		Array.isArray(trackedCompanies) &&
+		trackedCompanies.some(tracked => tracked.companyID === company.companyID);
 
 	// Local state for optimistic UI and loading state for the toggle itself
 	const [optimisticIsTracked, setOptimisticIsTracked] =
 		useState(isActuallyTracked);
 	const [isToggleLoading, setIsToggleLoading] = useState(false);
 
-	// Effect to sync optimisticIsTracked when isActuallyTracked changes (e.g., after initial load or external update)
+	// Effect to sync optimisticIsTracked when isActuallyTracked changes
 	useEffect(() => {
 		setOptimisticIsTracked(isActuallyTracked);
 	}, [isActuallyTracked]);
 
 	const handleTrackingToggle = async () => {
 		setIsToggleLoading(true);
-		setOptimisticIsTracked(!optimisticIsTracked); // Optimistic update
+		setOptimisticIsTracked(!optimisticIsTracked);
 
 		try {
 			if (optimisticIsTracked) {
-				// If it was tracked, now we untrack
 				await untrackCompany(company.companyID);
 			} else {
-				// If it was not tracked, now we track
-				await trackCompany(company.companyID);
+				// Pass default ranking of 75 when tracking
+				await trackCompany(company.companyID, 75);
 			}
-			// onSuccess in useMutation will invalidate and refetch,
-			// which will trigger the useEffect above to sync isActuallyTracked
 		} catch (error) {
 			console.error('Failed to update tracking status', error);
-			setOptimisticIsTracked(optimisticIsTracked); // Revert optimistic update on error
+			setOptimisticIsTracked(optimisticIsTracked); // Revert on error
 		} finally {
 			setIsToggleLoading(false);
 		}
 	};
 
+	// Rest of component unchanged...
 	return (
 		<div
 			className="company-card border rounded-2xl p-5 flex flex-col justify-between bg-[var(--card-bg)] border-[var(--card-border)]"
-			data-name={company.company.toLowerCase()} // Use company.company for name
-			data-work-model={company.work_model} // Use company.work_model
-			data-ranking={company.ranking}
+			data-name={company.company.toLowerCase()}
+			data-work-model={company.work_model}
 		>
+			{/* Remove data-ranking since companies don't have rankings anymore */}
 			<div>
 				<h3 className="font-bold text-lg text-[var(--text-color)]">
-					{company.company} {/* Use company.company for name */}
+					{company.company}
 				</h3>
-				{/* Display fields, joining if it's an array */}
 				<p className="text-[var(--text-muted)] text-sm mt-1">
 					{Array.isArray(company.fields) && company.fields.length > 0
 						? company.fields.join(', ')
@@ -95,21 +85,13 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 						className="sr-only peer"
 						checked={optimisticIsTracked}
 						onChange={handleTrackingToggle}
-						disabled={isToggleLoading} // Disable while loading
+						disabled={isToggleLoading}
 					/>
-					<div
-						className="relative w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full 
-                      peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 
-                      peer transition-colors duration-200 ease-in-out
-                      peer-checked:bg-purple-600"
-					>
+					<div className="relative w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 peer transition-colors duration-200 ease-in-out peer-checked:bg-purple-600">
 						<div
-							className={`absolute top-0.5 left-[2px] bg-white h-5 w-5 rounded-full transition-transform duration-200 ease-in-out
-                        ${
-													optimisticIsTracked
-														? 'translate-x-5'
-														: 'translate-x-0'
-												}`}
+							className={`absolute top-0.5 left-[2px] bg-white h-5 w-5 rounded-full transition-transform duration-200 ease-in-out ${
+								optimisticIsTracked ? 'translate-x-5' : 'translate-x-0'
+							}`}
 						></div>
 					</div>
 				</label>
@@ -118,34 +100,32 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	);
 };
 
+// Update the filters to remove ranking filter since companies don't have rankings
 interface FiltersState {
 	search: string;
 	workModel: string;
-	ranking: number;
 	sort: string;
+	// Remove: ranking: number;
 }
 
-interface CompanyFiltersProps {
-	onSearchChange: (value: string) => void;
-	onWorkModelChange: (value: string) => void;
-	onRankingChange: (value: number) => void;
-	onSortChange: (value: string) => void;
-	currentFilters: FiltersState;
-}
-
+// Update CompanyFilters to remove ranking filter
 const CompanyFilters = ({
 	onSearchChange,
 	onWorkModelChange,
-	onRankingChange,
 	onSortChange,
 	currentFilters,
-}: CompanyFiltersProps) => {
+}: {
+	onSearchChange: (value: string) => void;
+	onWorkModelChange: (value: string) => void;
+	onSortChange: (value: string) => void;
+	currentFilters: FiltersState;
+}) => {
 	return (
 		<div className="border rounded-2xl p-6 mb-8 bg-[var(--card-bg)] border-[var(--card-border)]">
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
 				<div>
 					<label
-						htmlFor="search"
+						htmlFor="search-input"
 						className="block text-sm font-medium text-[var(--text-muted)] mb-2"
 					>
 						Search
@@ -154,8 +134,8 @@ const CompanyFilters = ({
 						type="text"
 						id="search-input"
 						placeholder="Company name..."
-						className="w-full p-2 rounded-lg border bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]
-                                 focus:outline-none focus:ring-2 focus:ring-purple-500"
+						className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+						value={currentFilters.search}
 						onChange={e => onSearchChange(e.target.value)}
 					/>
 				</div>
@@ -165,44 +145,37 @@ const CompanyFilters = ({
 						Work Model
 					</label>
 					<div className="flex gap-2">
-						{['all', 'FULLY_REMOTE', 'HYBRID'].map(model => (
-							<button
-								key={model}
-								onClick={() => onWorkModelChange(model)}
-								className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors
-                                          ${
-																						currentFilters.workModel === model
-																							? 'bg-purple-600 text-white'
-																							: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
-																					}`}
-							>
-								{model === 'all'
-									? 'All'
-									: model.split('_').join(' ').toLowerCase()}
-							</button>
-						))}
+						<button
+							onClick={() => onWorkModelChange('all')}
+							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+								currentFilters.workModel === 'all'
+									? 'active bg-purple-600 text-white'
+									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
+							}`}
+						>
+							All
+						</button>
+						<button
+							onClick={() => onWorkModelChange('FULLY_REMOTE')}
+							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+								currentFilters.workModel === 'FULLY_REMOTE'
+									? 'active bg-purple-600 text-white'
+									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
+							}`}
+						>
+							Remote
+						</button>
+						<button
+							onClick={() => onWorkModelChange('HYBRID')}
+							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+								currentFilters.workModel === 'HYBRID'
+									? 'active bg-purple-600 text-white'
+									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
+							}`}
+						>
+							Hybrid
+						</button>
 					</div>
-				</div>
-
-				<div>
-					<label
-						htmlFor="ranking-slider"
-						className="block text-sm font-medium text-[var(--text-muted)] mb-2"
-					>
-						Min. Ranking:{' '}
-						<span className="font-bold text-purple-600 dark:text-purple-400">
-							{currentFilters.ranking}
-						</span>
-					</label>
-					<input
-						type="range"
-						id="ranking-slider"
-						min="0"
-						max="100"
-						value={currentFilters.ranking}
-						onChange={e => onRankingChange(parseInt(e.target.value, 10))}
-						className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
-					/>
 				</div>
 
 				<div>
@@ -214,14 +187,13 @@ const CompanyFilters = ({
 					</label>
 					<select
 						id="sort-select"
+						className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+						value={currentFilters.sort}
 						onChange={e => onSortChange(e.target.value)}
-						className="w-full p-2 rounded-lg border bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]
-                                 focus:outline-none focus:ring-2 focus:ring-purple-500"
 					>
 						<option value="name-asc">Name (A-Z)</option>
 						<option value="name-desc">Name (Z-A)</option>
-						<option value="ranking-desc">Ranking (High-Low)</option>
-						<option value="ranking-asc">Ranking (Low-High)</option>
+						{/* Ranking sort options removed as per previous logic */}
 					</select>
 				</div>
 			</div>
@@ -229,53 +201,43 @@ const CompanyFilters = ({
 	);
 };
 
+// Update the main component
 export default function CompaniesPage() {
+	const {companies: allCompanies, isLoading, isError, error} = useCompanies();
 	const [filters, setFilters] = useState<FiltersState>({
 		search: '',
 		workModel: 'all',
-		ranking: 0, // Default to 0 to show all companies initially
 		sort: 'name-asc',
+		// Remove: ranking: 0,
 	});
 
-	const {
-		companies: allCompanies, // Renamed to avoid conflict with filteredCompanies
-		isLoading: isLoadingCompanies,
-		isError: isErrorCompanies,
-		error: companiesError,
-		refetch: refetchCompanies,
-		// trackedCompanies, trackCompany, untrackCompany are used in CompanyCard
-	} = useCompanies();
-
-	// Filter and sort companies
-	const filteredCompanies = (allCompanies ?? ([] as ICompany[])) // Ensure allCompanies is an array with correct type
+	// Update filtering logic to remove ranking filter
+	const filteredCompanies = (allCompanies ?? ([] as ICompany[]))
 		.filter((company: ICompany) => {
-			const searchMatch = company.company // Use company.company for name
+			const searchMatch = company.company
 				.toLowerCase()
 				.includes(filters.search.toLowerCase());
 			const workModelMatch =
-				filters.workModel === 'all' || company.work_model === filters.workModel; // Use company.work_model
-			const rankingMatch = company.ranking >= filters.ranking;
-			return searchMatch && workModelMatch && rankingMatch;
+				filters.workModel === 'all' || company.work_model === filters.workModel;
+			// Remove: const rankingMatch = company.ranking >= filters.ranking;
+			return searchMatch && workModelMatch; // Remove && rankingMatch
 		})
 		.sort((a: ICompany, b: ICompany) => {
 			switch (filters.sort) {
 				case 'name-asc':
-					return a.company.localeCompare(b.company); // Use company.company for name
+					return a.company.localeCompare(b.company);
 				case 'name-desc':
-					return b.company.localeCompare(a.company); // Use company.company for name
-				case 'ranking-desc':
-					return b.ranking - a.ranking;
-				case 'ranking-asc':
-					return a.ranking - b.ranking;
+					return b.company.localeCompare(a.company);
+				// Remove ranking-based sorting
 				default:
 					return 0;
 			}
 		});
 
+	// Update CompanyFilters props to remove ranking-related props
 	return (
 		<div className="min-h-screen bg-[var(--bg-color)]">
 			<Navbar onDemoClick={() => {}} />
-
 			<main className="px-4 pb-24 pt-32">
 				<div className="max-w-7xl mx-auto">
 					<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-color)]">
@@ -291,46 +253,34 @@ export default function CompaniesPage() {
 						onWorkModelChange={workModel =>
 							setFilters(f => ({...f, workModel}))
 						}
-						onRankingChange={ranking => setFilters(f => ({...f, ranking}))}
 						onSortChange={sort => setFilters(f => ({...f, sort}))}
 						currentFilters={filters}
 					/>
 
-					{isLoadingCompanies && (
+					{isLoading && (
 						<div className="text-center py-10 text-[var(--text-muted)]">
 							Loading companies...
 						</div>
 					)}
-					{isErrorCompanies && (
-						<div className="text-center py-10 space-y-4">
-							<p className="text-red-500 font-medium">
-								{companiesError instanceof Error
-									? companiesError.message.includes('timeout')
-										? 'The request took too long to complete. Please try again.'
-										: companiesError.message.includes('Database connection')
-										? 'Unable to connect to the database. Please try again later.'
-										: 'Error loading companies. Please try again later.'
-									: 'An unexpected error occurred. Please try again later.'}
-							</p>
-							<button
-								onClick={() => refetchCompanies()}
-								className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-							>
-								Try Again
-							</button>
+					{isError && (
+						<div className="text-center py-10 text-red-500">
+							<p>Error loading companies.</p>
+							{error && <p className="text-sm">{error.message}</p>}
 						</div>
 					)}
-					{!isLoadingCompanies && !isErrorCompanies && (
-						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-							{filteredCompanies.length > 0 ? (
-								filteredCompanies.map((company: ICompany) => (
-									<CompanyCard key={company.companyID} company={company} /> // Use companyID as key
-								))
-							) : (
-								<p className="text-center col-span-full py-10 text-[var(--text-muted)]">
-									No companies match your current filters.
-								</p>
-							)}
+					{!isLoading && !isError && filteredCompanies.length === 0 && (
+						<div className="text-center py-10 text-[var(--text-muted)]">
+							No companies match your current filters.
+						</div>
+					)}
+					{!isLoading && !isError && filteredCompanies.length > 0 && (
+						<div
+							id="company-grid"
+							className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+						>
+							{filteredCompanies.map(company => (
+								<CompanyCard key={company.companyID} company={company} />
+							))}
 						</div>
 					)}
 				</div>

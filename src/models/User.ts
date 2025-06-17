@@ -66,11 +66,32 @@ const CandidateInfoSchema = new Schema(
 	{_id: false},
 );
 
+const TrackedCompanySchema = new Schema(
+	{
+		companyID: {
+			type: String,
+			required: true,
+			ref: 'Company',
+		},
+		ranking: {
+			type: Number,
+			default: 75,
+			min: 0,
+			max: 100,
+			required: true,
+		},
+	},
+	{_id: false},
+);
+
 export interface IUser extends Document {
 	email: string;
-	trackedCompanies: string[]; // Array of company IDs
+	trackedCompanies: Array<{
+		companyID: string;
+		ranking: number;
+	}>;
 	cvUrl?: string;
-	candidateInfo?: typeof CandidateInfoSchema; // Using typeof for the schema type
+	candidateInfo?: typeof CandidateInfoSchema;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -84,13 +105,7 @@ const UserSchema = new Schema<IUser>(
 			lowercase: true,
 			trim: true,
 		},
-		trackedCompanies: [
-			{
-				type: String,
-				ref: 'Company',
-				refPath: 'companyID', // Reference the companyID field instead of _id
-			},
-		],
+		trackedCompanies: [TrackedCompanySchema],
 		cvUrl: {
 			type: String,
 			trim: true,
@@ -98,7 +113,7 @@ const UserSchema = new Schema<IUser>(
 		candidateInfo: CandidateInfoSchema,
 	},
 	{
-		timestamps: true, // Automatically adds createdAt and updatedAt fields
+		timestamps: true,
 	},
 );
 
