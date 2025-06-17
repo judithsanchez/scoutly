@@ -2,8 +2,9 @@
 
 import {Navbar} from '@/components/Navbar';
 import {useCompanies} from '@/hooks/useCompanies';
-import {ICompany} from '@/models/Company';
+import {ICompany} from '@/types/company';
 import {useEffect, useState} from 'react';
+import {AddCompanyModal} from '@/components/AddCompanyModal';
 
 const CompanyCard = ({company}: {company: ICompany}) => {
 	const {
@@ -262,7 +263,7 @@ const CompanyFilters = ({
 					<label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
 						Work Model
 					</label>
-					<div className="flex gap-2">
+					<div className="flex flex-wrap gap-2">
 						<button
 							onClick={() => onWorkModelChange('all')}
 							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
@@ -292,6 +293,16 @@ const CompanyFilters = ({
 							}`}
 						>
 							Hybrid
+						</button>
+						<button
+							onClick={() => onWorkModelChange('IN_OFFICE')}
+							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+								currentFilters.workModel === 'IN_OFFICE'
+									? 'active bg-purple-600 text-white'
+									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
+							}`}
+						>
+							On-Site
 						</button>
 					</div>
 				</div>
@@ -328,7 +339,12 @@ export default function CompaniesPage() {
 		isLoading,
 		isError,
 		error,
+		createCompany,
+		trackCompany,
+		isCreatingCompany,
 	} = useCompanies();
+
+	const [isAddCompanyModalOpen, setIsAddCompanyModalOpen] = useState(false);
 
 	const [filters, setFilters] = useState<FiltersState>({
 		search: '',
@@ -346,7 +362,7 @@ export default function CompaniesPage() {
 
 	// Update filtering logic to include showTrackedOnly filter
 	const filteredCompanies = (allCompanies ?? ([] as ICompany[]))
-		.filter((company: ICompany) => {
+		.filter(company => {
 			const searchMatch = company.company
 				.toLowerCase()
 				.includes(filters.search.toLowerCase());
@@ -360,7 +376,7 @@ export default function CompaniesPage() {
 
 			return searchMatch && workModelMatch && trackedMatch;
 		})
-		.sort((a: ICompany, b: ICompany) => {
+		.sort((a, b) => {
 			switch (filters.sort) {
 				case 'name-asc':
 					return a.company.localeCompare(b.company);
@@ -385,13 +401,32 @@ export default function CompaniesPage() {
 			<Navbar onDemoClick={() => {}} />
 			<main className="px-4 pb-24 pt-32">
 				<div className="max-w-7xl mx-auto">
-					<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-color)]">
-						Track Companies
-					</h1>
-					<p className="text-[var(--text-muted)] mb-8">
-						Select the companies you want Scoutly to monitor for new job
-						openings.
-					</p>
+					<div className="flex flex-wrap justify-between items-center mb-8">
+						<div>
+							<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-color)]">
+								Track Companies
+							</h1>
+							<p className="text-[var(--text-muted)]">
+								Select the companies you want Scoutly to monitor for new job
+								openings.
+							</p>
+						</div>
+						<button
+							onClick={() => setIsAddCompanyModalOpen(true)}
+							className="mt-4 md:mt-0 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16"
+								height="16"
+								fill="currentColor"
+								viewBox="0 0 16 16"
+							>
+								<path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 1 1 0-2h6V1a1 1 0 0 1 1-1z" />
+							</svg>
+							Add Company
+						</button>
+					</div>
 
 					<CompanyFilters
 						onSearchChange={search => setFilters(f => ({...f, search}))}
@@ -433,6 +468,29 @@ export default function CompaniesPage() {
 					)}
 				</div>
 			</main>
+
+			{/* Add Company Modal */}
+			<AddCompanyModal
+				isOpen={isAddCompanyModalOpen}
+				onClose={() => setIsAddCompanyModalOpen(false)}
+				onAddCompany={async (companyData, track, ranking) => {
+					try {
+						// Create the company first
+						const result = await createCompany(companyData);
+
+						// If tracking is requested, track the company with the specified ranking
+						if (track && result.company) {
+							await trackCompany(result.company.companyID, ranking);
+						}
+
+						// Close the modal after successful creation
+						setIsAddCompanyModalOpen(false);
+					} catch (error) {
+						console.error('Failed to create company:', error);
+						throw error;
+					}
+				}}
+			/>
 		</div>
 	);
 }

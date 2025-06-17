@@ -10,16 +10,17 @@ This page displays a list of companies that users can track. Users can search, f
 - **Data Fetching**: Company data and tracked company statuses are fetched using the `useCompanies` custom hook. This hook utilizes `@tanstack/react-query` for data fetching, caching, and synchronization.
 - **Company Card**: The `CompanyCard` component displays individual company information, a toggle switch to track/untrack the company, and a ranking display with editing capability for tracked companies. It implements optimistic updates for both tracking status and ranking changes.
 - **Filtering and Sorting**:
-  - Users can filter companies by name (search input), work model, and tracking status.
+  - Users can filter companies by name (search input), work model (Remote, Hybrid, On-Site), and tracking status.
   - Users can sort companies by name (ascending/descending) and by user-specific ranking (high-to-low/low-to-high).
   - Each company has a user-specific ranking that can be edited via a slider interface.
 - **Error Handling**: The `useCompanies` hook includes basic retry logic for fetching data. The `CompanyCard` component reverts optimistic updates if an API call to track/untrack fails.
 
 ## Key Components
 
-- **`CompaniesPage` (Default Export)**: The main component that orchestrates the page. It fetches data using `useCompanies`, manages filter state, and renders the layout, `CompanyFilters`, and a list of `CompanyCard` components. It also handles displaying loading and error states for the company list. The page now supports filtering by tracked status and sorting by user-specific ranking.
+- **`CompaniesPage` (Default Export)**: The main component that orchestrates the page. It fetches data using `useCompanies`, manages filter state, and renders the layout, `CompanyFilters`, and a list of `CompanyCard` components. It also handles displaying loading and error states for the company list. The page now supports filtering by tracked status and sorting by user-specific ranking, as well as adding new companies.
 - **`CompanyCard`**: A component responsible for rendering a single company's details, a toggle to track/untrack it, and a user-specific ranking display with edit capabilities via a slider. It handles optimistic UI updates for both tracking status and ranking changes.
 - **`CompanyFilters`**: A component that provides UI elements (search input, work model buttons, tracked only toggle, sort dropdown) for searching, filtering by work model, filtering by tracked status, and sorting the list of companies.
+- **`AddCompanyModal`**: A modal component that provides a form for adding new companies to the database, with the option to immediately track them and set a ranking.
 
 ## Recent Changes
 
@@ -31,6 +32,8 @@ This page displays a list of companies that users can track. Users can search, f
 - Added "Show Tracked Only" filter to allow users to view only their tracked companies.
 - Added sorting options by company ranking (high-to-low and low-to-high).
 - Updated the `useCompanies` hook to include a `updateRanking` mutation for modifying company rankings.
+- Added "On-Site" filter option for companies with IN_OFFICE work model.
+- Added "Add Company" button and modal that allows users to create new companies and optionally track them with a custom ranking.
 
 ## Status
 

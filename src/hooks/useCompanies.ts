@@ -1,5 +1,5 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
-import {ICompany} from '@/models/Company';
+import {ICompany, CreateCompanyInput} from '@/types/company';
 
 interface TrackedCompaniesResponse {
 	companies: Array<{
@@ -64,6 +64,36 @@ async function untrackCompany(companyId: string) {
 	return response.json();
 }
 
+async function updateRanking(params: {companyId: string; ranking: number}) {
+	const {companyId, ranking} = params;
+	const response = await fetch(`/api/users/tracked-companies/${companyId}`, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({ranking}),
+	});
+	if (!response.ok) {
+		throw new Error('Failed to update company ranking');
+	}
+	return response.json();
+}
+
+async function createCompany(companyData: CreateCompanyInput) {
+	const response = await fetch('/api/companies/create', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(companyData),
+	});
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to create company');
+	}
+	return response.json();
+}
+
 export function useCompanies() {
 	const queryClient = useQueryClient();
 
@@ -117,6 +147,20 @@ export function useCompanies() {
 		},
 	});
 
+	const updateRankingMutation = useMutation({
+		mutationFn: updateRanking,
+		onSuccess: () => {
+			queryClient.invalidateQueries({queryKey: ['trackedCompanies']});
+		},
+	});
+
+	const createCompanyMutation = useMutation({
+		mutationFn: createCompany,
+		onSuccess: () => {
+			queryClient.invalidateQueries({queryKey: ['companies']});
+		},
+	});
+
 	return {
 		companies: companiesQuery.data || ([] as ICompany[]),
 		trackedCompanies: trackedCompaniesQuery.data || [],
@@ -132,5 +176,10 @@ export function useCompanies() {
 		trackCompany: (companyId: string, ranking?: number) =>
 			trackMutation.mutate({companyId, ranking}),
 		untrackCompany: untrackMutation.mutate,
+		updateRanking: (companyId: string, ranking: number) =>
+			updateRankingMutation.mutate({companyId, ranking}),
+		createCompany: (companyData: any) =>
+			createCompanyMutation.mutateAsync(companyData),
+		isCreatingCompany: createCompanyMutation.isPending,
 	};
 }
