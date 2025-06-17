@@ -179,13 +179,15 @@ export default function DashboardPage() {
 	}, [authInfo.gmail]);
 
 	return (
-		<div className="bg-slate-950 text-white min-h-screen">
+		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
 			<div className="background-glows fixed inset-0 z-0"></div>
 			<main className="relative z-10 max-w-7xl mx-auto pt-32 pb-24 px-4">
 				{/* Header */}
 				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-					<p className="text-slate-400">
+					<h1 className="text-3xl font-bold text-[var(--text-color)] mb-2">
+						Dashboard
+					</h1>
+					<p className="text-[var(--text-muted)]">
 						Manage your job search and track your applications
 					</p>
 
@@ -231,10 +233,10 @@ export default function DashboardPage() {
 				</div>
 
 				{/* Auth Info Section */}
-				<div className="mb-8 p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
+				<div className="mb-8 p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)]">
 					<div className="flex justify-between items-center">
 						<div>
-							<h2 className="text-lg font-medium text-slate-200">
+							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
 							</h2>
 							<p className="text-purple-400 font-medium mt-1">

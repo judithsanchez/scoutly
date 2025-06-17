@@ -431,9 +431,10 @@ export default function CompaniesPage() {
 
 	// Update CompanyFilters props to remove ranking-related props
 	return (
-		<div className="min-h-screen bg-[var(--bg-color)]">
+		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
+			<div className="background-glows fixed inset-0 z-0"></div>
 			<Navbar onDemoClick={() => {}} />
-			<main className="px-4 pb-24 pt-32">
+			<main className="relative z-10 px-4 pb-24 pt-32">
 				<div className="max-w-7xl mx-auto">
 					<div className="flex flex-wrap justify-between items-center mb-8">
 						<div>

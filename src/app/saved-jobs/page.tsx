@@ -122,8 +122,9 @@ export default function SavedJobsPage() {
 	}, []);
 
 	return (
-		<div className="min-h-screen bg-slate-950 text-white pt-32 pb-24 px-4">
-			<div className="max-w-4xl mx-auto">
+		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
+			<div className="background-glows fixed inset-0 z-0"></div>
+			<div className="relative z-10 max-w-4xl mx-auto pt-32 pb-24 px-4">
 				<h1 className="text-4xl font-extrabold tracking-tight mb-6">
 					Saved Jobs
 				</h1>
