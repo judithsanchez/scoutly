@@ -57,7 +57,7 @@ const inputClasses =
 const buttonClasses =
 	'px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 const secondaryButtonClasses = `${buttonClasses} bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover-bg)] text-[var(--btn-secondary-text)]`;
-const removeButtonClasses = `${buttonClasses} bg-pink-600/80 hover:bg-pink-700 text-white text-xs py-1 px-2 flex items-center justify-center`;
+const removeButtonClasses = `${buttonClasses} bg-pink-600/80 hover:bg-pink-700 text-white text-xs py-1 px-2 flex items-center justify-center`; // Pink is distinct enough to work in both themes
 const primaryButtonClasses = `${buttonClasses} bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] shadow-md`;
 
 // Default data
@@ -188,8 +188,8 @@ export default function ProfilePage() {
 						<div
 							className={`mt-3 p-3 rounded-lg text-sm ${
 								saveMessage.includes('successfully')
-									? 'bg-green-900/50 text-green-300 border border-green-700'
-									: 'bg-red-900/50 text-red-300 border border-red-700'
+									? 'bg-green-900/30 dark:bg-green-900/50 text-green-700 dark:text-green-300 border border-green-600 dark:border-green-700'
+									: 'bg-red-900/30 dark:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-600 dark:border-red-700'
 							}`}
 						>
 							{saveMessage}
@@ -301,7 +301,10 @@ export default function ProfilePage() {
 									id="willingToRelocate"
 									checked={logistics.willingToRelocate}
 									onChange={e =>
-										setLogistics({...logistics, willingToRelocate: e.target.checked})
+										setLogistics({
+											...logistics,
+											willingToRelocate: e.target.checked,
+										})
 									}
 									className="h-5 w-5 rounded bg-[var(--input-bg)] border-[var(--input-border)] text-purple-500 focus:ring-purple-500"
 								/>
@@ -370,10 +373,9 @@ export default function ProfilePage() {
 										<button
 											type="button"
 											onClick={() => {
-												const filteredAuth =
-													logistics.workAuthorization.filter(
-														(_, i) => i !== index,
-													);
+												const filteredAuth = logistics.workAuthorization.filter(
+													(_, i) => i !== index,
+												);
 												setLogistics({
 													...logistics,
 													workAuthorization: filteredAuth,
@@ -406,7 +408,9 @@ export default function ProfilePage() {
 
 					{/* Languages */}
 					<div className={cardClasses}>
-						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">Languages</h3>
+						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">
+							Languages
+						</h3>
 						<div className="space-y-3">
 							{languages.map((lang, index) => (
 								<div
@@ -466,7 +470,9 @@ export default function ProfilePage() {
 
 					{/* Preferences */}
 					<div className={cardClasses}>
-						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">Preferences</h3>
+						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">
+							Preferences
+						</h3>
 						<div className="space-y-6">
 							<ArrayInput
 								label="Career Goals"

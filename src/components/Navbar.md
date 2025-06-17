@@ -5,7 +5,7 @@
 The Navbar component provides global navigation for the Scoutly application. It has two distinct modes:
 
 1. **Homepage Mode**: Displays landing page navigation with "How It Works", "About this Project", "GitHub", and a "Launch Demo" button.
-2. **Internal Pages Mode**: Displays app navigation with "Dashboard", "Saved Jobs", "Companies", and "Profile" links.
+2. **Internal Pages Mode**: Displays app navigation with "Dashboard", "Saved Jobs", "Companies", and a profile icon for accessing user profile.
 
 ## Implementation Notes
 
@@ -14,6 +14,7 @@ The Navbar component provides global navigation for the Scoutly application. It 
 - **Active State**: Highlights the current page in the navigation menu for better user orientation.
 - **Theme Integration**: Supports both light and dark themes through CSS variables and the ThemeToggle component.
 - **Mobile Menu Animation**: Includes smooth slide-in animation for the mobile menu with `max-height` transition.
+- **Profile Access**: Uses an icon-only approach for profile access to reduce navbar clutter.
 
 ## Props
 
