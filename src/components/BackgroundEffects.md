@@ -16,13 +16,11 @@ The main background effect is achieved using a combination of:
 
 ```tsx
 <div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
-  {/* The background effect */}
-  <div className="background-glows fixed inset-0 z-0"></div>
-  
-  {/* Main content goes here */}
-  <main className="relative z-10">
-    {/* Page content */}
-  </main>
+	{/* The background effect */}
+	<div className="background-glows fixed inset-0 z-0"></div>
+
+	{/* Main content goes here */}
+	<main className="relative z-10">{/* Page content */}</main>
 </div>
 ```
 
@@ -32,29 +30,29 @@ The background effect is defined in globals.css with different styles for light 
 
 ```css
 .background-glows {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: var(--bg-color);
-  transition: background-color 0.3s ease;
-  z-index: -1;
-  animation: move-glows 25s linear infinite;
-  pointer-events: none;
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: var(--bg-color);
+	transition: background-color 0.3s ease;
+	z-index: -1;
+	animation: move-glows 25s linear infinite;
+	pointer-events: none;
 }
 
 /* Light mode gradients */
 .light .background-glows,
 html:not(.dark) .background-glows {
-  background-image: radial-gradient(...);
+	background-image: radial-gradient(...);
 }
 
 /* Dark mode gradients */
 .dark .background-glows,
 html.dark .background-glows {
-  background-image: radial-gradient(...);
+	background-image: radial-gradient(...);
 }
 ```
 
