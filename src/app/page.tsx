@@ -3,16 +3,15 @@
 import {AboutProjectSection} from '@/components/AboutProjectSection';
 import {HeroSection} from '@/components/HeroSection';
 import {HowItWorksSection} from '@/components/HowItWorksSection';
-import {HomepageBackground} from '@/components/HomepageBackground';
 import {useState} from 'react';
 
 export default function Home() {
 	const [isDemoOpen, setIsDemoOpen] = useState(false);
 
 	return (
-		<div className="text-[var(--text-color)] overflow-x-hidden relative min-h-screen bg-[var(--bg-color)]">
-			{/* Direct inclusion of background component */}
-			<HomepageBackground />
+		<div className="text-[var(--text-color)] overflow-x-hidden relative min-h-screen bg-[var(--page-bg)]">
+			{/* Using the exact same background implementation as in profile page */}
+			<div className="background-glows fixed inset-0 z-0"></div>
 
 			{/* Main content */}
 			<main className="relative z-10 homepage-content">
