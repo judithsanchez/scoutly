@@ -25,6 +25,7 @@ export const HEADING_MD =
 	'text-xl font-semibold text-slate-900 dark:text-white mb-4';
 export const TEXT_PRIMARY = 'text-slate-900 dark:text-white';
 export const TEXT_SECONDARY = 'text-slate-600 dark:text-slate-400';
+export const TEXT_ACCENT = 'text-purple-600 dark:text-purple-400';
 
 // Button classes
 export const BUTTON_PRIMARY =
@@ -33,6 +34,14 @@ export const BUTTON_SECONDARY =
 	'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-medium py-2 px-4 rounded-md transition-colors';
 export const BUTTON_OUTLINE =
 	'border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white font-medium py-2 px-4 rounded-md transition-colors';
+
+// Stat card classes
+export const STAT_CARD_CONTAINER =
+	'text-center p-3 bg-slate-100 dark:bg-slate-900/50 rounded-lg';
+export const STAT_CARD_NUMBER_PURPLE = 'text-2xl font-bold text-purple-600 dark:text-purple-400';
+export const STAT_CARD_NUMBER_GREEN = 'text-2xl font-bold text-green-600 dark:text-green-400';
+export const STAT_CARD_NUMBER_YELLOW = 'text-2xl font-bold text-yellow-600 dark:text-yellow-400';
+export const STAT_CARD_NUMBER_BLUE = 'text-2xl font-bold text-blue-600 dark:text-blue-400';
 
 /**
  * Page background styling - These three constants should be used together

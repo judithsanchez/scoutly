@@ -5,6 +5,17 @@ import {useCompanies} from '@/hooks/useCompanies';
 import {ICompany} from '@/types/company';
 import {useEffect, useState} from 'react';
 import {AddCompanyModal} from '@/components/AddCompanyModal';
+import {
+	PAGE_BACKGROUND_CONTAINER,
+	PAGE_BACKGROUND_GLOW,
+	PAGE_CONTENT_CONTAINER,
+	CARD_CONTAINER,
+	HEADING_LG,
+	HEADING_MD,
+	TEXT_SECONDARY,
+	BUTTON_PRIMARY,
+	FLEX_BETWEEN,
+} from '@/constants/styles';
 
 const CompanyCard = ({company}: {company: ICompany}) => {
 	const {
@@ -15,7 +26,6 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 		isLoading: isTrackingHookLoading,
 	} = useCompanies();
 
-	// Update to work with new structure: array of {companyID, ranking}
 	const trackedCompany = Array.isArray(trackedCompanies)
 		? trackedCompanies.find(tracked => tracked.companyID === company.companyID)
 		: undefined;
@@ -23,7 +33,6 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	const isActuallyTracked = !!trackedCompany;
 	const companyRanking = trackedCompany?.ranking ?? 75;
 
-	// Local state for optimistic UI and loading state for the toggle itself
 	const [optimisticIsTracked, setOptimisticIsTracked] =
 		useState(isActuallyTracked);
 	const [optimisticRanking, setOptimisticRanking] = useState(companyRanking);
@@ -31,7 +40,6 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	const [isEditingRanking, setIsEditingRanking] = useState(false);
 	const [isRankingLoading, setIsRankingLoading] = useState(false);
 
-	// Effect to sync optimistic states when data changes
 	useEffect(() => {
 		setOptimisticIsTracked(isActuallyTracked);
 		setOptimisticRanking(companyRanking);
@@ -45,7 +53,6 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 			if (optimisticIsTracked) {
 				await untrackCompany(company.companyID);
 			} else {
-				// Pass default ranking of 75 when tracking
 				await trackCompany(company.companyID, optimisticRanking);
 			}
 		} catch (error) {
@@ -63,13 +70,7 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	const handleRankingSave = async () => {
 		setIsRankingLoading(true);
 		try {
-			console.log(
-				`Updating ranking for company ${company.companyID} to ${optimisticRanking}`,
-			);
 			await updateRanking(company.companyID, optimisticRanking);
-			console.log(
-				`Successfully updated ranking for company ${company.companyID}`,
-			);
 		} catch (error) {
 			console.error(
 				`Failed to update ranking for company ${company.companyID}:`,
@@ -82,19 +83,16 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 		}
 	};
 
-	// Rest of component unchanged...
 	return (
 		<div
-			className="company-card border rounded-2xl p-5 flex flex-col justify-between bg-[var(--card-bg)] border-[var(--card-border)]"
+			className={`${CARD_CONTAINER} flex flex-col justify-between`}
 			data-name={company.company.toLowerCase()}
 			data-work-model={company.work_model}
 			data-ranking={optimisticRanking}
 		>
 			<div>
-				<h3 className="font-bold text-lg text-[var(--text-color)]">
-					{company.company}
-				</h3>
-				<p className="text-[var(--text-muted)] text-sm mt-1">
+				<h3 className={HEADING_MD}>{company.company}</h3>
+				<p className={`${TEXT_SECONDARY} text-sm mt-1`}>
 					{Array.isArray(company.fields) && company.fields.length > 0
 						? company.fields.join(', ')
 						: typeof company.fields === 'string'
@@ -104,7 +102,7 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 
 				{optimisticIsTracked && (
 					<div className="mt-3">
-						<div className="flex items-center justify-between">
+						<div className={FLEX_BETWEEN}>
 							<span className="text-sm font-medium text-[var(--text-color)]">
 								Ranking: {optimisticRanking}/100
 							</span>
@@ -188,7 +186,6 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	);
 };
 
-// Update the filters to include tracked filter and ranking filter
 interface FiltersState {
 	search: string;
 	workModel: string;
@@ -197,7 +194,6 @@ interface FiltersState {
 	ranking: number;
 }
 
-// Update CompanyFilters to include tracked only filter and ranking sort
 const CompanyFilters = ({
 	onSearchChange,
 	onWorkModelChange,
@@ -212,7 +208,7 @@ const CompanyFilters = ({
 	currentFilters: FiltersState;
 }) => {
 	return (
-		<div className="border rounded-2xl p-6 mb-8 bg-[var(--card-bg)] border-[var(--card-border)]">
+		<div className={`${CARD_CONTAINER} mb-8`}>
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
 				<div>
 					<label
@@ -343,7 +339,6 @@ const CompanyFilters = ({
 	);
 };
 
-// Update the main component
 export default function CompaniesPage() {
 	const {
 		companies: allCompanies,
@@ -362,11 +357,10 @@ export default function CompaniesPage() {
 		search: '',
 		workModel: 'all',
 		sort: 'name-asc',
-		showTrackedOnly: true, // Default to showing tracked companies only
+		showTrackedOnly: true,
 		ranking: 0,
 	});
 
-	// Effect to ensure tracked companies are shown by default if there are any
 	useEffect(() => {
 		if (!isLoading && trackedCompanies && trackedCompanies.length > 0) {
 			setFilters(prev => ({...prev, showTrackedOnly: true}));
@@ -375,18 +369,15 @@ export default function CompaniesPage() {
 			trackedCompanies &&
 			trackedCompanies.length === 0
 		) {
-			// If there are no tracked companies, show all companies
 			setFilters(prev => ({...prev, showTrackedOnly: false}));
 		}
 	}, [isLoading, trackedCompanies]);
 
-	// Helper function to get company ranking
 	const getCompanyRanking = (companyId: string): number => {
 		const tracked = trackedCompanies.find(t => t.companyID === companyId);
 		return tracked?.ranking ?? 0;
 	};
 
-	// Update filtering logic to include showTrackedOnly filter
 	const filteredCompanies = (allCompanies ?? ([] as ICompany[]))
 		.filter(company => {
 			const searchMatch = company.company
@@ -421,34 +412,29 @@ export default function CompaniesPage() {
 			}
 		});
 
-	// Add useEffect to check if there are tracked companies and adjust filter accordingly
 	useEffect(() => {
-		// If there are no tracked companies, show all companies instead
 		if (trackedCompanies && trackedCompanies.length === 0) {
 			setFilters(prev => ({...prev, showTrackedOnly: false}));
 		}
 	}, [trackedCompanies]);
 
-	// Update CompanyFilters props to remove ranking-related props
 	return (
-		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
-			<div className="background-glows fixed inset-0 z-0"></div>
+		<div className={PAGE_BACKGROUND_CONTAINER}>
+			<div className={PAGE_BACKGROUND_GLOW}></div>
 			<Navbar onDemoClick={() => {}} />
-			<main className="relative z-10 px-4 pb-24 pt-32">
+			<main className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}>
 				<div className="max-w-7xl mx-auto">
 					<div className="flex flex-wrap justify-between items-center mb-8">
 						<div>
-							<h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-color)]">
-								Track Companies
-							</h1>
-							<p className="text-[var(--text-muted)]">
+							<h1 className={HEADING_LG}>Track Companies</h1>
+							<p className={TEXT_SECONDARY}>
 								Select the companies you want Scoutly to monitor for new job
 								openings.
 							</p>
 						</div>
 						<button
 							onClick={() => setIsAddCompanyModalOpen(true)}
-							className="mt-4 md:mt-0 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+							className={`${BUTTON_PRIMARY} mt-4 md:mt-0`}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -456,6 +442,7 @@ export default function CompaniesPage() {
 								height="16"
 								fill="currentColor"
 								viewBox="0 0 16 16"
+								className="mr-2"
 							>
 								<path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 1 1 0-2h6V1a1 1 0 0 1 1-1z" />
 							</svg>
@@ -476,7 +463,7 @@ export default function CompaniesPage() {
 					/>
 
 					{isLoading && (
-						<div className="text-center py-10 text-[var(--text-muted)]">
+						<div className={`text-center py-10 ${TEXT_SECONDARY}`}>
 							Loading companies...
 						</div>
 					)}
@@ -487,7 +474,7 @@ export default function CompaniesPage() {
 						</div>
 					)}
 					{!isLoading && !isError && filteredCompanies.length === 0 && (
-						<div className="text-center py-10 text-[var(--text-muted)]">
+						<div className={`text-center py-10 ${TEXT_SECONDARY}`}>
 							No companies match your current filters.
 						</div>
 					)}
@@ -504,21 +491,17 @@ export default function CompaniesPage() {
 				</div>
 			</main>
 
-			{/* Add Company Modal */}
 			<AddCompanyModal
 				isOpen={isAddCompanyModalOpen}
 				onClose={() => setIsAddCompanyModalOpen(false)}
 				onAddCompany={async (companyData, track, ranking) => {
 					try {
-						// Create the company first
 						const result = await createCompany(companyData);
 
-						// If tracking is requested, track the company with the specified ranking
 						if (track && result.company) {
 							await trackCompany(result.company.companyID, ranking);
 						}
 
-						// Close the modal after successful creation
 						setIsAddCompanyModalOpen(false);
 					} catch (error) {
 						console.error('Failed to create company:', error);

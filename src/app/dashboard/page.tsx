@@ -8,63 +8,25 @@ import ApplicationPipeline from '@/components/ApplicationPipeline';
 import StartScoutButton from '@/components/StartScoutButton';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
 import config from '@/config/appConfig';
-
-// --- STYLING & ICONS ---
-const cardClasses =
-	'bg-slate-800/50 border border-slate-700 rounded-2xl p-4 shadow-lg';
-const buttonClasses =
-	'px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const primaryButtonClasses = `${buttonClasses} bg-purple-600 text-white hover:bg-purple-700 shadow-md`;
-
-// Default data for search functionality
-const DEFAULT_CANDIDATE_DATA = {
-	cvUrl:
-		'https://drive.google.com/file/d/1-0NUsEx0HmnTmcpMOjGSKdOJJ1Vd_uWL/view?usp=drive_link',
-	candidateInfo: {
-		logistics: {
-			currentResidence: {
-				city: 'Utrecht',
-				country: 'Netherlands',
-				countryCode: 'NL',
-				timezone: 'Europe/Amsterdam',
-			},
-			willingToRelocate: true,
-			workAuthorization: [
-				{
-					region: 'European Union',
-					regionCode: 'EU',
-					status: 'Citizen',
-				},
-			],
-		},
-		languages: [
-			{language: 'Spanish', level: 'C2'},
-			{language: 'English', level: 'C1'},
-			{language: 'Dutch', level: 'B1'},
-		],
-		preferences: {
-			careerGoals: [
-				'Work with a modern tech stack like Next.js and Tailwind CSS',
-				'Transition into a Senior Engineer role',
-				'Contribute to a high-impact, user-facing product',
-			],
-			jobTypes: ['Full-time', 'Part-time'],
-			workEnvironments: ['Remote', 'Hybrid'],
-			companySizes: ['Start-ups', 'Mid-size (51-1000)', 'Large (1001+)'],
-			exclusions: {
-				industries: ['Gambling', 'Defense Contracting'],
-				technologies: ['PHP', 'WordPress', 'jQuery'],
-				roleTypes: [
-					'100% on-call support',
-					'Roles with heavy project management duties',
-				],
-			},
-		},
-	},
-};
+import {
+	PAGE_BACKGROUND_CONTAINER,
+	PAGE_BACKGROUND_GLOW,
+	PAGE_CONTENT_CONTAINER,
+	CARD_CONTAINER,
+	BUTTON_PRIMARY,
+	HEADING_LG,
+	TEXT_SECONDARY,
+	FLEX_BETWEEN,
+	BUTTON_SECONDARY,
+	TEXT_ACCENT,
+	STAT_CARD_CONTAINER,
+	STAT_CARD_NUMBER_PURPLE,
+	STAT_CARD_NUMBER_GREEN,
+	STAT_CARD_NUMBER_YELLOW,
+	STAT_CARD_NUMBER_BLUE,
+} from '@/constants/styles';
 
 export default function DashboardPage() {
-	// Mock authenticated user
 	const authInfo = {
 		gmail: 'judithv.sanchezc@gmail.com',
 	};
@@ -130,7 +92,6 @@ export default function DashboardPage() {
 		}
 	};
 
-	// Function to fetch saved jobs
 	const fetchSavedJobs = async () => {
 		try {
 			setIsLoadingJobs(true);
@@ -163,35 +124,28 @@ export default function DashboardPage() {
 		}
 	};
 
-	// Handler for when search completes
 	const handleSearchComplete = (success: boolean, totalJobs: number) => {
 		setSearchComplete({success, totalJobs});
 		if (success && totalJobs > 0) {
-			// Refresh the jobs list to show new jobs
 			fetchSavedJobs();
 		}
 	};
 
-	// Initial fetch of saved jobs
 	useEffect(() => {
 		fetchSavedJobs();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [authInfo.gmail]);
 
 	return (
-		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
-			<div className="background-glows fixed inset-0 z-0"></div>
-			<main className="relative z-10 max-w-7xl mx-auto pt-32 pb-24 px-4">
-				{/* Header */}
+		<div className={PAGE_BACKGROUND_CONTAINER}>
+			<div className={PAGE_BACKGROUND_GLOW}></div>
+			<main className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}>
 				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-[var(--text-color)] mb-2">
-						Dashboard
-					</h1>
-					<p className="text-[var(--text-muted)]">
+					<h1 className={HEADING_LG}>Dashboard</h1>
+					<p className={TEXT_SECONDARY}>
 						Manage your job search and track your applications
 					</p>
 
-					{/* Search completion notification */}
 					{searchComplete && (
 						<div
 							className={`mt-4 p-4 rounded-lg border flex justify-between items-center ${
@@ -232,9 +186,8 @@ export default function DashboardPage() {
 					)}
 				</div>
 
-				{/* Auth Info Section */}
-				<div className="mb-8 p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)]">
-					<div className="flex justify-between items-center">
+				<div className={`${CARD_CONTAINER} mb-8`}>
+					<div className={FLEX_BETWEEN}>
 						<div>
 							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
@@ -244,22 +197,20 @@ export default function DashboardPage() {
 							</p>
 						</div>
 						<div className="flex gap-3">
-							<a
-								href="/profile"
-								className="px-4 py-2 text-sm font-medium bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
-							>
+							<a href="/profile" className={BUTTON_SECONDARY}>
 								Edit Profile
 							</a>
 							<StartScoutButton
 								onScoutStart={async selectedCompanyIds => {
-									// Clear any previous search results notification
 									setSearchComplete(null);
+									const userResponse = await fetch('/api/user/profile');
+									const userData = await userResponse.json();
 
 									const requestBody = {
 										credentials: authInfo,
 										companyIds: selectedCompanyIds,
-										cvUrl: DEFAULT_CANDIDATE_DATA.cvUrl,
-										candidateInfo: DEFAULT_CANDIDATE_DATA.candidateInfo,
+										cvUrl: userData.cvUrl,
+										candidateInfo: userData.candidateProfile,
 									};
 									setSearchRequestBody(requestBody);
 									setSearchModalOpen(true);
@@ -270,7 +221,6 @@ export default function DashboardPage() {
 					</div>
 				</div>
 
-				{/* Search Modal */}
 				<SearchModal
 					isOpen={isSearchModalOpen}
 					onClose={() => setSearchModalOpen(false)}
@@ -278,11 +228,9 @@ export default function DashboardPage() {
 					onSearchComplete={handleSearchComplete}
 				/>
 
-				{/* Main Content - Two Column Layout */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					{/* Left Column - Companies */}
 					<div className="space-y-6">
-						<div className={cardClasses}>
+						<div className={CARD_CONTAINER}>
 							<h3 className="text-lg font-bold text-white mb-4">
 								Target Companies
 							</h3>
@@ -292,67 +240,64 @@ export default function DashboardPage() {
 							/>
 						</div>
 
-						{/* Quick Stats Card */}
-						<div className={cardClasses}>
+						<div className={CARD_CONTAINER}>
 							<h3 className="text-lg font-bold text-white mb-4">Quick Stats</h3>
 							<div className="grid grid-cols-2 gap-4">
-								<div className="text-center p-3 bg-slate-900/50 rounded-lg">
-									<div className="text-2xl font-bold text-purple-400">
+								<div className={STAT_CARD_CONTAINER}>
+									<div className={STAT_CARD_NUMBER_PURPLE}>
 										{savedJobs.length}
 									</div>
-									<div className="text-sm text-slate-400">Total Saved</div>
+									<div className={TEXT_SECONDARY}>Total Saved</div>
 								</div>
-								<div className="text-center p-3 bg-slate-900/50 rounded-lg">
-									<div className="text-2xl font-bold text-green-400">
+								<div className={STAT_CARD_CONTAINER}>
+									<div className={STAT_CARD_NUMBER_GREEN}>
 										{
 											savedJobs.filter(
 												job => job.status === ApplicationStatus.APPLIED,
 											).length
 										}
 									</div>
-									<div className="text-sm text-slate-400">Applied</div>
+									<div className={TEXT_SECONDARY}>Applied</div>
 								</div>
-								<div className="text-center p-3 bg-slate-900/50 rounded-lg">
-									<div className="text-2xl font-bold text-yellow-400">
+								<div className={STAT_CARD_CONTAINER}>
+									<div className={STAT_CARD_NUMBER_YELLOW}>
 										{
 											savedJobs.filter(
 												job => job.status === ApplicationStatus.WANT_TO_APPLY,
 											).length
 										}
 									</div>
-									<div className="text-sm text-slate-400">Want to Apply</div>
+									<div className={TEXT_SECONDARY}>Want to Apply</div>
 								</div>
-								<div className="text-center p-3 bg-slate-900/50 rounded-lg">
-									<div className="text-2xl font-bold text-blue-400">
+								<div className={STAT_CARD_CONTAINER}>
+									<div className={STAT_CARD_NUMBER_BLUE}>
 										{selectedCompanies.length}
 									</div>
-									<div className="text-sm text-slate-400">Target Companies</div>
+									<div className={TEXT_SECONDARY}>Target Companies</div>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					{/* Right Column - Saved Jobs */}
 					<div className="space-y-6">
-						<div className={cardClasses}>
-							<div className="flex justify-between items-center mb-4">
+						<div className={CARD_CONTAINER}>
+							<div className={`${FLEX_BETWEEN} mb-4`}>
 								<h3 className="text-lg font-bold text-white">
 									Recent Saved Jobs
 								</h3>
-								<a
-									href="/saved-jobs"
-									className="text-purple-400 hover:text-purple-300 text-sm"
-								>
+								<a href="/saved-jobs" className={`${TEXT_ACCENT} text-sm`}>
 									View All
 								</a>
 							</div>
 							<div className="min-h-[400px] max-h-[calc(100vh-20rem)] overflow-y-auto pr-2">
 								{isLoadingJobs ? (
-									<div className="flex items-center justify-center text-slate-400 h-32">
+									<div className={`flex items-center justify-center h-32 ${TEXT_SECONDARY}`}>
 										<p>Loading saved jobs...</p>
 									</div>
 								) : savedJobs.length === 0 ? (
-									<div className="flex flex-col items-center justify-center text-slate-400 h-32">
+									<div
+										className={`flex flex-col items-center justify-center h-32 ${TEXT_SECONDARY}`}
+									>
 										<p>No saved jobs yet</p>
 									</div>
 								) : (
@@ -372,9 +317,8 @@ export default function DashboardPage() {
 					</div>
 				</div>
 
-				{/* Application Pipeline (Kanban View) */}
 				{config.features.enableKanbanView && savedJobs.length > 0 && (
-					<div className={`mt-8 ${cardClasses} p-6`}>
+					<div className={`mt-8 ${CARD_CONTAINER} p-6`}>
 						<ApplicationPipeline
 							jobs={savedJobs}
 							onStatusChange={handleStatusChange}
