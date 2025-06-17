@@ -10,23 +10,31 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 		trackedCompanies,
 		trackCompany,
 		untrackCompany,
+		updateRanking,
 		isLoading: isTrackingHookLoading,
 	} = useCompanies();
 
 	// Update to work with new structure: array of {companyID, ranking}
-	const isActuallyTracked =
-		Array.isArray(trackedCompanies) &&
-		trackedCompanies.some(tracked => tracked.companyID === company.companyID);
+	const trackedCompany = Array.isArray(trackedCompanies)
+		? trackedCompanies.find(tracked => tracked.companyID === company.companyID)
+		: undefined;
+
+	const isActuallyTracked = !!trackedCompany;
+	const companyRanking = trackedCompany?.ranking ?? 75;
 
 	// Local state for optimistic UI and loading state for the toggle itself
 	const [optimisticIsTracked, setOptimisticIsTracked] =
 		useState(isActuallyTracked);
+	const [optimisticRanking, setOptimisticRanking] = useState(companyRanking);
 	const [isToggleLoading, setIsToggleLoading] = useState(false);
+	const [isEditingRanking, setIsEditingRanking] = useState(false);
+	const [isRankingLoading, setIsRankingLoading] = useState(false);
 
-	// Effect to sync optimisticIsTracked when isActuallyTracked changes
+	// Effect to sync optimistic states when data changes
 	useEffect(() => {
 		setOptimisticIsTracked(isActuallyTracked);
-	}, [isActuallyTracked]);
+		setOptimisticRanking(companyRanking);
+	}, [isActuallyTracked, companyRanking]);
 
 	const handleTrackingToggle = async () => {
 		setIsToggleLoading(true);
@@ -37,7 +45,7 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 				await untrackCompany(company.companyID);
 			} else {
 				// Pass default ranking of 75 when tracking
-				await trackCompany(company.companyID, 75);
+				await trackCompany(company.companyID, optimisticRanking);
 			}
 		} catch (error) {
 			console.error('Failed to update tracking status', error);
@@ -47,14 +55,40 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 		}
 	};
 
+	const handleRankingChange = (newRanking: number) => {
+		setOptimisticRanking(newRanking);
+	};
+
+	const handleRankingSave = async () => {
+		setIsRankingLoading(true);
+		try {
+			console.log(
+				`Updating ranking for company ${company.companyID} to ${optimisticRanking}`,
+			);
+			await updateRanking(company.companyID, optimisticRanking);
+			console.log(
+				`Successfully updated ranking for company ${company.companyID}`,
+			);
+		} catch (error) {
+			console.error(
+				`Failed to update ranking for company ${company.companyID}:`,
+				error,
+			);
+			setOptimisticRanking(companyRanking); // Revert on error
+		} finally {
+			setIsRankingLoading(false);
+			setIsEditingRanking(false);
+		}
+	};
+
 	// Rest of component unchanged...
 	return (
 		<div
 			className="company-card border rounded-2xl p-5 flex flex-col justify-between bg-[var(--card-bg)] border-[var(--card-border)]"
 			data-name={company.company.toLowerCase()}
 			data-work-model={company.work_model}
+			data-ranking={optimisticRanking}
 		>
-			{/* Remove data-ranking since companies don't have rankings anymore */}
 			<div>
 				<h3 className="font-bold text-lg text-[var(--text-color)]">
 					{company.company}
@@ -66,7 +100,60 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 						? company.fields
 						: 'N/A'}
 				</p>
+
+				{optimisticIsTracked && (
+					<div className="mt-3">
+						<div className="flex items-center justify-between">
+							<span className="text-sm font-medium text-[var(--text-color)]">
+								Ranking: {optimisticRanking}/100
+							</span>
+							{!isEditingRanking ? (
+								<button
+									onClick={() => setIsEditingRanking(true)}
+									className="text-purple-500 hover:text-purple-600 focus:outline-none"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="16"
+										height="16"
+										fill="currentColor"
+										viewBox="0 0 16 16"
+									>
+										<path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+									</svg>
+								</button>
+							) : (
+								<button
+									onClick={handleRankingSave}
+									disabled={isRankingLoading}
+									className="text-green-500 hover:text-green-600 focus:outline-none"
+								>
+									{isRankingLoading ? 'Saving...' : 'Save'}
+								</button>
+							)}
+						</div>
+
+						{isEditingRanking && (
+							<div className="mt-2">
+								<input
+									type="range"
+									min="0"
+									max="100"
+									value={optimisticRanking}
+									onChange={e => handleRankingChange(parseInt(e.target.value))}
+									className="w-full"
+								/>
+								<div className="flex justify-between mt-1 text-xs text-[var(--text-muted)]">
+									<span>0</span>
+									<span>50</span>
+									<span>100</span>
+								</div>
+							</div>
+						)}
+					</div>
+				)}
 			</div>
+
 			<div className="mt-4 flex items-center justify-between">
 				<span
 					className={`text-sm font-medium ${
@@ -100,29 +187,32 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	);
 };
 
-// Update the filters to remove ranking filter since companies don't have rankings
+// Update the filters to include tracked filter and ranking filter
 interface FiltersState {
 	search: string;
 	workModel: string;
 	sort: string;
-	// Remove: ranking: number;
+	showTrackedOnly: boolean;
+	ranking: number;
 }
 
-// Update CompanyFilters to remove ranking filter
+// Update CompanyFilters to include tracked only filter and ranking sort
 const CompanyFilters = ({
 	onSearchChange,
 	onWorkModelChange,
 	onSortChange,
+	onShowTrackedOnlyChange,
 	currentFilters,
 }: {
 	onSearchChange: (value: string) => void;
 	onWorkModelChange: (value: string) => void;
 	onSortChange: (value: string) => void;
+	onShowTrackedOnlyChange: (value: boolean) => void;
 	currentFilters: FiltersState;
 }) => {
 	return (
 		<div className="border rounded-2xl p-6 mb-8 bg-[var(--card-bg)] border-[var(--card-border)]">
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
 				<div>
 					<label
 						htmlFor="search-input"
@@ -138,6 +228,34 @@ const CompanyFilters = ({
 						value={currentFilters.search}
 						onChange={e => onSearchChange(e.target.value)}
 					/>
+				</div>
+
+				<div>
+					<label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+						Show Tracked Only
+					</label>
+					<label className="inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							className="sr-only peer"
+							checked={currentFilters.showTrackedOnly}
+							onChange={e => onShowTrackedOnlyChange(e.target.checked)}
+						/>
+						<div className="relative w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 peer transition-colors duration-200 ease-in-out peer-checked:bg-purple-600">
+							<div
+								className={`absolute top-0.5 left-[2px] bg-white h-5 w-5 rounded-full transition-transform duration-200 ease-in-out ${
+									currentFilters.showTrackedOnly
+										? 'translate-x-5'
+										: 'translate-x-0'
+								}`}
+							></div>
+						</div>
+						<span className="ml-2 text-[var(--text-color)]">
+							{currentFilters.showTrackedOnly
+								? 'Tracking Only'
+								: 'All Companies'}
+						</span>
+					</label>
 				</div>
 
 				<div>
@@ -193,7 +311,8 @@ const CompanyFilters = ({
 					>
 						<option value="name-asc">Name (A-Z)</option>
 						<option value="name-desc">Name (Z-A)</option>
-						{/* Ranking sort options removed as per previous logic */}
+						<option value="ranking-desc">Ranking (High to Low)</option>
+						<option value="ranking-asc">Ranking (Low to High)</option>
 					</select>
 				</div>
 			</div>
@@ -203,15 +322,29 @@ const CompanyFilters = ({
 
 // Update the main component
 export default function CompaniesPage() {
-	const {companies: allCompanies, isLoading, isError, error} = useCompanies();
+	const {
+		companies: allCompanies,
+		trackedCompanies,
+		isLoading,
+		isError,
+		error,
+	} = useCompanies();
+
 	const [filters, setFilters] = useState<FiltersState>({
 		search: '',
 		workModel: 'all',
 		sort: 'name-asc',
-		// Remove: ranking: 0,
+		showTrackedOnly: false,
+		ranking: 0,
 	});
 
-	// Update filtering logic to remove ranking filter
+	// Helper function to get company ranking
+	const getCompanyRanking = (companyId: string): number => {
+		const tracked = trackedCompanies.find(t => t.companyID === companyId);
+		return tracked?.ranking ?? 0;
+	};
+
+	// Update filtering logic to include showTrackedOnly filter
 	const filteredCompanies = (allCompanies ?? ([] as ICompany[]))
 		.filter((company: ICompany) => {
 			const searchMatch = company.company
@@ -219,8 +352,13 @@ export default function CompaniesPage() {
 				.includes(filters.search.toLowerCase());
 			const workModelMatch =
 				filters.workModel === 'all' || company.work_model === filters.workModel;
-			// Remove: const rankingMatch = company.ranking >= filters.ranking;
-			return searchMatch && workModelMatch; // Remove && rankingMatch
+			const trackedMatch =
+				!filters.showTrackedOnly ||
+				trackedCompanies.some(
+					tracked => tracked.companyID === company.companyID,
+				);
+
+			return searchMatch && workModelMatch && trackedMatch;
 		})
 		.sort((a: ICompany, b: ICompany) => {
 			switch (filters.sort) {
@@ -228,7 +366,14 @@ export default function CompaniesPage() {
 					return a.company.localeCompare(b.company);
 				case 'name-desc':
 					return b.company.localeCompare(a.company);
-				// Remove ranking-based sorting
+				case 'ranking-desc':
+					return (
+						getCompanyRanking(b.companyID) - getCompanyRanking(a.companyID)
+					);
+				case 'ranking-asc':
+					return (
+						getCompanyRanking(a.companyID) - getCompanyRanking(b.companyID)
+					);
 				default:
 					return 0;
 			}
@@ -254,6 +399,9 @@ export default function CompaniesPage() {
 							setFilters(f => ({...f, workModel}))
 						}
 						onSortChange={sort => setFilters(f => ({...f, sort}))}
+						onShowTrackedOnlyChange={showTrackedOnly =>
+							setFilters(f => ({...f, showTrackedOnly}))
+						}
 						currentFilters={filters}
 					/>
 

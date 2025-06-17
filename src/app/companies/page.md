@@ -8,18 +8,18 @@ This page displays a list of companies that users can track. Users can search, f
 
 - **Client Component**: This page is a Client Component (`'use client';`) as it uses React hooks like `useState` and `useEffect` for managing filters, optimistic UI updates, and component state.
 - **Data Fetching**: Company data and tracked company statuses are fetched using the `useCompanies` custom hook. This hook utilizes `@tanstack/react-query` for data fetching, caching, and synchronization.
-- **Company Card**: The `CompanyCard` component displays individual company information and a toggle switch to track/untrack the company. It implements optimistic updates for the tracking status.
+- **Company Card**: The `CompanyCard` component displays individual company information, a toggle switch to track/untrack the company, and a ranking display with editing capability for tracked companies. It implements optimistic updates for both tracking status and ranking changes.
 - **Filtering and Sorting**:
-  - Users can filter companies by name (search input) and work model.
-  - Users can sort companies by name (ascending/descending).
-  - The ranking filter and sorting by ranking have been removed as per recent updates where companies no longer have a direct ranking property in the primary company data. Tracked companies have a user-specific ranking.
+  - Users can filter companies by name (search input), work model, and tracking status.
+  - Users can sort companies by name (ascending/descending) and by user-specific ranking (high-to-low/low-to-high).
+  - Each company has a user-specific ranking that can be edited via a slider interface.
 - **Error Handling**: The `useCompanies` hook includes basic retry logic for fetching data. The `CompanyCard` component reverts optimistic updates if an API call to track/untrack fails.
 
 ## Key Components
 
-- **`CompaniesPage` (Default Export)**: The main component that orchestrates the page. It fetches data using `useCompanies`, manages filter state, and renders the layout, `CompanyFilters`, and a list of `CompanyCard` components. It also handles displaying loading and error states for the company list.
-- **`CompanyCard`**: A component responsible for rendering a single company's details and a toggle to track/untrack it. It handles optimistic UI updates for the tracking status.
-- **`CompanyFilters`**: A component that provides UI elements (search input, work model buttons, sort dropdown) for searching, filtering by work model, and sorting the list of companies.
+- **`CompaniesPage` (Default Export)**: The main component that orchestrates the page. It fetches data using `useCompanies`, manages filter state, and renders the layout, `CompanyFilters`, and a list of `CompanyCard` components. It also handles displaying loading and error states for the company list. The page now supports filtering by tracked status and sorting by user-specific ranking.
+- **`CompanyCard`**: A component responsible for rendering a single company's details, a toggle to track/untrack it, and a user-specific ranking display with edit capabilities via a slider. It handles optimistic UI updates for both tracking status and ranking changes.
+- **`CompanyFilters`**: A component that provides UI elements (search input, work model buttons, tracked only toggle, sort dropdown) for searching, filtering by work model, filtering by tracked status, and sorting the list of companies.
 
 ## Recent Changes
 
@@ -27,7 +27,10 @@ This page displays a list of companies that users can track. Users can search, f
 - Correctly integrated `allCompanies` data from the `useCompanies` hook, resolving a `Cannot find name 'allCompanies'` TypeScript error.
 - Implemented rendering of the `filteredCompanies` list, including loading, error, and empty states.
 - Added UI elements for search, work model filtering, and sorting within the `CompanyFilters` component.
-- Removed ranking-based filtering and sorting from the UI and logic, as company rankings are now user-specific and managed differently.
+- Added user-specific company ranking display and edit functionality using a slider interface.
+- Added "Show Tracked Only" filter to allow users to view only their tracked companies.
+- Added sorting options by company ranking (high-to-low and low-to-high).
+- Updated the `useCompanies` hook to include a `updateRanking` mutation for modifying company rankings.
 
 ## Status
 
@@ -39,4 +42,6 @@ This page displays a list of companies that users can track. Users can search, f
 
 - More robust error display to the user.
 - Pagination or infinite scrolling for large lists of companies.
-- Potentially re-introducing a user-specific ranking display or filter if required by product features.
+- Visual indicators (like color coding) for ranking values to help users quickly identify high vs low ranked companies.
+- Batch ranking updates for multiple companies simultaneously.
+- Drag-and-drop interface to reorder tracked companies by ranking.
