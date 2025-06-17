@@ -8,6 +8,38 @@ The JobMatchingOrchestrator is a sophisticated service that automates the job ma
 
 See [jobMatchingOrchestrator.mmd](./jobMatchingOrchestrator.mmd) for the complete flow diagram.
 
+## Recent Improvements
+
+### Code Refactoring (June 2025)
+
+#### Phase 1: Constants and Validation (Initial Refactor)
+
+- **Constants Centralization**: Moved `MAX_PARALLEL_COMPANIES` and error/log messages to `/src/constants/common.ts` for better maintainability
+- **Enhanced Validation**: Created dedicated `validateBatchJobMatchingInput()` method with comprehensive input validation
+- **Improved Debugging**: Added structured logging with detailed debug information for easier troubleshooting
+- **Better Error Handling**: Centralized error messages with consistent formatting and detailed context
+
+#### Phase 2: Utility Extraction (Major Refactor)
+
+- **Modular Architecture**: Extracted major functionality into specialized utility modules:
+  - `dataTransform.ts`: Object-to-XML conversion, URL set creation, link filtering
+  - `rateLimiting.ts`: Rate limit logic, usage stats management
+  - `batchProcessing.ts`: Batch creation, sequential/parallel processing, delays
+  - `templateLoader.ts`: Prompt template loading and validation
+  - `cvProcessor.ts`: CV download and text extraction
+  - `jobScraper.ts`: Job link filtering, scraping with retry logic
+  - `aiProcessor.ts`: Gemini AI prompt/response handling
+
+#### Phase 3: Final Cleanup (Performance Optimization)
+
+- **Code Reduction**: Reduced file size from 802 to 583 lines (27% reduction)
+- **Removed Duplicated Logic**: Eliminated redundant CV processing method
+- **Simplified Methods**: Inlined wrapper methods and removed unused state variables
+- **Optimized Imports**: Cleaned up unused imports and dependencies
+- **Enhanced Rate Limiting**: Added `updateUsageStats` utility for cleaner token management
+
+**Result**: The orchestrator is now significantly more maintainable, modular, and follows separation of concerns principles while maintaining full functionality.
+
 ## Core Features
 
 1. **Parallel Company Processing**
@@ -42,10 +74,11 @@ See [jobMatchingOrchestrator.mmd](./jobMatchingOrchestrator.mmd) for the complet
 interface JobMatchingConfig {
 	MODEL_NAME: string; // AI model identifier
 	BATCH_SIZE: number; // Number of jobs per batch
-	MAX_PARALLEL_COMPANIES: 10; // Maximum companies to process
 	MAX_BROWSERS: 3; // Maximum concurrent browser instances
 }
 ```
+
+**Note**: The `MAX_PARALLEL_COMPANIES` constant is now centralized in `/src/constants/common.ts` as part of the `JOB_MATCHING` configuration object for better maintainability.
 
 ### Rate Limits
 

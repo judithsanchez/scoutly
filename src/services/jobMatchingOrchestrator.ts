@@ -4,12 +4,7 @@ import {
 	type ScrapeResult,
 } from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
-import {GoogleGenerativeAI, GenerationConfig} from '@google/generative-ai';
-import fs from 'fs/promises';
-import path from 'path';
-import {spawn} from 'child_process';
-import os from 'os';
-import {initialMatchingSchema, deepDiveSchema} from '@/utils/geminiSchemas';
+import {GoogleGenerativeAI} from '@google/generative-ai';
 import {GeminiFreeTierLimits, type IGeminiRateLimit} from '@/config/rateLimits';
 import {ICompany} from '@/models/Company';
 import {ScrapeHistoryService} from './scrapeHistoryService';
@@ -18,46 +13,53 @@ import {UserService} from './userService';
 import {TokenOperation} from '@/models/TokenUsage';
 import {TokenUsageService} from './tokenUsageService';
 import crypto from 'crypto';
+import {JOB_MATCHING} from '@/constants/common';
+import {createUrlSet, filterLinksByUrlSet} from '@/utils/dataTransform';
+import {
+	createUsageStats,
+	checkDailyReset,
+	checkRateLimits,
+	getUsageSummary,
+	updateUsageStats,
+	type UsageStats,
+} from '@/utils/rateLimiting';
+import {createBatches, processSequentialBatches} from '@/utils/batchProcessing';
+import {
+	loadPromptTemplates,
+	validateTemplates,
+	type PromptTemplates,
+} from '@/utils/templateLoader';
+import {getCvContentAsText} from '@/utils/cvProcessor';
+import {scrapeJobsWithFiltering, scrapeJobDetails} from '@/utils/jobScraper';
+import {
+	performInitialMatching,
+	analyzeJobBatch,
+	createAIProcessorConfig,
+	type JobAnalysisResult,
+	type AIProcessorConfig,
+} from '@/utils/aiProcessor';
 
 const logger = new Logger('JobMatchingOrchestrator');
 const MODEL_NAME = 'gemini-2.0-flash-lite'; // Must match modelName in rateLimits.ts
 const BATCH_SIZE = 5;
 
-interface JobAnalysisResult {
-	title: string;
-	url: string;
-	goodFitReasons: string[];
-	considerationPoints: string[];
-	stretchGoals: string[];
-	suitabilityScore: number;
-}
-
 export class JobMatchingOrchestrator {
 	private genAI!: GoogleGenerativeAI;
 	private model!: any;
 	private modelLimits: IGeminiRateLimit;
-	private static readonly MAX_PARALLEL_COMPANIES = 10;
 	private static readonly MAX_BROWSERS = 3;
 	private currentUserEmail: string = '';
 	private currentCompanyId: string = '';
 	private currentCompanyName: string = '';
-	private usageStats = {
-		minuteTokens: 0,
-		dayTokens: 0,
-		totalTokens: 0,
-		calls: 0,
-		lastMinuteCalls: 0,
-		lastDayCalls: 0,
-		lastReset: new Date(),
+	private usageStats: UsageStats = createUsageStats();
+	private templates: PromptTemplates = {
+		systemRole: '',
+		firstSelectionTask: '',
+		jobPostDeepDive: '',
 	};
-	private systemRole = '';
-	private firstSelectionTask = '';
-	private jobPostDeepDive = '';
-	private scrapedJobs: ExtractedLink[] = [];
+	private aiConfig!: AIProcessorConfig;
 	private cvContent: string = '';
 	private candidateInfo: Record<string, any> | null = null;
-	private candidateXML: string = '';
-	private initialMatches: Array<{title: string; url: string}> = [];
 	private detailedJobContents: Map<string, string> = new Map();
 
 	constructor() {
@@ -87,31 +89,20 @@ export class JobMatchingOrchestrator {
 	}
 
 	private async loadPromptTemplates() {
-		this.systemRole = await fs.readFile(
-			path.join(process.cwd(), 'src/config/systemRole.md'),
-			'utf-8',
-		);
-		this.firstSelectionTask = await fs.readFile(
-			path.join(process.cwd(), 'src/config/firstSelectionTask.md'),
-			'utf-8',
-		);
-		this.jobPostDeepDive = await fs.readFile(
-			path.join(process.cwd(), 'src/config/jobPostDeepDive.md'),
-			'utf-8',
-		);
-	}
+		this.templates = await loadPromptTemplates();
+		validateTemplates(this.templates);
 
-	private resetPipelineState(): void {
-		this.scrapedJobs = [];
-		this.cvContent = '';
-		this.candidateInfo = null;
-		this.candidateXML = '';
-		this.initialMatches = [];
-		this.detailedJobContents.clear();
+		// Initialize AI processor config
+		this.aiConfig = createAIProcessorConfig(
+			this.model,
+			this.modelLimits,
+			this.templates,
+			this.usageStats,
+		);
 	}
 
 	private async initializeCV(cvUrl: string): Promise<void> {
-		this.cvContent = await this.getCvContentAsText(cvUrl);
+		this.cvContent = await getCvContentAsText(cvUrl);
 		logger.success(
 			`✓ CV processed. Extracted ${this.cvContent.length} characters.`,
 		);
@@ -119,34 +110,7 @@ export class JobMatchingOrchestrator {
 
 	private initializeCandidateProfile(candidateInfo: Record<string, any>): void {
 		this.candidateInfo = candidateInfo;
-		this.candidateXML = this.objectToXML(candidateInfo);
-		logger.debug('Candidate Profile initialized as XML');
-	}
-
-	// Helper method to convert objects to XML format
-	private objectToXML(obj: any): string {
-		if (obj === null || obj === undefined) return '';
-		if (Array.isArray(obj)) {
-			return obj
-				.map(
-					item =>
-						`<item>${
-							typeof item === 'object' ? this.objectToXML(item) : item
-						}</item>`,
-				)
-				.join('');
-		}
-		if (typeof obj === 'object') {
-			let xml = '';
-			for (const [key, value] of Object.entries(obj)) {
-				const tag = key.replace(/[^a-zA-Z0-9]/g, '');
-				xml += `<${tag}>${
-					typeof value === 'object' ? this.objectToXML(value) : value
-				}</${tag}>`;
-			}
-			return xml;
-		}
-		return String(obj);
+		logger.debug('Candidate Profile initialized');
 	}
 
 	// Helper method to scrape jobs for a single company
@@ -159,7 +123,7 @@ export class JobMatchingOrchestrator {
 		newLinks: ExtractedLink[];
 	}> {
 		logger.info(`📝 Step 1: Scraping ${company.company} job listings...`);
-		const jobsResult = await this.scrapeJobs(company.careers_url);
+		const jobsResult = await scrapeJobsWithFiltering(company.careers_url);
 		if (jobsResult.error) {
 			throw new Error(`Failed to scrape jobs: ${jobsResult.error}`);
 		}
@@ -183,11 +147,9 @@ export class JobMatchingOrchestrator {
 			allScrapedLinks,
 		);
 
-		// Create a Set for O(1) lookups
-		const newUrlsSet = new Set(newLinkUrls.map(url => String(url)));
-		const newLinks = allScrapedLinks.filter(link =>
-			newUrlsSet.has(String(link.url)),
-		);
+		// Create a Set for O(1) lookups and filter new links
+		const newUrlsSet = createUrlSet(newLinkUrls);
+		const newLinks = filterLinksByUrlSet(allScrapedLinks, newUrlsSet);
 
 		logger.info(
 			`Found ${newLinks.length} new links for ${company.company} to analyze.`,
@@ -204,148 +166,13 @@ export class JobMatchingOrchestrator {
 	private async scrapeJobDetailsBatch(
 		urls: string[],
 	): Promise<Map<string, string>> {
-		const contents = new Map<string, string>();
-		const batches: string[][] = [];
-
-		// Split URLs into batches according to MAX_BROWSERS
-		for (
-			let i = 0;
-			i < urls.length;
-			i += JobMatchingOrchestrator.MAX_BROWSERS
-		) {
-			batches.push(urls.slice(i, i + JobMatchingOrchestrator.MAX_BROWSERS));
-		}
-
-		logger.info(
-			`Scraping ${urls.length} jobs in ${batches.length} batches of up to ${JobMatchingOrchestrator.MAX_BROWSERS}...`,
-		);
-
-		// Process each batch
-		for (const [batchIndex, batchUrls] of batches.entries()) {
-			logger.info(
-				`Processing batch ${batchIndex + 1}/${batches.length} (${
-					batchUrls.length
-				} jobs)`,
-			);
-
-			try {
-				// Scrape urls in current batch in parallel
-				const batchResults = await Promise.all(
-					batchUrls.map(async url => {
-						const scrapeStart = Date.now();
-						try {
-							// Add delay between requests in batch
-							await new Promise(resolve =>
-								setTimeout(resolve, 1000 + Math.random() * 1000),
-							);
-
-							let attempts = 0;
-							const maxAttempts = 5;
-							const maxBackoff = 30000;
-							let lastError: any;
-
-							while (attempts < maxAttempts) {
-								try {
-									const result = await scrapeWebsite({
-										url,
-										options: {
-											timeout: 120000,
-											waitUntil: 'networkidle',
-										},
-									});
-									if (result.error) {
-										throw new Error(result.error);
-									}
-									return {url, content: result.content};
-								} catch (error) {
-									lastError = error;
-									attempts++;
-									if (attempts < maxAttempts) {
-										const backoff = Math.min(
-											1000 * Math.pow(2, attempts),
-											maxBackoff,
-										);
-										logger.warn(
-											`Scrape attempt ${attempts} failed, retrying in ${backoff}ms...`,
-											{url, error},
-										);
-										await new Promise(resolve => setTimeout(resolve, backoff));
-									} else {
-										throw lastError;
-									}
-								}
-							}
-							throw new Error('All retry attempts failed');
-						} catch (error) {
-							const scrapeTime = (Date.now() - scrapeStart) / 1000;
-							logger.error('Unexpected error during job detail scrape:', {
-								url,
-								error,
-								timeSpent: `${scrapeTime}s`,
-							});
-							return {url, content: ''};
-						}
-					}),
-				);
-
-				// Add successful results to map
-				batchResults.forEach(({url, content}) => {
-					if (content) {
-						contents.set(url, content);
-					}
-				});
-
-				// Add delay between batches if not the last batch
-				if (batchIndex < batches.length - 1) {
-					await new Promise(resolve =>
-						setTimeout(resolve, 2000 + Math.random() * 2000),
-					);
-				}
-			} catch (error) {
-				logger.error(`Failed to process batch ${batchIndex + 1}:`, error);
-			}
-		}
-
-		return contents;
-	}
-
-	private async performInitialMatching(
-		links: ExtractedLink[],
-		cvContent: string,
-		candidateInfo: Record<string, any>,
-	): Promise<Array<{title: string; url: string}>> {
-		const candidateXML = this.objectToXML(candidateInfo);
-		const prompt = `
-${this.systemRole}
-${this.firstSelectionTask}
-Analyze these job postings based on the candidate's profile and the following CV content.
-<CandidateProfile>${candidateXML}</CandidateProfile>
-<CVContent>${cvContent}</CVContent>
-Links to analyze:
-${links
-	.map(
-		link => `\nTitle: ${link.text}\nURL: ${link.url}\nContext: ${link.context}`,
-	)
-	.join('')}`;
-
-		logger.info('Waiting for AI initial screening with structured output...');
-		const generationConfig: GenerationConfig = {
-			responseMimeType: 'application/json',
-			responseSchema: initialMatchingSchema,
-		};
-		await this.checkRateLimits();
-		const result = await this.model.generateContent({
-			contents: [{role: 'user', parts: [{text: prompt}]}],
-			generationConfig,
+		return await scrapeJobDetails(urls, {
+			timeout: 120000,
+			waitUntil: 'networkidle',
+			maxRetries: 5,
+			baseDelay: 1000,
+			maxBackoff: 30000,
 		});
-		if (result.response.usageMetadata) {
-			this.recordUsage(
-				result.response.usageMetadata,
-				TokenOperation.INITIAL_MATCHING,
-			);
-		}
-		const responseText = result.response.text();
-		return JSON.parse(responseText).recommendedPositions || [];
 	}
 
 	private async performDeepDiveAnalysis(
@@ -370,132 +197,24 @@ ${links
 		}
 
 		const results: JobAnalysisResult[] = [];
-		const batches: Array<typeof validPositions> = [];
+		const batches = createBatches(validPositions, BATCH_SIZE);
 
-		// Split into batches to avoid token limits
-		for (let i = 0; i < validPositions.length; i += BATCH_SIZE) {
-			batches.push(validPositions.slice(i, i + BATCH_SIZE));
-		}
-
-		logger.info(
-			`Processing ${validPositions.length} jobs in ${batches.length} batches...`,
-		);
-
-		for (let i = 0; i < batches.length; i++) {
-			const batch = batches[i];
-			logger.info(
-				`Processing batch ${i + 1}/${batches.length} (${batch.length} jobs)...`,
-			);
-
-			try {
-				const batchResults = await this.analyzeJobBatch(
+		const allResults = await processSequentialBatches(
+			batches,
+			async (batch: typeof validPositions) => {
+				// Update AI config with current usage stats
+				this.aiConfig.usageStats = this.usageStats;
+				return await analyzeJobBatch(
 					batch,
 					cvContent,
 					candidateInfo,
+					this.aiConfig,
 				);
-				results.push(...batchResults);
-			} catch (error: any) {
-				logger.error(`Failed to process batch ${i + 1}:`, {error});
-			}
-		}
+			},
+			'jobs',
+		);
 
-		return results.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
-	}
-
-	private async analyzeJobBatch(
-		batch: Array<{title: string; url: string; content: string}>,
-		cvContent: string,
-		candidateInfo: Record<string, any>,
-	): Promise<JobAnalysisResult[]> {
-		const candidateXML = this.objectToXML(candidateInfo);
-		logger.debug('Analyzing batch:', {
-			batchSize: batch.length,
-			jobs: batch.map(job => job.title),
-		});
-
-		const prompt = `
-${this.systemRole}
-${this.jobPostDeepDive}
-<CandidateProfile>${candidateXML}</CandidateProfile>
-<CVContent>${cvContent}</CVContent>
-<JobsToAnalyze>
-${batch
-	.map(
-		job =>
-			`<Job><Title>${job.title}</Title><URL>${job.url}</URL><Content>${job.content}</Content></Job>`,
-	)
-	.join('\n')}
-</JobsToAnalyze>`;
-
-		logger.info('  ↳ Starting analysis of batch...');
-		const generationConfig: GenerationConfig = {
-			responseMimeType: 'application/json',
-			responseSchema: deepDiveSchema,
-		};
-		await this.checkRateLimits();
-		const result = await this.model.generateContent({
-			contents: [{role: 'user', parts: [{text: prompt}]}],
-			generationConfig,
-		});
-
-		if (result.response.usageMetadata) {
-			this.recordUsage(
-				result.response.usageMetadata,
-				TokenOperation.DEEP_DIVE_ANALYSIS,
-			);
-		}
-
-		logger.info('  ↳ Received Gemini response, processing results...');
-		const analysis = JSON.parse(result.response.text());
-		const validResults = analysis.analysisResults
-			.filter((result: JobAnalysisResult) => result.suitabilityScore > 0)
-			.sort(
-				(a: JobAnalysisResult, b: JobAnalysisResult) =>
-					b.suitabilityScore - a.suitabilityScore,
-			);
-
-		logger.info('📊 Batch Analysis Results:', {
-			batchSize: batch.length,
-			acceptedPositions: validResults.length,
-			rejectedPositions: batch.length - validResults.length,
-		});
-
-		return validResults;
-	}
-
-	private async checkRateLimits(): Promise<void> {
-		const {tpm, rpm, rpd} = this.modelLimits;
-		const now = new Date();
-		if (now.getTime() - this.usageStats.lastReset.getTime() > 86400000) {
-			this.usageStats.dayTokens = 0;
-			this.usageStats.lastDayCalls = 0;
-			this.usageStats.lastReset = now;
-		}
-		if (rpd && this.usageStats.lastDayCalls >= rpd) {
-			const msUntilTomorrow =
-				86400000 - (now.getTime() - this.usageStats.lastReset.getTime());
-			logger.warn(
-				`Daily request limit (${rpd}) reached, waiting ${Math.ceil(
-					msUntilTomorrow / 1000,
-				)}s for reset`,
-			);
-			await new Promise(resolve => setTimeout(resolve, msUntilTomorrow));
-			this.usageStats.lastDayCalls = 0;
-		}
-		if (rpm && this.usageStats.lastMinuteCalls >= rpm) {
-			logger.warn(
-				`Minute request limit (${rpm}) reached, waiting for next minute`,
-			);
-			await new Promise(resolve => setTimeout(resolve, 60000));
-			this.usageStats.lastMinuteCalls = 0;
-		}
-		if (tpm && this.usageStats.minuteTokens >= tpm) {
-			logger.warn(
-				`Minute token limit (${tpm}) reached, waiting for next minute`,
-			);
-			await new Promise(resolve => setTimeout(resolve, 60000));
-			this.usageStats.minuteTokens = 0;
-		}
+		return allResults.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
 	}
 
 	private async recordUsage(
@@ -507,29 +226,22 @@ ${batch
 		operation: TokenOperation = TokenOperation.INITIAL_MATCHING,
 	): Promise<void> {
 		try {
-			const now = new Date();
-			if (now.getTime() - this.usageStats.lastReset.getTime() > 86400000) {
-				this.usageStats.dayTokens = 0;
-				this.usageStats.lastDayCalls = 0;
-				this.usageStats.lastReset = now;
-			}
-			this.usageStats.minuteTokens += usage.totalTokenCount;
-			this.usageStats.dayTokens += usage.totalTokenCount;
-			this.usageStats.totalTokens += usage.totalTokenCount;
-			this.usageStats.calls++;
-			this.usageStats.lastMinuteCalls++;
-			this.usageStats.lastDayCalls++;
+			// Use utility to check and apply daily reset and update stats
+			this.usageStats = checkDailyReset(this.usageStats);
+			this.usageStats = updateUsageStats(
+				this.usageStats,
+				usage.totalTokenCount,
+			);
 
+			// Record usage in database if we have company context
 			if (this.currentUserEmail && this.currentCompanyId) {
 				const modelConfig = this.modelLimits;
 				const pricePerInputToken =
 					(modelConfig.pricing?.input || 0) / 1_000_000;
 				const pricePerOutputToken =
 					(modelConfig.pricing?.output || 0) / 1_000_000;
-
 				const inputCost = usage.promptTokenCount * pricePerInputToken;
 				const outputCost = usage.candidatesTokenCount * pricePerOutputToken;
-				const totalCost = inputCost + outputCost;
 
 				await TokenUsageService.recordUsage({
 					processId: crypto.randomUUID(),
@@ -541,7 +253,7 @@ ${batch
 					costEstimate: {
 						input: inputCost,
 						output: outputCost,
-						total: totalCost,
+						total: inputCost + outputCost,
 						currency: 'USD',
 						isFreeUsage: true,
 					},
@@ -557,12 +269,10 @@ ${batch
 					day: this.usageStats.dayTokens,
 					total: this.usageStats.totalTokens,
 				},
-				limits: {
-					tpm: this.modelLimits.tpm,
-					tpd: this.modelLimits.tpd,
-				},
+				limits: {tpm: this.modelLimits.tpm, tpd: this.modelLimits.tpd},
 			});
 
+			// Reset minute counters after 60 seconds
 			setTimeout(() => {
 				this.usageStats.minuteTokens = 0;
 				this.usageStats.lastMinuteCalls = 0;
@@ -572,33 +282,14 @@ ${batch
 		}
 	}
 
-	private getUsageSummary(): string {
-		return [
-			`Model: ${this.modelLimits.modelName}`,
-			`Last minute: ${this.usageStats.minuteTokens} tokens${
-				this.modelLimits.tpm ? ` (limit: ${this.modelLimits.tpm})` : ''
-			}`,
-			`Today: ${this.usageStats.dayTokens} tokens${
-				this.modelLimits.tpd ? ` (limit: ${this.modelLimits.tpd})` : ''
-			}`,
-			`All time: ${this.usageStats.totalTokens} tokens across ${this.usageStats.calls} calls`,
-			`Average per call: ${
-				Math.round(this.usageStats.totalTokens / this.usageStats.calls) || 0
-			} tokens`,
-		].join('\n');
-	}
-
 	private async cleanup() {
 		logger.debug('Starting cleanup...');
-		const usageSummary = this.getUsageSummary();
+		const usageSummary = getUsageSummary(this.modelLimits, this.usageStats);
 		logger.info('🔢 Final AI usage statistics:', {
 			usage: usageSummary.split('\n'),
 		});
 		this.detailedJobContents.clear();
-		this.initialMatches = [];
-		this.scrapedJobs = [];
 		this.cvContent = '';
-		this.candidateXML = '';
 		this.candidateInfo = null;
 		this.currentUserEmail = '';
 		this.currentCompanyId = '';
@@ -606,31 +297,6 @@ ${batch
 
 		await logger.saveBufferedLogs();
 		logger.debug('Cleanup completed');
-	}
-
-	private async scrapeJobs(url: string): Promise<ScrapeResult> {
-		const result = await scrapeWebsite({url});
-		if (result.links.length > 0) {
-			const filteredLinks = result.links.filter(link => {
-				const title = link.text.toLowerCase();
-				if (
-					title.length < 5 ||
-					title.includes('login') ||
-					title.includes('sign') ||
-					title.includes('cookie') ||
-					title.includes('privacy')
-				) {
-					logger.debug(`Filtered out non-job link: ${link.text}`);
-					return false;
-				}
-				return true;
-			});
-			logger.info(
-				`Early filtering reduced links from ${result.links.length} to ${filteredLinks.length}`,
-			);
-			result.links = filteredLinks;
-		}
-		return result;
 	}
 
 	// Backward compatible method for single company processing
@@ -649,32 +315,81 @@ ${batch
 		return results.get(company.id) || [];
 	}
 
-	// Method to orchestrate batch job matching
+	/**
+	 * Orchestrates batch job matching across multiple companies
+	 *
+	 * @param companies - Array of companies to process
+	 * @param cvUrl - URL to the candidate's CV
+	 * @param candidateInfo - Candidate information object
+	 * @param userEmail - Email of the user requesting the matching
+	 * @returns Map of company IDs to their job analysis results
+	 *
+	 * @throws {Error} When no companies provided or too many companies
+	 */
 	async orchestrateBatchJobMatching(
 		companies: ICompany[],
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
 		userEmail: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
-		if (!companies.length) {
-			throw new Error('No companies provided for batch processing');
-		}
+		// Validate input parameters
+		this.validateBatchJobMatchingInput(companies);
 
-		if (companies.length > JobMatchingOrchestrator.MAX_PARALLEL_COMPANIES) {
-			throw new Error(
-				`Maximum of ${JobMatchingOrchestrator.MAX_PARALLEL_COMPANIES} companies can be processed in parallel`,
-			);
-		}
+		// Log process initiation
+		logger.info(JOB_MATCHING.LOG_MESSAGES.BATCH_START(companies.length));
+		logger.debug(JOB_MATCHING.LOG_MESSAGES.VALIDATION_SUCCESS, {
+			companiesCount: companies.length,
+			userEmail,
+			cvProvided: !!cvUrl,
+			candidateInfoProvided: !!candidateInfo,
+		});
 
-		logger.info(
-			`🚀 Starting batch job matching for ${companies.length} companies`,
-		);
+		logger.debug(JOB_MATCHING.LOG_MESSAGES.PROCESSING_START);
+
+		// Delegate to batch processing implementation
 		return this.processBatchCompanies(
 			companies,
 			cvUrl,
 			candidateInfo,
 			userEmail,
 		);
+	}
+
+	/**
+	 * Validates the input parameters for batch job matching
+	 *
+	 * @private
+	 * @param companies - Array of companies to validate
+	 * @throws {Error} When validation fails
+	 */
+	private validateBatchJobMatchingInput(companies: ICompany[]): void {
+		// Check if companies array exists and is not empty
+		if (!companies || !Array.isArray(companies)) {
+			throw new Error(JOB_MATCHING.ERROR_MESSAGES.INVALID_COMPANY_DATA);
+		}
+
+		if (companies.length === 0) {
+			throw new Error(JOB_MATCHING.ERROR_MESSAGES.NO_COMPANIES_PROVIDED);
+		}
+
+		// Check against maximum parallel processing limit
+		if (companies.length > JOB_MATCHING.MAX_PARALLEL_COMPANIES) {
+			throw new Error(
+				JOB_MATCHING.ERROR_MESSAGES.TOO_MANY_COMPANIES(
+					JOB_MATCHING.MAX_PARALLEL_COMPANIES,
+				),
+			);
+		}
+
+		// Validate individual company objects
+		companies.forEach((company, index) => {
+			if (!company || !company.id || !company.company) {
+				logger.error(`Invalid company data at index ${index}:`, company);
+				throw new Error(
+					`${JOB_MATCHING.ERROR_MESSAGES.INVALID_COMPANY_DATA} (index: ${index})`,
+				);
+			}
+		});
 	}
 
 	// Process multiple companies in parallel
@@ -726,10 +441,13 @@ ${batch
 		logger.info(
 			`🔍 Step 4: Running initial job matching analysis for ${allNewLinks.length} jobs...`,
 		);
-		const matchedJobs = await this.performInitialMatching(
+		// Update AI config with current usage stats
+		this.aiConfig.usageStats = this.usageStats;
+		const matchedJobs = await performInitialMatching(
 			allNewLinks,
 			this.cvContent,
 			this.candidateInfo!,
+			this.aiConfig,
 		);
 
 		// Step 5: Group matched jobs by company
@@ -851,71 +569,5 @@ ${batch
 			`🏁 Batch processing completed in ${totalTime}s for ${companies.length} companies`,
 		);
 		return results;
-	}
-
-	private async getCvContentAsText(cvUrl: string): Promise<string> {
-		logger.info('Processing CV from URL using Python helper...', {url: cvUrl});
-		const tempFilePath = path.join(os.tmpdir(), `cv-${Date.now()}.pdf`);
-		try {
-			const url = new URL(cvUrl);
-			let fileId: string | null = null;
-			if (url.hostname === 'drive.google.com') {
-				const match = url.pathname.match(/\/d\/([^/]+)/);
-				fileId = match ? match[1] : null;
-			}
-			if (!fileId) {
-				throw new Error('Could not extract file ID from Google Drive URL.');
-			}
-			const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-			const response = await fetch(downloadUrl);
-			if (!response.ok) {
-				throw new Error(`Failed to download file: ${response.statusText}`);
-			}
-			const pdfBuffer = await response.arrayBuffer();
-			await fs.writeFile(tempFilePath, Buffer.from(pdfBuffer));
-			logger.debug(`PDF saved temporarily to: ${tempFilePath}`);
-			return new Promise((resolve, reject) => {
-				const pythonProcess = spawn('python3', [
-					'src/scripts/pdf_extractor.py',
-					tempFilePath,
-				]);
-				let extractedText = '';
-				let errorOutput = '';
-				pythonProcess.stdout.on('data', data => {
-					extractedText += data.toString();
-				});
-				pythonProcess.stderr.on('data', data => {
-					errorOutput += data.toString();
-				});
-				pythonProcess.on('close', code => {
-					fs.unlink(tempFilePath).catch(e =>
-						logger.warn(`Failed to delete temp file: ${tempFilePath}`, e),
-					);
-					if (code !== 0) {
-						logger.error('Python script exited with error code:', {
-							code,
-							errorOutput,
-						});
-						reject(new Error(`Python script failed: ${errorOutput}`));
-					} else {
-						logger.success(
-							'Successfully extracted text from CV via Python script.',
-						);
-						resolve(extractedText);
-					}
-				});
-				pythonProcess.on('error', err => {
-					logger.error('Failed to spawn Python script.', err);
-					fs.unlink(tempFilePath).catch(e =>
-						logger.warn(`Failed to delete temp file: ${tempFilePath}`, e),
-					);
-					reject(err);
-				});
-			});
-		} catch (error) {
-			logger.error('Failed to process CV from Google Drive link.', error);
-			await fs.unlink(tempFilePath).catch(() => {});
-			throw new Error('Could not read CV content from the provided URL.');
-		}
 	}
 }
