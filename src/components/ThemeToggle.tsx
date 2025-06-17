@@ -40,12 +40,14 @@ export function ThemeToggle() {
 				strokeLinejoin="round"
 				className="h-5 w-5 text-slate-600 dark:text-white/80"
 			>
-				{theme === 'dark' ? (
+				{theme === 'light' ? (
 					<>
+						{/* Moon icon for light mode */}
 						<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
 					</>
 				) : (
 					<>
+						{/* Sun icon for dark mode */}
 						<circle cx="12" cy="12" r="4" />
 						<path d="M12 2v2" />
 						<path d="M12 20v2" />

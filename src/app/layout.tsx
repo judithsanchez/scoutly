@@ -19,8 +19,8 @@ export const metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
 	return (
-		<html lang="en" className={`${inter.variable} dark`}>
-			<body className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-white">
+		<html lang="en" className={`${inter.variable}`}>
+			<body>
 				<Providers>
 					{/* Wrap inside the providers to ensure theme context is available */}
 					<RootLayoutContent>{children}</RootLayoutContent>

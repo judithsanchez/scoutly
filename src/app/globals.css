@@ -4,12 +4,12 @@
 
 @layer base {
 	:root {
-		/* Light Theme */
-		--bg-color: #f8fafc;
-		--text-color: #0f172a;
-		--text-muted: #475569;
-		--nav-bg: rgba(255, 255, 255, 0.5);
-		--nav-border: #e2e8f0;
+		/* Light Theme - matching reference design */
+		--bg-color: #f8fafc; /* slate-50 */
+		--text-color: #0f172a; /* slate-900 */
+		--text-muted: #475569; /* slate-600 */
+		--nav-bg: rgba(255, 255, 255, 0.7); /* white/70 */
+		--nav-border: #e2e8f0; /* slate-200 */
 		--card-bg: white;
 		--card-border: #e2e8f0;
 		--tech-card-bg: #f1f5f9;
@@ -48,23 +48,23 @@
 	}
 
 	.dark {
-		--bg-color: #020617;
-		--text-color: #f1f5f9;
-		--text-muted: #94a3b8;
-		--nav-bg: rgba(15, 23, 42, 0.5);
+		--bg-color: #020617; /* slate-950 - exact match from reference - THE DARKEST SLATE */
+		--text-color: #f1f5f9; /* slate-100 */
+		--text-muted: #94a3b8; /* slate-400 */
+		--nav-bg: rgba(15, 23, 42, 0.7); /* slate-900/70 */
 		--nav-border: rgba(255, 255, 255, 0.2);
-		--card-bg: rgba(2, 6, 23, 0.5);
+		--card-bg: rgba(2, 6, 23, 0.5); /* slate-950/50 */
 		--card-border: rgba(255, 255, 255, 0.1);
-		--tech-card-bg: #1e293b;
-		--tech-card-border: #334155;
+		--tech-card-bg: #0f172a; /* slate-900 - darker than before */
+		--tech-card-border: #1e293b; /* slate-800 - darker than before */
 		--btn-primary-bg: white;
 		--btn-primary-text: #0f172a;
 		--btn-primary-hover-bg: #e2e8f0;
 		--toggle-icon-color: #cbd5e1;
-		--modal-bg: #1e293b;
-		--modal-border: #334155;
+		--modal-bg: #0f172a; /* slate-900 - darker than before */
+		--modal-border: #1e293b; /* slate-800 - darker than before */
 		--input-bg: #0f172a;
-		--input-border: #334155;
+		--input-border: #1e293b; /* darker than before */
 		--result-card-bg: #0f172a;
 
 		/* Tailwind CSS variables for dark theme */
@@ -74,8 +74,8 @@
 		--card-foreground: 241 245 249; /* slate-100 */
 		--popover: 30 41 59; /* slate-800 */
 		--popover-foreground: 241 245 249; /* slate-100 */
-		--primary: 241 245 249; /* slate-100 */
-		--primary-foreground: 30 41 59; /* slate-800 */
+		--primary: 255 255 255; /* white */
+		--primary-foreground: 15 23 42; /* slate-900 */
 		--secondary: 51 65 85; /* slate-700 */
 		--secondary-foreground: 241 245 249; /* slate-100 */
 		--muted: 51 65 85; /* slate-700 */
@@ -113,15 +113,22 @@
 	-webkit-backdrop-filter: blur(12px);
 }
 
-@keyframes background-flow {
+@keyframes move-glows {
 	0% {
-		background-position: 0% 50%;
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
 	}
-	50% {
-		background-position: 100% 50%;
+	33% {
+		transform: translate(5vw, -5vh) scale(1.1);
+		opacity: 0.9;
+	}
+	66% {
+		transform: translate(-5vw, 5vh) scale(1.05);
+		opacity: 0.95;
 	}
 	100% {
-		background-position: 0% 50%;
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
 	}
 }
 
@@ -130,33 +137,34 @@
 	position: fixed;
 	top: 0;
 	left: 0;
+	right: 0;
+	bottom: 0;
 	width: 100vw;
 	height: 100vh;
-	background-color: var(--bg-color);
-	transition: background-color 0.3s ease;
-	z-index: -1;
-	background-size: 200% 200%;
-	animation: background-flow 15s ease infinite;
-}
-
-.light .background-glows {
+	pointer-events: none;
+	z-index: 0; /* Keep above -1 to ensure visibility */
+	opacity: 0.9;
 	background-image: radial-gradient(
-			circle at 10% 20%,
-			rgba(168, 85, 247, 0.1),
+			circle at 15% 25%,
+			rgba(168, 85, 247, 0.6),
 			transparent 50%
 		),
-		radial-gradient(circle at 80% 90%, rgba(236, 72, 153, 0.1), transparent 55%),
-		radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.08), transparent 50%);
+		radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.6), transparent 50%),
+		radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.4), transparent 50%);
+	animation: move-glows 30s ease-in-out infinite;
 }
 
-.dark .background-glows {
+/* Dark mode gets more vibrant gradients */
+.dark .background-glows,
+html.dark .background-glows {
 	background-image: radial-gradient(
-			circle at 10% 20%,
-			rgba(168, 85, 247, 0.2),
-			transparent 40%
+			circle at 15% 25%,
+			rgba(168, 85, 247, 0.8),
+			transparent 60%
 		),
-		radial-gradient(circle at 80% 90%, rgba(236, 72, 153, 0.2), transparent 45%),
-		radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.15), transparent 40%);
+		radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.8), transparent 60%),
+		radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.6), transparent 60%);
+	opacity: 1;
 }
 
 .gradient-text {
@@ -174,6 +182,19 @@
 	to {
 		opacity: 1;
 		transform: translateY(0);
+	}
+}
+
+/* Additional keyframe for the background pulsing effect */
+@keyframes pulse-glow {
+	0%,
+	100% {
+		opacity: 0.85;
+		filter: saturate(1);
+	}
+	50% {
+		opacity: 1;
+		filter: saturate(1.5);
 	}
 }
 
