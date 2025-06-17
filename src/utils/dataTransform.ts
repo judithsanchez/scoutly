@@ -51,11 +51,30 @@ export function createUrlSet(urls: Array<{url: string} | string>): Set<string> {
  *
  * @param links - Array of link objects with url property
  * @param urlSet - Set of URLs to filter by
+ * @param exclude - If true, excludes URLs in the set (default: false)
  * @returns Filtered array of links
  */
 export function filterLinksByUrlSet<T extends {url: string}>(
 	links: T[],
 	urlSet: Set<string>,
+	exclude: boolean = false,
 ): T[] {
+	if (exclude) {
+		return links.filter(link => !urlSet.has(String(link.url)));
+	}
 	return links.filter(link => urlSet.has(String(link.url)));
+}
+
+/**
+ * Filters out links that are already in the URL set (new links only)
+ *
+ * @param links - Array of link objects with url property
+ * @param seenUrls - Set of previously seen URLs
+ * @returns Array of new links not in the seen URLs
+ */
+export function filterNewLinks<T extends {url: string}>(
+	links: T[],
+	seenUrls: Set<string>,
+): T[] {
+	return links.filter(link => !seenUrls.has(String(link.url)));
 }

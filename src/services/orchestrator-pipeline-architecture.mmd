@@ -1,0 +1,72 @@
+flowchart TD
+    classDef default fill:#2d333b,stroke:#adbac7,stroke-width:1px,color:#adbac7
+    classDef process fill:#22272e,stroke:#adbac7,stroke-width:1px,color:#adbac7
+    classDef storage fill:#1d2229,stroke:#adbac7,stroke-width:1px,color:#adbac7
+    classDef special fill:#2d2b55,stroke:#adbac7,stroke-width:1px,color:#adbac7
+    classDef important fill:#3e3426,stroke:#d4a75f,stroke-width:1px,color:#d4a75f
+
+    %% Entry Point
+    Start([JobMatchingOrchestrator]):::important --> ArchCheck{Architecture Selection}:::special
+    
+    %% Architecture Decision
+    ArchCheck -->|Pipeline Enabled| PipelineFlow[Execute Pipeline]:::process
+    ArchCheck -->|Legacy Mode| LegacyFlow[Execute Legacy]:::process
+    
+    %% Pipeline Architecture Flow
+    subgraph Pipeline ["🚀 Pipeline-Based Architecture"]
+        direction TB
+        PipelineFlow --> Context[Create Pipeline Context]:::process
+        Context --> Step1[1. Candidate Profile Step]:::process
+        Step1 --> Step2[2. CV Processing Step]:::process
+        Step2 --> Step3[3. Company Scraping Step]:::process
+        Step3 --> Step4[4. Initial Matching Step]:::process
+        Step4 --> Step5[5. Job Details Step]:::process
+        Step5 --> Step6[6. Deep Analysis Step]:::process
+        Step6 --> Step7[7. Results Storage Step]:::process
+        Step7 --> PipelineResults[Pipeline Results]:::storage
+    end
+    
+    %% Legacy Architecture Flow  
+    subgraph Legacy ["🔧 Legacy Architecture"]
+        direction TB
+        LegacyFlow --> LegacyScrape[Parallel Company Scraping]:::process
+        LegacyScrape --> LegacyCV[Process CV & Candidate]:::process
+        LegacyCV --> LegacyMatch[AI Initial Matching]:::process
+        LegacyMatch --> LegacyDetails[Fetch Job Details]:::process
+        LegacyDetails --> LegacyAnalysis[Deep Dive Analysis]:::process
+        LegacyAnalysis --> LegacyStorage[Save to Database]:::process
+        LegacyStorage --> LegacyResults[Legacy Results]:::storage
+    end
+    
+    %% Error Handling & Fallback
+    PipelineFlow -.->|Pipeline Failure| FallbackFlow[Automatic Fallback]:::special
+    FallbackFlow --> LegacyFlow
+    
+    %% Results Convergence
+    PipelineResults --> ResultsMap[Map CompanyID JobAnalysisResults]:::storage
+    LegacyResults --> ResultsMap
+    
+    %% Control Methods
+    subgraph Control ["🎛️ Runtime Control"]
+        direction TB
+        SetPipeline[setPipelineEnabled boolean]:::important
+        GetInfo[getArchitectureInfo]:::important
+        EnvVar[USE_PIPELINE_ARCHITECTURE]:::important
+    end
+    
+    %% Connect control to architecture selection
+    Control -.-> ArchCheck
+    
+    %% Shared Components (used by both architectures)
+    subgraph Shared ["📦 Shared Utilities"]
+        direction LR
+        Utils1[Rate Limiting]:::process
+        Utils2[AI Processing]:::process
+        Utils3[Job Scraping]:::process
+        Utils4[Data Transform]:::process
+        Utils5[Template Loading]:::process
+    end
+    
+    %% Connect shared utilities
+    Pipeline -.-> Shared
+    Legacy -.-> Shared

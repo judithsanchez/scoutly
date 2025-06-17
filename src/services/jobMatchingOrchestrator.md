@@ -4,22 +4,62 @@
 
 The JobMatchingOrchestrator is a sophisticated service that automates the job matching process by combining web scraping, AI analysis, and intelligent scoring. It processes multiple company career pages in parallel, analyzes job postings against candidate profiles, and provides detailed suitability assessments.
 
+**NEW**: Now supports both **pipeline-based** and **legacy** architectures for enhanced modularity and backward compatibility.
+
 ## Architecture
 
-See [jobMatchingOrchestrator.mmd](./jobMatchingOrchestrator.mmd) for the complete flow diagram.
+### Dual Architecture Support
+
+The orchestrator now supports two distinct architectures:
+
+1. **Pipeline-Based Architecture** (Default): Modular, step-based processing with shared context
+2. **Legacy Architecture**: Original monolithic implementation for backward compatibility
+
+See [orchestrator-pipeline-architecture.mmd](./orchestrator-pipeline-architecture.mmd) for the new dual architecture diagram and [jobMatchingOrchestrator.mmd](./jobMatchingOrchestrator.mmd) for the original flow diagram.
+
+### Architecture Selection
+
+- **Default**: Pipeline architecture (`USE_PIPELINE_ARCHITECTURE !== 'false'`)
+- **Environment Control**: Set `USE_PIPELINE_ARCHITECTURE=false` to use legacy
+- **Runtime Control**: Use `setPipelineEnabled(boolean)` method
+- **Automatic Fallback**: Pipeline failures automatically fall back to legacy implementation
+
+## Pipeline Architecture
+
+The new pipeline-based architecture provides:
+
+- **Modular Steps**: Each processing stage is a separate, testable component
+- **Shared Context**: Centralized state management across all steps
+- **Enhanced Error Handling**: Step-level error recovery and retries
+- **Better Observability**: Detailed logging and monitoring per step
+- **Extensibility**: Easy addition of new steps or modification of existing ones
+
+### Pipeline Steps
+
+1. **CandidateProfileStep**: Process candidate information
+2. **CvProcessingStep**: Download and extract CV content
+3. **CompanyScrapingStep**: Scrape job listings and filter new links
+4. **InitialMatchingStep**: AI-powered initial job filtering
+5. **JobDetailsStep**: Fetch detailed job descriptions
+6. **DeepAnalysisStep**: Detailed AI scoring and analysis
+7. **ResultsStorageStep**: Save results to database
+
+See [Pipeline Documentation](./pipeline/pipeline.md) for detailed information.
 
 ## Recent Improvements
 
-### Code Refactoring (June 2025)
+### Pipeline Integration (June 2025)
 
-#### Phase 1: Constants and Validation (Initial Refactor)
+#### Phase 4: Pipeline Architecture Implementation
 
-- **Constants Centralization**: Moved `MAX_PARALLEL_COMPANIES` and error/log messages to `/src/constants/common.ts` for better maintainability
-- **Enhanced Validation**: Created dedicated `validateBatchJobMatchingInput()` method with comprehensive input validation
-- **Improved Debugging**: Added structured logging with detailed debug information for easier troubleshooting
-- **Better Error Handling**: Centralized error messages with consistent formatting and detailed context
+- **Pipeline Infrastructure**: Created complete pipeline system with 7 modular steps
+- **Dual Architecture**: Maintains both pipeline and legacy implementations
+- **Backward Compatibility**: Existing public API unchanged, internal implementation modernized
+- **Fallback System**: Automatic fallback to legacy implementation on pipeline failures
+- **Runtime Control**: Methods to switch between architectures dynamically
+- **Enhanced Monitoring**: Detailed logging for both pipeline and legacy executions
 
-#### Phase 2: Utility Extraction (Major Refactor)
+#### Phase 3: Utility Extraction (Major Refactor)
 
 - **Modular Architecture**: Extracted major functionality into specialized utility modules:
   - `dataTransform.ts`: Object-to-XML conversion, URL set creation, link filtering
@@ -30,15 +70,14 @@ See [jobMatchingOrchestrator.mmd](./jobMatchingOrchestrator.mmd) for the complet
   - `jobScraper.ts`: Job link filtering, scraping with retry logic
   - `aiProcessor.ts`: Gemini AI prompt/response handling
 
-#### Phase 3: Final Cleanup (Performance Optimization)
+#### Phase 2: Code Refactoring (Initial Cleanup)
 
-- **Code Reduction**: Reduced file size from 802 to 583 lines (27% reduction)
-- **Removed Duplicated Logic**: Eliminated redundant CV processing method
-- **Simplified Methods**: Inlined wrapper methods and removed unused state variables
-- **Optimized Imports**: Cleaned up unused imports and dependencies
-- **Enhanced Rate Limiting**: Added `updateUsageStats` utility for cleaner token management
+- **Constants Centralization**: Moved constants to `/src/constants/common.ts`
+- **Enhanced Validation**: Dedicated input validation methods
+- **Improved Debugging**: Structured logging with detailed context
+- **Better Error Handling**: Centralized error messages with consistent formatting
 
-**Result**: The orchestrator is now significantly more maintainable, modular, and follows separation of concerns principles while maintaining full functionality.
+**Result**: The orchestrator now supports modern pipeline architecture while maintaining full backward compatibility and improved maintainability.
 
 ## Core Features
 
@@ -114,6 +153,32 @@ const batchResults = await orchestrator.orchestrateBatchJobMatching(
 	userEmail,
 );
 ```
+
+### Architecture Control
+
+```typescript
+const orchestrator = new JobMatchingOrchestrator();
+
+// Check current architecture
+const info = orchestrator.getArchitectureInfo();
+console.log(`Using ${info.version} architecture`); // "pipeline-based" or "legacy"
+
+// Switch to legacy architecture
+orchestrator.setPipelineEnabled(false);
+
+// Switch back to pipeline architecture
+orchestrator.setPipelineEnabled(true);
+
+// Environment-based control
+// Set USE_PIPELINE_ARCHITECTURE=false to default to legacy
+```
+
+### Pipeline vs Legacy Behavior
+
+- **Pipeline**: Modern, modular, step-based processing with enhanced error handling
+- **Legacy**: Original implementation, preserved for backward compatibility
+- **Fallback**: Pipeline failures automatically fall back to legacy implementation
+- **Performance**: Pipeline offers better observability and maintainability
 
 ### Input Types
 

@@ -29,6 +29,41 @@ docker compose up -d
 
 # Seed the database
 docker compose exec app npx tsx src/scripts/seedCompanies.ts
+
+# Clear scrape history (allows re-scraping companies)
+docker compose exec app npx tsx src/scripts/clearScrapeHistory.ts
+
+# Clear specific data (more options)
+docker compose exec app npx tsx src/scripts/clearData.ts --help
+```
+
+## Database Management
+
+### Clear Scrape History
+
+When companies show "0 new jobs", it's because they've been scraped before. Clear the scrape history to allow re-scraping:
+
+```bash
+# Quick way - clear all scrape history
+docker compose exec app npx tsx src/scripts/clearScrapeHistory.ts
+
+# Or use the detailed script
+docker compose exec app npx tsx src/scripts/clearData.ts --scrape-history
+```
+
+### Clear Saved Jobs
+
+Remove saved jobs for testing or cleanup:
+
+```bash
+# Clear saved jobs for specific user
+docker compose exec app npx tsx src/scripts/clearData.ts --saved-jobs --user judithv.sanchezc@gmail.com
+
+# Clear all saved jobs
+docker compose exec app npx tsx src/scripts/clearData.ts --saved-jobs --all
+
+# Clear everything (scrape history + all saved jobs)
+docker compose exec app npx tsx src/scripts/clearData.ts --all
 ```
 
 ## API Endpoints

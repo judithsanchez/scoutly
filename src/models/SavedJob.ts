@@ -133,6 +133,9 @@ const SavedJobSchema = new Schema<ISavedJob>(
 // To prevent a user from saving the exact same job URL twice
 SavedJobSchema.index({user: 1, url: 1}, {unique: true});
 
+// Additional compound index for better duplicate detection (URL + title)
+SavedJobSchema.index({user: 1, url: 1, title: 1}, {unique: true, sparse: true});
+
 // Pre-save middleware to add status changes to history
 SavedJobSchema.pre('save', function (next) {
 	const job = this;

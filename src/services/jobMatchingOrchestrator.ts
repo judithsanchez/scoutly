@@ -1,8 +1,4 @@
-import {
-	scrapeWebsite,
-	type ExtractedLink,
-	type ScrapeResult,
-} from '@/utils/scraper';
+import {type ExtractedLink} from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
 import {GoogleGenerativeAI} from '@google/generative-ai';
 import {GeminiFreeTierLimits, type IGeminiRateLimit} from '@/config/rateLimits';
@@ -18,7 +14,6 @@ import {createUrlSet, filterLinksByUrlSet} from '@/utils/dataTransform';
 import {
 	createUsageStats,
 	checkDailyReset,
-	getUsageSummary,
 	updateUsageStats,
 	type UsageStats,
 } from '@/utils/rateLimiting';
@@ -37,6 +32,8 @@ import {
 	type JobAnalysisResult,
 	type AIProcessorConfig,
 } from '@/utils/aiProcessor';
+// Pipeline imports
+import {executeJobMatchingPipeline} from './pipeline/JobMatchingPipelineConfig';
 
 const logger = new Logger('JobMatchingOrchestrator');
 const MODEL_NAME = 'gemini-2.0-flash-lite'; // Must match modelName in rateLimits.ts
@@ -60,6 +57,10 @@ export class JobMatchingOrchestrator {
 	private cvContent: string = '';
 	private candidateInfo: Record<string, any> | null = null;
 	private detailedJobContents: Map<string, string> = new Map();
+
+	// Pipeline integration - can be controlled via environment variable
+	private usePipeline: boolean =
+		process.env.USE_PIPELINE_ARCHITECTURE !== 'false';
 
 	constructor() {
 		const apiKey = process.env.GEMINI_API_KEY;
@@ -91,7 +92,6 @@ export class JobMatchingOrchestrator {
 		this.templates = await loadPromptTemplates();
 		validateTemplates(this.templates);
 
-		// Initialize AI processor config
 		this.aiConfig = createAIProcessorConfig(
 			this.model,
 			this.modelLimits,
@@ -112,7 +112,6 @@ export class JobMatchingOrchestrator {
 		logger.debug('Candidate Profile initialized');
 	}
 
-	// Helper method to scrape jobs for a single company
 	private async scrapeCompanyJobs(
 		company: ICompany,
 		userEmail: string,
@@ -139,14 +138,12 @@ export class JobMatchingOrchestrator {
 			allScrapedLinks,
 		);
 
-		// Record all links for future comparisons
 		await ScrapeHistoryService.recordScrape(
 			company.id,
 			userEmail,
 			allScrapedLinks,
 		);
 
-		// Create a Set for O(1) lookups and filter new links
 		const newUrlsSet = createUrlSet(newLinkUrls);
 		const newLinks = filterLinksByUrlSet(allScrapedLinks, newUrlsSet);
 
@@ -161,7 +158,6 @@ export class JobMatchingOrchestrator {
 		};
 	}
 
-	// Batch scraping of job details
 	private async scrapeJobDetailsBatch(
 		urls: string[],
 	): Promise<Map<string, string>> {
@@ -201,7 +197,6 @@ export class JobMatchingOrchestrator {
 		const allResults = await processSequentialBatches(
 			batches,
 			async (batch: typeof validPositions) => {
-				// Update AI config with current usage stats
 				this.aiConfig.usageStats = this.usageStats;
 				return await analyzeJobBatch(
 					batch,
@@ -225,14 +220,12 @@ export class JobMatchingOrchestrator {
 		operation: TokenOperation = TokenOperation.INITIAL_MATCHING,
 	): Promise<void> {
 		try {
-			// Use utility to check and apply daily reset and update stats
 			this.usageStats = checkDailyReset(this.usageStats);
 			this.usageStats = updateUsageStats(
 				this.usageStats,
 				usage.totalTokenCount,
 			);
 
-			// Record usage in database if we have company context
 			if (this.currentUserEmail && this.currentCompanyId) {
 				const modelConfig = this.modelLimits;
 				const pricePerInputToken =
@@ -271,7 +264,6 @@ export class JobMatchingOrchestrator {
 				limits: {tpm: this.modelLimits.tpm, tpd: this.modelLimits.tpd},
 			});
 
-			// Reset minute counters after 60 seconds
 			setTimeout(() => {
 				this.usageStats.minuteTokens = 0;
 				this.usageStats.lastMinuteCalls = 0;
@@ -280,25 +272,6 @@ export class JobMatchingOrchestrator {
 			logger.error('Failed to record token usage:', error);
 		}
 	}
-
-	private async cleanup() {
-		logger.debug('Starting cleanup...');
-		const usageSummary = getUsageSummary(this.modelLimits, this.usageStats);
-		logger.info('🔢 Final AI usage statistics:', {
-			usage: usageSummary.split('\n'),
-		});
-		this.detailedJobContents.clear();
-		this.cvContent = '';
-		this.candidateInfo = null;
-		this.currentUserEmail = '';
-		this.currentCompanyId = '';
-		this.currentCompanyName = '';
-
-		await logger.saveBufferedLogs();
-		logger.debug('Cleanup completed');
-	}
-
-	// Backward compatible method for single company processing
 	async orchestrateJobMatching(
 		company: ICompany,
 		cvUrl: string,
@@ -331,10 +304,8 @@ export class JobMatchingOrchestrator {
 		candidateInfo: Record<string, any>,
 		userEmail: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
-		// Validate input parameters
 		this.validateBatchJobMatchingInput(companies);
 
-		// Log process initiation
 		logger.info(JOB_MATCHING.LOG_MESSAGES.BATCH_START(companies.length));
 		logger.debug(JOB_MATCHING.LOG_MESSAGES.VALIDATION_SUCCESS, {
 			companiesCount: companies.length,
@@ -345,7 +316,6 @@ export class JobMatchingOrchestrator {
 
 		logger.debug(JOB_MATCHING.LOG_MESSAGES.PROCESSING_START);
 
-		// Delegate to batch processing implementation
 		return this.processBatchCompanies(
 			companies,
 			cvUrl,
@@ -362,7 +332,6 @@ export class JobMatchingOrchestrator {
 	 * @throws {Error} When validation fails
 	 */
 	private validateBatchJobMatchingInput(companies: ICompany[]): void {
-		// Check if companies array exists and is not empty
 		if (!companies || !Array.isArray(companies)) {
 			throw new Error(JOB_MATCHING.ERROR_MESSAGES.INVALID_COMPANY_DATA);
 		}
@@ -371,7 +340,6 @@ export class JobMatchingOrchestrator {
 			throw new Error(JOB_MATCHING.ERROR_MESSAGES.NO_COMPANIES_PROVIDED);
 		}
 
-		// Check against maximum parallel processing limit
 		if (companies.length > JOB_MATCHING.MAX_PARALLEL_COMPANIES) {
 			throw new Error(
 				JOB_MATCHING.ERROR_MESSAGES.TOO_MANY_COMPANIES(
@@ -380,7 +348,6 @@ export class JobMatchingOrchestrator {
 			);
 		}
 
-		// Validate individual company objects
 		companies.forEach((company, index) => {
 			if (!company || !company.id || !company.company) {
 				logger.error(`Invalid company data at index ${index}:`, company);
@@ -391,13 +358,79 @@ export class JobMatchingOrchestrator {
 		});
 	}
 
-	// Process multiple companies in parallel
 	private async processBatchCompanies(
 		companies: ICompany[],
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
 		userEmail: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
+		// Use pipeline if enabled (default), otherwise use legacy implementation
+		if (this.usePipeline) {
+			return this.processBatchCompaniesWithPipeline(
+				companies,
+				cvUrl,
+				candidateInfo,
+				userEmail,
+			);
+		} else {
+			return this.processBatchCompaniesLegacy(
+				companies,
+				cvUrl,
+				candidateInfo,
+				userEmail,
+			);
+		}
+	}
+
+	/**
+	 * Pipeline-based batch processing (new implementation)
+	 */
+	private async processBatchCompaniesWithPipeline(
+		companies: ICompany[],
+		cvUrl: string,
+		candidateInfo: Record<string, any>,
+		userEmail: string,
+	): Promise<Map<string, JobAnalysisResult[]>> {
+		logger.info('🚀 Using pipeline-based architecture for job matching');
+
+		try {
+			// Execute the complete pipeline
+			const results = await executeJobMatchingPipeline(
+				companies,
+				cvUrl,
+				candidateInfo,
+				userEmail,
+			);
+
+			logger.info(
+				`✅ Pipeline execution completed successfully for ${companies.length} companies`,
+			);
+			return results;
+		} catch (error) {
+			logger.error(
+				'❌ Pipeline execution failed, falling back to legacy implementation',
+				error,
+			);
+			// Fallback to legacy implementation on pipeline failure
+			return this.processBatchCompaniesLegacy(
+				companies,
+				cvUrl,
+				candidateInfo,
+				userEmail,
+			);
+		}
+	}
+
+	/**
+	 * Legacy batch processing implementation (preserved for backward compatibility)
+	 */
+	private async processBatchCompaniesLegacy(
+		companies: ICompany[],
+		cvUrl: string,
+		candidateInfo: Record<string, any>,
+		userEmail: string,
+	): Promise<Map<string, JobAnalysisResult[]>> {
+		logger.info('🔧 Using legacy architecture for job matching');
 		const results = new Map<string, JobAnalysisResult[]>();
 		const startTime = Date.now();
 
@@ -440,7 +473,6 @@ export class JobMatchingOrchestrator {
 		logger.info(
 			`🔍 Step 4: Running initial job matching analysis for ${allNewLinks.length} jobs...`,
 		);
-		// Update AI config with current usage stats
 		this.aiConfig.usageStats = this.usageStats;
 		const matchedJobs = await performInitialMatching(
 			allNewLinks,
@@ -456,7 +488,6 @@ export class JobMatchingOrchestrator {
 		>();
 
 		matchedJobs.forEach(job => {
-			// Find which company this job belongs to
 			for (const [companyId, links] of companyLinks.entries()) {
 				if (links.some(link => link.url === job.url)) {
 					const companyMatches = matchedJobsByCompany.get(companyId) || [];
@@ -472,14 +503,12 @@ export class JobMatchingOrchestrator {
 			if (companyMatches.length === 0) continue;
 
 			try {
-				// Set company context for token usage tracking
 				const company = companies.find(c => c.id === companyId);
 				if (!company) continue;
 
 				this.currentCompanyId = companyId;
 				this.currentCompanyName = company.company;
 
-				// Get all job details in parallel
 				logger.info(
 					`🌐 Step 5: Fetching content for ${companyMatches.length} matched positions from ${company.company}...`,
 				);
@@ -512,17 +541,21 @@ export class JobMatchingOrchestrator {
 					continue;
 				}
 
-				// Save jobs to database
 				const user = await UserService.getUserByEmail(userEmail);
 				if (user) {
 					let savedCount = 0;
 					let skippedCount = 0;
+					const savedJobs: JobAnalysisResult[] = [];
 
 					for (const job of analysisResults) {
 						try {
+							// Check for duplicates by URL + title for better duplicate detection
 							const existingJob = await SavedJob.findOne({
 								user: user.id,
-								url: job.url,
+								$or: [
+									{url: job.url}, // Same URL
+									{url: job.url, title: job.title}, // Same URL and title
+								],
 							});
 
 							if (existingJob) {
@@ -540,6 +573,7 @@ export class JobMatchingOrchestrator {
 								status: ApplicationStatus.WANT_TO_APPLY,
 							});
 							savedCount++;
+							savedJobs.push(job); // Track actually saved jobs
 						} catch (dbError) {
 							logger.error(`Failed to process job "${job.title}"`, {
 								error: dbError,
@@ -551,9 +585,13 @@ export class JobMatchingOrchestrator {
 					logger.success(
 						`✓ Database update complete for ${company.company}: ${savedCount} new jobs saved, ${skippedCount} duplicates skipped.`,
 					);
-				}
 
-				results.set(companyId, analysisResults);
+					// Store only the actually saved jobs for return
+					results.set(companyId, savedJobs);
+				} else {
+					logger.error('User not found, cannot save jobs to database');
+					results.set(companyId, []);
+				}
 			} catch (error) {
 				logger.error(
 					`Failed to process matched jobs for company ${companyId}:`,
@@ -565,8 +603,27 @@ export class JobMatchingOrchestrator {
 
 		const totalTime = (Date.now() - startTime) / 1000;
 		logger.info(
-			`🏁 Batch processing completed in ${totalTime}s for ${companies.length} companies`,
+			`🏁 Legacy batch processing completed in ${totalTime}s for ${companies.length} companies`,
 		);
 		return results;
+	}
+
+	/**
+	 * Enable or disable pipeline architecture
+	 * @param enabled - Whether to use the pipeline architecture
+	 */
+	public setPipelineEnabled(enabled: boolean): void {
+		this.usePipeline = enabled;
+		logger.info(`Pipeline architecture ${enabled ? 'enabled' : 'disabled'}`);
+	}
+
+	/**
+	 * Get current architecture information
+	 */
+	public getArchitectureInfo(): {usePipeline: boolean; version: string} {
+		return {
+			usePipeline: this.usePipeline,
+			version: this.usePipeline ? 'pipeline-based' : 'legacy',
+		};
 	}
 }

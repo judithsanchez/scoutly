@@ -120,8 +120,16 @@ export class CompanyService {
 
 	static async findCompaniesByName(names: string[]): Promise<ICompany[]> {
 		try {
+			// Create OR conditions for each name
+			const orConditions = names.flatMap(name => [
+				// Exact match on companyID (case insensitive)
+				{companyID: new RegExp(`^${name}$`, 'i')},
+				// Partial match on company name (case insensitive)
+				{company: new RegExp(name, 'i')},
+			]);
+
 			return await Company.find({
-				company: {$in: names.map(name => new RegExp(name, 'i'))},
+				$or: orConditions,
 			});
 		} catch (error: any) {
 			throw new Error(`Error finding companies by names: ${error.message}`);

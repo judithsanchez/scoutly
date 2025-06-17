@@ -44,23 +44,20 @@ export async function POST(request: NextRequest) {
 
 		// Process each company sequentially
 		const results = [];
-		for (const companyName of companyIds) {
+		for (const companyId of companyIds) {
 			try {
-				// Get the company details from the database
-				const companies = await CompanyService.findCompaniesByName([
-					companyName,
-				]);
-				if (companies.length === 0) {
-					logger.warn(`Company '${companyName}' not found in the database.`);
+				// Get the company details from the database by companyID
+				const company = await CompanyService.getCompanyById(companyId);
+				if (!company) {
+					logger.warn(`Company '${companyId}' not found in the database.`);
 					results.push({
-						company: companyName,
+						company: companyId,
 						processed: false,
 						error: 'Company not found in the database',
 						results: [],
 					});
 					continue;
 				}
-				const company = companies[0];
 
 				// Run the main AI workflow
 				const analysisResults = await orchestrator.orchestrateJobMatching(
