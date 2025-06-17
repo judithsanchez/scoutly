@@ -7,11 +7,11 @@ import {DEFAULT_USER_EMAIL} from '@/constants/common';
 import {API_ENDPOINTS} from '@/constants/config';
 import {API_CONFIG, API_ERRORS} from '@/constants/api';
 import {
-	GRADIENT_BACKGROUND,
-	GRADIENT_GLOW,
-	ANIMATED_GRADIENT,
 	HEADING_LG,
 	FLEX_COL,
+	PAGE_BACKGROUND_CONTAINER,
+	PAGE_BACKGROUND_GLOW,
+	PAGE_CONTENT_CONTAINER,
 } from '@/constants/styles';
 
 export default function SavedJobsPage() {
@@ -29,7 +29,6 @@ export default function SavedJobsPage() {
 		status: ApplicationStatus,
 	) => {
 		try {
-			// Ensure we have a valid email
 			if (!DEFAULT_USER_EMAIL) {
 				setError(
 					'No user email configured. Please set NEXT_PUBLIC_DEV_USER_EMAIL in your .env.local file',
@@ -81,7 +80,6 @@ export default function SavedJobsPage() {
 	useEffect(() => {
 		async function fetchSavedJobs() {
 			try {
-				// Ensure we have a valid email
 				if (!DEFAULT_USER_EMAIL) {
 					setError(
 						'No user email configured. Please set NEXT_PUBLIC_DEV_USER_EMAIL in your .env.local file',
@@ -127,11 +125,9 @@ export default function SavedJobsPage() {
 	}, []);
 
 	return (
-		<div className="relative min-h-screen">
-			<div className={ANIMATED_GRADIENT}></div>
-			<div className={GRADIENT_BACKGROUND}></div>
-			<div className={GRADIENT_GLOW}></div>
-			<div className="relative z-10 max-w-4xl mx-auto pt-32 pb-24 px-4">
+		<div className={PAGE_BACKGROUND_CONTAINER}>
+			<div className={PAGE_BACKGROUND_GLOW}></div>
+			<main className={PAGE_CONTENT_CONTAINER}>
 				<h1 className={HEADING_LG}>Saved Jobs</h1>
 
 				{isLoading ? (
@@ -154,7 +150,7 @@ export default function SavedJobsPage() {
 						))}
 					</div>
 				)}
-			</div>
+			</main>
 		</div>
 	);
 }

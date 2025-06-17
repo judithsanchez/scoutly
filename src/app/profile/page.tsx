@@ -2,6 +2,11 @@
 
 import React, {useState, useEffect} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
+import {
+	PAGE_CONTENT_CONTAINER,
+	PAGE_BACKGROUND_CONTAINER,
+	PAGE_BACKGROUND_GLOW,
+} from '@/constants/styles';
 
 // --- TYPE DEFINITIONS ---
 interface CurrentResidence {
@@ -147,9 +152,9 @@ export default function ProfilePage() {
 	};
 
 	return (
-		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
-			<div className="background-glows fixed inset-0 z-0"></div>
-			<main className="relative z-10 max-w-4xl mx-auto pt-32 pb-24 px-4">
+		<div className={PAGE_BACKGROUND_CONTAINER}>
+			<div className={PAGE_BACKGROUND_GLOW} />
+			<main className={PAGE_CONTENT_CONTAINER}>
 				{/* Header */}
 				<div className="mb-8">
 					<h1 className="text-3xl font-bold text-[var(--text-color)] mb-2">
