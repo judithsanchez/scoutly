@@ -33,7 +33,6 @@ async function trackCompany(
 	let companyId: string;
 	let ranking: number = 75;
 
-	// Handle both parameter styles
 	if (typeof companyIdOrParams === 'string') {
 		companyId = companyIdOrParams;
 	} else {
@@ -101,7 +100,6 @@ export function useCompanies() {
 		queryKey: ['companies'],
 		queryFn: fetchCompanies,
 		retry: (failureCount, error) => {
-			// Don't retry on specific error messages that indicate permanent failures
 			if (error instanceof Error) {
 				if (error.message.includes('Database connection error')) {
 					return false;
@@ -109,9 +107,9 @@ export function useCompanies() {
 			}
 			return failureCount < 3;
 		},
-		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-		staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
-		gcTime: 1000 * 60 * 30, // Keep data in cache for 30 minutes
+		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+		staleTime: 1000 * 60 * 5,
+		gcTime: 1000 * 60 * 30,
 	});
 
 	const trackedCompaniesQuery = useQuery<

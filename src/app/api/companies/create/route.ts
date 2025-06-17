@@ -2,19 +2,15 @@ import {NextRequest, NextResponse} from 'next/server';
 import {Logger} from '@/utils/logger';
 import {CompanyService} from '@/services/companyService';
 import dbConnect from '@/middleware/database';
-import {ICompany} from '@/models/Company';
 
 const logger = new Logger('AddCompanyAPI');
 
 export async function POST(request: NextRequest) {
 	try {
-		// Connect to database
 		await dbConnect();
 
-		// Parse request body
 		const companyData = await request.json();
 
-		// Validate required fields
 		const requiredFields = [
 			'companyID',
 			'company',
@@ -32,7 +28,6 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		// Check if company already exists
 		const existingCompany = await CompanyService.getCompanyById(
 			companyData.companyID,
 		);
@@ -43,7 +38,6 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Create the company
 		const newCompany = await CompanyService.createCompany(companyData);
 
 		logger.success(

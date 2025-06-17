@@ -2,9 +2,17 @@
 
 import {useEffect, useState} from 'react';
 import SavedJobCard from '@/components/SavedJobCard';
-import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
-
-const HARDCODED_EMAIL = 'judithv.sanchezc@gmail.com';
+import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
+import {DEFAULT_USER_EMAIL} from '@/constants/common';
+import {API_ENDPOINTS} from '@/constants/config';
+import {API_CONFIG, API_ERRORS} from '@/constants/api';
+import {
+	GRADIENT_BACKGROUND,
+	GRADIENT_GLOW,
+	ANIMATED_GRADIENT,
+	HEADING_LG,
+	FLEX_COL,
+} from '@/constants/styles';
 
 export default function SavedJobsPage() {
 	interface SavedJobResponse {
@@ -21,7 +29,15 @@ export default function SavedJobsPage() {
 		status: ApplicationStatus,
 	) => {
 		try {
-			const response = await fetch('/api/jobs/saved/status', {
+			// Ensure we have a valid email
+			if (!DEFAULT_USER_EMAIL) {
+				setError(
+					'No user email configured. Please set NEXT_PUBLIC_DEV_USER_EMAIL in your .env.local file',
+				);
+				return;
+			}
+
+			const response = await fetch(API_ENDPOINTS.SAVED_JOB_STATUS, {
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
@@ -29,7 +45,7 @@ export default function SavedJobsPage() {
 				body: JSON.stringify({
 					jobId,
 					status,
-					gmail: HARDCODED_EMAIL,
+					gmail: DEFAULT_USER_EMAIL,
 				}),
 			});
 
@@ -40,28 +56,17 @@ export default function SavedJobsPage() {
 
 			const updatedJob = await response.json();
 
-			// Update jobs list with new status and resort
 			setJobs(currentJobs => {
 				const updatedJobs = currentJobs.map(job =>
 					job._id === jobId ? {...job, ...updatedJob} : job,
 				);
 
-				// Sort by status priority and suitability score
 				return updatedJobs.sort((a, b) => {
-					const statusPriority: Record<ApplicationStatus, number> = {
-						[ApplicationStatus.WANT_TO_APPLY]: 3,
-						[ApplicationStatus.PENDING_APPLICATION]: 2,
-						[ApplicationStatus.APPLIED]: 1,
-						[ApplicationStatus.DISCARDED]: 0,
-					};
-
-					// First compare by status priority
 					const statusDiff =
 						statusPriority[a.status as ApplicationStatus] -
 						statusPriority[b.status as ApplicationStatus];
 					if (statusDiff !== 0) return -statusDiff;
 
-					// If status is the same, sort by suitability score (highest first)
 					return b.suitabilityScore - a.suitabilityScore;
 				});
 			});
@@ -76,36 +81,36 @@ export default function SavedJobsPage() {
 	useEffect(() => {
 		async function fetchSavedJobs() {
 			try {
-				console.log('Fetching jobs for email:', HARDCODED_EMAIL);
+				// Ensure we have a valid email
+				if (!DEFAULT_USER_EMAIL) {
+					setError(
+						'No user email configured. Please set NEXT_PUBLIC_DEV_USER_EMAIL in your .env.local file',
+					);
+					setIsLoading(false);
+					return;
+				}
+
+				console.log('Fetching jobs for email:', DEFAULT_USER_EMAIL);
 				const response = await fetch(
-					`/api/jobs/saved?gmail=${encodeURIComponent(HARDCODED_EMAIL)}`,
+					`${API_ENDPOINTS.SAVED_JOBS}?${
+						API_CONFIG.QUERY_PARAMS.EMAIL
+					}=${encodeURIComponent(DEFAULT_USER_EMAIL)}`,
 				);
 
 				const data = await response.json();
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch saved jobs');
+					throw new Error(data.error || API_ERRORS.NOT_FOUND);
 				}
 
 				const jobs = data as SavedJobResponse;
 				console.log('Fetched jobs:', jobs);
 
-				// Sort jobs by status priority and suitability score
 				const sortedJobs = jobs.jobs.sort((a, b) => {
-					// Define status priority (WANT_TO_APPLY highest, DISCARDED lowest)
-					const statusPriority: Record<ApplicationStatus, number> = {
-						[ApplicationStatus.WANT_TO_APPLY]: 3,
-						[ApplicationStatus.PENDING_APPLICATION]: 2,
-						[ApplicationStatus.APPLIED]: 1,
-						[ApplicationStatus.DISCARDED]: 0,
-					};
-
-					// First compare by status priority
 					const statusDiff =
 						statusPriority[a.status as ApplicationStatus] -
 						statusPriority[b.status as ApplicationStatus];
 					if (statusDiff !== 0) return -statusDiff;
 
-					// If status is the same, sort by suitability score (highest first)
 					return b.suitabilityScore - a.suitabilityScore;
 				});
 
@@ -122,12 +127,12 @@ export default function SavedJobsPage() {
 	}, []);
 
 	return (
-		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
-			<div className="background-glows fixed inset-0 z-0"></div>
+		<div className="relative min-h-screen">
+			<div className={ANIMATED_GRADIENT}></div>
+			<div className={GRADIENT_BACKGROUND}></div>
+			<div className={GRADIENT_GLOW}></div>
 			<div className="relative z-10 max-w-4xl mx-auto pt-32 pb-24 px-4">
-				<h1 className="text-4xl font-extrabold tracking-tight mb-6">
-					Saved Jobs
-				</h1>
+				<h1 className={HEADING_LG}>Saved Jobs</h1>
 
 				{isLoading ? (
 					<div className="text-slate-400">Loading saved jobs...</div>
@@ -139,7 +144,7 @@ export default function SavedJobsPage() {
 						opportunities, save them here to keep track of them.
 					</div>
 				) : (
-					<div className="space-y-6">
+					<div className={`space-y-6 ${FLEX_COL}`}>
 						{jobs.map(job => (
 							<SavedJobCard
 								key={job._id}
