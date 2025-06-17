@@ -2,7 +2,6 @@
 
 import React, {useState, useEffect} from 'react';
 import {CompanySelector} from '@/components/form/CompanySelector';
-import {SearchModal} from '@/components/SearchModal';
 import SavedJobCard from '@/components/SavedJobCard';
 import ApplicationPipeline from '@/components/ApplicationPipeline';
 import StartScoutButton from '@/components/StartScoutButton';
@@ -35,8 +34,6 @@ export default function DashboardPage() {
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
-	const [isSearchModalOpen, setSearchModalOpen] = useState(false);
-	const [searchRequestBody, setSearchRequestBody] = useState<any>(null);
 	const [searchComplete, setSearchComplete] = useState<{
 		success: boolean;
 		totalJobs: number;
@@ -205,30 +202,63 @@ export default function DashboardPage() {
 							<StartScoutButton
 								onScoutStart={async selectedCompanyIds => {
 									setSearchComplete(null);
-									const userResponse = await fetch('/api/user/profile');
-									const userData = await userResponse.json();
+									try {
+										const userResponse = await fetch('/api/users/profile');
+										if (!userResponse.ok) {
+											const errorText = await userResponse.text();
+											console.error('Failed to fetch user profile:', errorText);
+											throw new Error(
+												`Failed to fetch user profile. Status: ${userResponse.status}`,
+											);
+										}
+										const userData = await userResponse.json();
 
-									const requestBody = {
-										credentials: authInfo,
-										companyIds: selectedCompanyIds,
-										cvUrl: userData.cvUrl,
-										candidateInfo: userData.candidateProfile,
-									};
-									setSearchRequestBody(requestBody);
-									setSearchModalOpen(true);
+										const requestBody = {
+											credentials: {
+												gmail: authInfo.gmail,
+											},
+											companyIds: selectedCompanyIds,
+											cvUrl: userData.cvUrl,
+											candidateInfo: userData.candidateInfo,
+										};
+
+										const searchResponse = await fetch('/api/jobs', {
+											method: 'POST',
+											headers: {
+												'Content-Type': 'application/json',
+											},
+											body: JSON.stringify(requestBody),
+										});
+
+										if (!searchResponse.ok) {
+											const errorData = await searchResponse.json();
+											throw new Error(
+												errorData.error ||
+													'An error occurred while searching for jobs',
+											);
+										}
+
+										const searchData = await searchResponse.json();
+										const totalJobs = searchData.results.reduce(
+											(acc: number, company: any) => {
+												return (
+													acc + (company.processed ? company.results.length : 0)
+												);
+											},
+											0,
+										);
+
+										handleSearchComplete(true, totalJobs);
+									} catch (err) {
+										console.error('Failed to start scout:', err);
+										handleSearchComplete(false, 0);
+									}
 								}}
 								className="ml-2"
 							/>
 						</div>
 					</div>
 				</div>
-
-				<SearchModal
-					isOpen={isSearchModalOpen}
-					onClose={() => setSearchModalOpen(false)}
-					requestBody={searchRequestBody}
-					onSearchComplete={handleSearchComplete}
-				/>
 
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<div className="space-y-6">

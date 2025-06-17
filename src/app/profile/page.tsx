@@ -14,7 +14,6 @@ import {
 	SectionHeading,
 	FormField,
 	SaveButton,
-	RemoveButton,
 	AddButton,
 	CheckboxField,
 	LanguageItem,
@@ -378,7 +377,6 @@ export default function ProfilePage() {
 						</div>
 					</ProfileCard>
 
-					{/* Save Button at Bottom */}
 					<div className="flex justify-center pt-6">
 						<SaveButton
 							onClick={handleSaveProfile}
