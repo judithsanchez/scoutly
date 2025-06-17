@@ -422,7 +422,9 @@ export default function CompaniesPage() {
 		<div className={PAGE_BACKGROUND_CONTAINER}>
 			<div className={PAGE_BACKGROUND_GLOW}></div>
 			<Navbar onDemoClick={() => {}} />
-			<main className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}>
+			<main
+				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
+			>
 				<div className="max-w-7xl mx-auto">
 					<div className="flex flex-wrap justify-between items-center mb-8">
 						<div>

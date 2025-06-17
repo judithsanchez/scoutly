@@ -14,9 +14,7 @@ export default function Home() {
 	const [isDemoOpen, setIsDemoOpen] = useState(false);
 
 	return (
-		<div
-			className={`${PAGE_BACKGROUND_CONTAINER} overflow-x-hidden relative`}
-		>
+		<div className={`${PAGE_BACKGROUND_CONTAINER} overflow-x-hidden relative`}>
 			<div className={PAGE_BACKGROUND_GLOW}></div>
 
 			<main className="relative z-10 homepage-content">

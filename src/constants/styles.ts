@@ -38,10 +38,14 @@ export const BUTTON_OUTLINE =
 // Stat card classes
 export const STAT_CARD_CONTAINER =
 	'text-center p-3 bg-slate-100 dark:bg-slate-900/50 rounded-lg';
-export const STAT_CARD_NUMBER_PURPLE = 'text-2xl font-bold text-purple-600 dark:text-purple-400';
-export const STAT_CARD_NUMBER_GREEN = 'text-2xl font-bold text-green-600 dark:text-green-400';
-export const STAT_CARD_NUMBER_YELLOW = 'text-2xl font-bold text-yellow-600 dark:text-yellow-400';
-export const STAT_CARD_NUMBER_BLUE = 'text-2xl font-bold text-blue-600 dark:text-blue-400';
+export const STAT_CARD_NUMBER_PURPLE =
+	'text-2xl font-bold text-purple-600 dark:text-purple-400';
+export const STAT_CARD_NUMBER_GREEN =
+	'text-2xl font-bold text-green-600 dark:text-green-400';
+export const STAT_CARD_NUMBER_YELLOW =
+	'text-2xl font-bold text-yellow-600 dark:text-yellow-400';
+export const STAT_CARD_NUMBER_BLUE =
+	'text-2xl font-bold text-blue-600 dark:text-blue-400';
 
 /**
  * Page background styling - These three constants should be used together

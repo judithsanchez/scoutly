@@ -139,7 +139,9 @@ export default function DashboardPage() {
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>
 			<div className={PAGE_BACKGROUND_GLOW}></div>
-			<main className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}>
+			<main
+				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
+			>
 				<div className="mb-8">
 					<h1 className={HEADING_LG}>Dashboard</h1>
 					<p className={TEXT_SECONDARY}>
@@ -291,7 +293,9 @@ export default function DashboardPage() {
 							</div>
 							<div className="min-h-[400px] max-h-[calc(100vh-20rem)] overflow-y-auto pr-2">
 								{isLoadingJobs ? (
-									<div className={`flex items-center justify-center h-32 ${TEXT_SECONDARY}`}>
+									<div
+										className={`flex items-center justify-center h-32 ${TEXT_SECONDARY}`}
+									>
 										<p>Loading saved jobs...</p>
 									</div>
 								) : savedJobs.length === 0 ? (
