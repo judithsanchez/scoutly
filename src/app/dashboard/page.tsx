@@ -4,7 +4,10 @@ import React, {useState, useEffect} from 'react';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import {SearchModal} from '@/components/SearchModal';
 import SavedJobCard from '@/components/SavedJobCard';
-import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
+import ApplicationPipeline from '@/components/ApplicationPipeline';
+import StartScoutButton from '@/components/StartScoutButton';
+import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
+import config from '@/config/appConfig';
 
 // --- STYLING & ICONS ---
 const cardClasses =
@@ -72,6 +75,10 @@ export default function DashboardPage() {
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
 	const [isSearchModalOpen, setSearchModalOpen] = useState(false);
 	const [searchRequestBody, setSearchRequestBody] = useState<any>(null);
+	const [searchComplete, setSearchComplete] = useState<{
+		success: boolean;
+		totalJobs: number;
+	} | null>(null);
 
 	const handleStatusChange = async (
 		jobId: string,
@@ -105,13 +112,6 @@ export default function DashboardPage() {
 
 				// Sort by status priority and suitability score
 				return updatedJobs.sort((a: ISavedJob, b: ISavedJob) => {
-					const statusPriority: Record<ApplicationStatus, number> = {
-						[ApplicationStatus.WANT_TO_APPLY]: 3,
-						[ApplicationStatus.PENDING_APPLICATION]: 2,
-						[ApplicationStatus.APPLIED]: 1,
-						[ApplicationStatus.DISCARDED]: 0,
-					};
-
 					// First compare by status priority
 					const statusDiff =
 						statusPriority[a.status as ApplicationStatus] -
@@ -130,47 +130,53 @@ export default function DashboardPage() {
 		}
 	};
 
-	useEffect(() => {
-		async function fetchSavedJobs() {
-			try {
-				const response = await fetch(
-					`/api/jobs/saved?gmail=${encodeURIComponent(authInfo.gmail)}`,
-				);
+	// Function to fetch saved jobs
+	const fetchSavedJobs = async () => {
+		try {
+			setIsLoadingJobs(true);
+			const response = await fetch(
+				`/api/jobs/saved?gmail=${encodeURIComponent(authInfo.gmail)}`,
+			);
 
-				const data = await response.json();
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch saved jobs');
-				}
-
-				// Sort jobs by status priority and suitability score
-				const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
-					const statusPriority: Record<ApplicationStatus, number> = {
-						[ApplicationStatus.WANT_TO_APPLY]: 3,
-						[ApplicationStatus.PENDING_APPLICATION]: 2,
-						[ApplicationStatus.APPLIED]: 1,
-						[ApplicationStatus.DISCARDED]: 0,
-					};
-
-					// First compare by status priority
-					const statusDiff =
-						statusPriority[a.status as ApplicationStatus] -
-						statusPriority[b.status as ApplicationStatus];
-					if (statusDiff !== 0) return -statusDiff;
-
-					// If status is the same, sort by suitability score (highest first)
-					return b.suitabilityScore - a.suitabilityScore;
-				});
-
-				setSavedJobs(sortedJobs);
-			} catch (err) {
-				console.error('Error fetching saved jobs:', err);
-			} finally {
-				setIsLoadingJobs(false);
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.error || 'Failed to fetch saved jobs');
 			}
-		}
 
+			// Sort jobs by status priority and suitability score
+			const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
+				// First compare by status priority
+				const statusDiff =
+					statusPriority[a.status as ApplicationStatus] -
+					statusPriority[b.status as ApplicationStatus];
+				if (statusDiff !== 0) return -statusDiff;
+
+				// If status is the same, sort by suitability score (highest first)
+				return b.suitabilityScore - a.suitabilityScore;
+			});
+
+			setSavedJobs(sortedJobs);
+		} catch (err) {
+			console.error('Error fetching saved jobs:', err);
+		} finally {
+			setIsLoadingJobs(false);
+		}
+	};
+
+	// Handler for when search completes
+	const handleSearchComplete = (success: boolean, totalJobs: number) => {
+		setSearchComplete({success, totalJobs});
+		if (success && totalJobs > 0) {
+			// Refresh the jobs list to show new jobs
+			fetchSavedJobs();
+		}
+	};
+
+	// Initial fetch of saved jobs
+	useEffect(() => {
 		fetchSavedJobs();
-	}, []);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [authInfo.gmail]);
 
 	return (
 		<div className="bg-slate-950 text-white min-h-screen">
@@ -182,6 +188,46 @@ export default function DashboardPage() {
 					<p className="text-slate-400">
 						Manage your job search and track your applications
 					</p>
+
+					{/* Search completion notification */}
+					{searchComplete && (
+						<div
+							className={`mt-4 p-4 rounded-lg border flex justify-between items-center ${
+								searchComplete.success
+									? searchComplete.totalJobs > 0
+										? 'bg-green-900/20 border-green-600 text-green-400'
+										: 'bg-blue-900/20 border-blue-600 text-blue-400'
+									: 'bg-red-900/20 border-red-600 text-red-400'
+							}`}
+						>
+							<div>
+								{searchComplete.success
+									? searchComplete.totalJobs > 0
+										? `✓ Success! Found ${searchComplete.totalJobs} new positions that match your profile.`
+										: '✓ Search completed successfully, but no new matching positions were found.'
+									: '✗ There was a problem with the job search. Please try again.'}
+							</div>
+							<button
+								onClick={() => setSearchComplete(null)}
+								className="p-1 hover:bg-slate-700 rounded-full"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
+									<line x1="18" y1="6" x2="6" y2="18"></line>
+									<line x1="6" y1="6" x2="18" y2="18"></line>
+								</svg>
+							</button>
+						</div>
+					)}
 				</div>
 
 				{/* Auth Info Section */}
@@ -202,21 +248,22 @@ export default function DashboardPage() {
 							>
 								Edit Profile
 							</a>
-							<button
-								onClick={() => {
+							<StartScoutButton
+								onScoutStart={async selectedCompanyIds => {
+									// Clear any previous search results notification
+									setSearchComplete(null);
+
 									const requestBody = {
 										credentials: authInfo,
-										companyIds: selectedCompanies,
+										companyIds: selectedCompanyIds,
 										cvUrl: DEFAULT_CANDIDATE_DATA.cvUrl,
 										candidateInfo: DEFAULT_CANDIDATE_DATA.candidateInfo,
 									};
 									setSearchRequestBody(requestBody);
 									setSearchModalOpen(true);
 								}}
-								className={primaryButtonClasses}
-							>
-								Start Search
-							</button>
+								className="ml-2"
+							/>
 						</div>
 					</div>
 				</div>
@@ -226,6 +273,7 @@ export default function DashboardPage() {
 					isOpen={isSearchModalOpen}
 					onClose={() => setSearchModalOpen(false)}
 					requestBody={searchRequestBody}
+					onSearchComplete={handleSearchComplete}
 				/>
 
 				{/* Main Content - Two Column Layout */}
@@ -321,6 +369,16 @@ export default function DashboardPage() {
 						</div>
 					</div>
 				</div>
+
+				{/* Application Pipeline (Kanban View) */}
+				{config.features.enableKanbanView && savedJobs.length > 0 && (
+					<div className={`mt-8 ${cardClasses} p-6`}>
+						<ApplicationPipeline
+							jobs={savedJobs}
+							onStatusChange={handleStatusChange}
+						/>
+					</div>
+				)}
 			</main>
 		</div>
 	);

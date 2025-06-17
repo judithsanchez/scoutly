@@ -6,13 +6,20 @@ interface SearchModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	requestBody: any;
+	onSearchComplete?: (success: boolean, totalJobs: number) => void;
 }
 
-export function SearchModal({isOpen, onClose, requestBody}: SearchModalProps) {
+export function SearchModal({
+	isOpen,
+	onClose,
+	requestBody,
+	onSearchComplete,
+}: SearchModalProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [results, setResults] = useState<{
 		message: string;
 		error?: boolean;
+		totalJobs?: number;
 	} | null>(null);
 
 	if (!isOpen) return null;
@@ -49,12 +56,23 @@ export function SearchModal({isOpen, onClose, requestBody}: SearchModalProps) {
 						? `Found ${totalJobs} new positions!`
 						: 'No new positions found.',
 				error: false,
+				totalJobs,
 			});
+
+			// Notify parent component that search completed successfully
+			if (onSearchComplete) {
+				onSearchComplete(true, totalJobs);
+			}
 		} catch (error: any) {
 			setResults({
 				message: error.message || 'An error occurred while searching for jobs',
 				error: true,
 			});
+
+			// Notify parent component that search failed
+			if (onSearchComplete) {
+				onSearchComplete(false, 0);
+			}
 		} finally {
 			setIsLoading(false);
 		}

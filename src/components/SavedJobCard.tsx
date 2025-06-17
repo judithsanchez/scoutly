@@ -1,16 +1,32 @@
 import {useState} from 'react';
 import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
-import {StarIcon, CheckIcon, ArchiveIcon} from '@/components/ui/status-icons';
+import {
+	StarIcon,
+	CheckIcon,
+	ArchiveIcon,
+	CalendarIcon,
+	CodeIcon,
+	CloseIcon,
+	MailIcon,
+	ThumbsUpIcon,
+	ThumbsDownIcon,
+	ClockIcon,
+	XIcon,
+} from '@/components/ui/icons';
+import {StatusBadge} from '@/components/ui/StatusBadge';
+import {StatusDropdown} from '@/components/ui/StatusDropdown';
 
 interface SavedJobCardProps {
 	job: ISavedJob;
 	compact?: boolean; // For dashboard view
+	kanban?: boolean; // For kanban view
 	onStatusChange?: (jobId: string, status: ApplicationStatus) => Promise<void>;
 }
 
 export default function SavedJobCard({
 	job,
 	compact = false,
+	kanban = false,
 	onStatusChange,
 }: SavedJobCardProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
@@ -26,15 +42,105 @@ export default function SavedJobCard({
 		switch (job.status) {
 			case ApplicationStatus.WANT_TO_APPLY:
 				return 'border-l-yellow-400 hover:bg-yellow-400/10';
+			case ApplicationStatus.PENDING_APPLICATION:
+				return 'border-l-orange-400 hover:bg-orange-400/10';
 			case ApplicationStatus.APPLIED:
-				return 'border-l-green-400 hover:bg-green-400/10';
-			case ApplicationStatus.DISCARDED:
+				return 'border-l-blue-400 hover:bg-blue-400/10';
+			case ApplicationStatus.INTERVIEW_SCHEDULED:
+				return 'border-l-purple-400 hover:bg-purple-400/10';
+			case ApplicationStatus.TECHNICAL_ASSESSMENT:
+				return 'border-l-indigo-400 hover:bg-indigo-400/10';
+			case ApplicationStatus.OFFER_RECEIVED:
+				return 'border-l-green-500 hover:bg-green-500/10';
+			case ApplicationStatus.OFFER_ACCEPTED:
+				return 'border-l-emerald-500 hover:bg-emerald-500/10';
+			case ApplicationStatus.OFFER_DECLINED:
+				return 'border-l-rose-500 hover:bg-rose-500/10';
+			case ApplicationStatus.REJECTED:
 				return 'border-l-red-500 hover:bg-red-500/10';
+			case ApplicationStatus.STALE:
+				return 'border-l-gray-400 hover:bg-gray-400/10';
+			case ApplicationStatus.DISCARDED:
+				return 'border-l-slate-500 hover:bg-slate-500/10';
 			default:
 				return 'border-l-slate-400 hover:bg-slate-700';
 		}
 	};
 
+	// For Kanban view, render a simplified version
+	if (kanban) {
+		return (
+			<div
+				className={`bg-slate-800 rounded-lg p-3 shadow-md border-l-4 ${getStatusStyles()} 
+				 hover:bg-slate-700/80 transition-all ${
+						job.status === ApplicationStatus.DISCARDED ? 'opacity-60' : ''
+					}`}
+			>
+				<div className="flex items-start justify-between mb-2">
+					<h3 className="font-semibold text-white text-sm line-clamp-2">
+						{job.title}
+					</h3>
+					<div className="text-lg font-bold text-green-400 ml-1 shrink-0">
+						{job.suitabilityScore}%
+					</div>
+				</div>
+
+				<p className="text-slate-400 text-xs font-medium mb-2 line-clamp-1">
+					{job.company &&
+					typeof job.company === 'object' &&
+					'company' in job.company
+						? (job.company as any).company
+						: 'Company not specified'}
+				</p>
+
+				{job.location && (
+					<p className="text-slate-500 text-xs mb-2 line-clamp-1">
+						{job.location}
+					</p>
+				)}
+
+				{/* Tech Stack Tags - limited in kanban view */}
+				{job.techStack && job.techStack.length > 0 && (
+					<div className="flex flex-wrap gap-1 mb-2">
+						{job.techStack.slice(0, 3).map((tech, index) => (
+							<span
+								key={index}
+								className="bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded-full text-xs"
+							>
+								{tech}
+							</span>
+						))}
+						{job.techStack.length > 3 && (
+							<span className="text-slate-400 text-xs">
+								+{job.techStack.length - 3}
+							</span>
+						)}
+					</div>
+				)}
+
+				<div className="flex items-center justify-between border-t border-slate-700 pt-2 mt-1">
+					<a
+						href={job.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-purple-400 hover:text-purple-300 text-xs"
+					>
+						View Job
+					</a>
+					{onStatusChange && (
+						<StatusDropdown
+							currentStatus={job.status}
+							onStatusChange={handleStatusChange}
+							disabled={false}
+							compact={true}
+						/>
+					)}
+				</div>
+			</div>
+		);
+	}
+
+	// Standard view
 	return (
 		<div
 			className={`bg-slate-800/80 rounded-lg ${
@@ -49,13 +155,16 @@ export default function SavedJobCard({
 				}`}
 			>
 				<div className="flex-grow">
-					<h3
-						className={`${
-							compact ? 'text-base' : 'text-xl'
-						} font-bold text-white mb-1`}
-					>
-						{job.title}
-					</h3>
+					<div className="flex items-center gap-2 mb-1">
+						<h3
+							className={`${
+								compact ? 'text-base' : 'text-xl'
+							} font-bold text-white`}
+						>
+							{job.title}
+						</h3>
+						<StatusBadge status={job.status} />
+					</div>
 					<p className="text-slate-400 font-medium">
 						{job.company &&
 						typeof job.company === 'object' &&
@@ -71,45 +180,11 @@ export default function SavedJobCard({
 					<div className="text-3xl font-bold text-green-400">
 						{job.suitabilityScore}%
 					</div>
-					<div className="flex items-center gap-2">
-						<button
-							onClick={() =>
-								handleStatusChange(ApplicationStatus.WANT_TO_APPLY)
-							}
-							className={`status-btn p-2 rounded-full transition-colors ${
-								job.status === ApplicationStatus.WANT_TO_APPLY
-									? 'bg-yellow-400/20 text-yellow-400'
-									: 'text-slate-400 hover:bg-slate-700'
-							}`}
-							title="Want to Apply"
-						>
-							<StarIcon
-								filled={job.status === ApplicationStatus.WANT_TO_APPLY}
-							/>
-						</button>
-						<button
-							onClick={() => handleStatusChange(ApplicationStatus.APPLIED)}
-							className={`status-btn p-2 rounded-full transition-colors ${
-								job.status === ApplicationStatus.APPLIED
-									? 'bg-green-400/20 text-green-400'
-									: 'text-slate-400 hover:bg-slate-700'
-							}`}
-							title="Mark as Applied"
-						>
-							<CheckIcon filled={job.status === ApplicationStatus.APPLIED} />
-						</button>
-						<button
-							onClick={() => handleStatusChange(ApplicationStatus.DISCARDED)}
-							className={`status-btn p-2 rounded-full transition-colors ${
-								job.status === ApplicationStatus.DISCARDED
-									? 'bg-red-500/20 text-red-400'
-									: 'text-slate-400 hover:bg-slate-700'
-							}`}
-							title="Discard"
-						>
-							<ArchiveIcon />
-						</button>
-					</div>
+					<StatusDropdown
+						currentStatus={job.status}
+						onStatusChange={handleStatusChange}
+						disabled={!onStatusChange}
+					/>
 				</div>
 			</div>
 

@@ -1,0 +1,31 @@
+classDef default fill:#2d333b,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef process fill:#22272e,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef storage fill:#1d2229,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef special fill:#2d2b55,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef important fill:#3e3426,stroke:#d4a75f,stroke-width:1px,color:#d4a75f
+
+flowchart TD
+    Start([Start Job Search]):::process --> Want[Want to Apply]:::default
+    Want --> Applied[Applied]:::process
+    Applied --> Tech[Technical Assessment]:::special
+    Applied --> Interview[Interview Scheduled]:::special
+    Tech --> Interview
+    Interview --> Offer[Offer Received]:::important
+    Interview --> Rejected[Rejected]:::storage
+    Offer --> Accepted[Offer Accepted]:::important
+    Offer --> Declined[Offer Declined]:::storage
+    
+    %% Failed responses branch
+    Applied -.-> Stale[Stale]:::storage
+    Want -.-> Discarded[Discarded]:::storage
+    
+    %% Add descriptions with position hints
+    subgraph Status Workflow
+        Start
+        Want -- "Active job search" --> Applied
+        Applied -- "Advanced stages" --> Tech & Interview
+        Interview -- "Final outcomes" --> Offer & Rejected
+        Offer -- "Decision" --> Accepted & Declined
+        Applied -. "No response<br>after 14 days" .-> Stale
+        Want -. "Not interested" .-> Discarded
+    end

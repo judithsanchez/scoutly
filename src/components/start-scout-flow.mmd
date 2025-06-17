@@ -1,0 +1,29 @@
+%%{
+  init: {
+    "theme": "dark"
+  }
+}%%
+
+flowchart TD
+    A[User clicks 'Start New Scout'] --> B{Available tracked companies?}
+    B -- Yes --> C[Show company selection modal]
+    B -- No --> D[Show 'No companies available' message]
+    
+    C --> E[User selects companies]
+    E --> F[User clicks 'Start Scouting']
+    
+    F --> G[Open SearchModal with request body]
+    G --> H[User confirms search]
+    
+    H --> I[Call /api/jobs API]
+    I --> J[API processes each company]
+    J --> K[Find and save matching jobs to DB]
+    
+    K --> L{Jobs found?}
+    L -- Yes --> M[Show success message with job count]
+    L -- No --> N[Show 'No jobs found' message]
+    
+    M --> O[Refresh dashboard job list]
+    N --> O
+    
+    O --> P[Display jobs in Kanban view]
