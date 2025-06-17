@@ -50,15 +50,15 @@ interface CandidateInfo {
 
 // --- STYLING ---
 const cardClasses =
-	'bg-slate-800/50 border border-slate-700 rounded-2xl p-4 shadow-lg';
-const labelClasses = 'block text-sm font-medium text-slate-300 mb-2';
+	'bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-lg';
+const labelClasses = 'block text-sm font-medium text-[var(--text-muted)] mb-2';
 const inputClasses =
-	'block w-full bg-slate-700/50 border border-slate-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition';
+	'block w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg py-2 px-3 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-purple-500 transition';
 const buttonClasses =
 	'px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const secondaryButtonClasses = `${buttonClasses} bg-slate-600 hover:bg-slate-500 text-white`;
+const secondaryButtonClasses = `${buttonClasses} bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover-bg)] text-[var(--btn-secondary-text)]`;
 const removeButtonClasses = `${buttonClasses} bg-pink-600/80 hover:bg-pink-700 text-white text-xs py-1 px-2 flex items-center justify-center`;
-const primaryButtonClasses = `${buttonClasses} bg-purple-600 text-white hover:bg-purple-700 shadow-md`;
+const primaryButtonClasses = `${buttonClasses} bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] shadow-md`;
 
 // Default data
 const DEFAULT_CANDIDATE_DATA = {
@@ -147,24 +147,24 @@ export default function ProfilePage() {
 	};
 
 	return (
-		<div className="bg-slate-950 text-white min-h-screen">
+		<div className="bg-[var(--page-bg)] text-[var(--text-color)] min-h-screen">
 			<div className="background-glows fixed inset-0 z-0"></div>
 			<main className="relative z-10 max-w-4xl mx-auto pt-32 pb-24 px-4">
 				{/* Header */}
 				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-white mb-2">
+					<h1 className="text-3xl font-bold text-[var(--text-color)] mb-2">
 						Profile Settings
 					</h1>
-					<p className="text-slate-400">
+					<p className="text-[var(--text-muted)]">
 						Manage your profile information and job preferences
 					</p>
 				</div>
 
 				{/* Auth Info Section */}
-				<div className="mb-8 p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
+				<div className="mb-8 p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)]">
 					<div className="flex justify-between items-center">
 						<div>
-							<h2 className="text-lg font-medium text-slate-200">
+							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
 							</h2>
 							<p className="text-purple-400 font-medium mt-1">
@@ -217,10 +217,12 @@ export default function ProfilePage() {
 
 					{/* Logistics */}
 					<div className={cardClasses}>
-						<h3 className="text-lg font-bold text-white mb-4">Logistics</h3>
+						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">
+							Logistics
+						</h3>
 						<div className="space-y-6">
 							<div>
-								<h4 className="font-semibold text-slate-200 mb-2">
+								<h4 className="font-semibold text-[var(--text-color)] mb-2">
 									Current Residence
 								</h4>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,7 +292,7 @@ export default function ProfilePage() {
 							<div className="flex items-center gap-3 pt-2">
 								<label
 									htmlFor="willingToRelocate"
-									className="font-medium text-slate-200"
+									className="font-medium text-[var(--text-color)]"
 								>
 									Willing to relocate?
 								</label>
@@ -299,95 +301,90 @@ export default function ProfilePage() {
 									id="willingToRelocate"
 									checked={logistics.willingToRelocate}
 									onChange={e =>
-										setLogistics({
-											...logistics,
-											willingToRelocate: e.target.checked,
-										})
+										setLogistics({...logistics, willingToRelocate: e.target.checked})
 									}
-									className="h-5 w-5 rounded bg-slate-700 border-slate-600 text-purple-500 focus:ring-purple-500"
+									className="h-5 w-5 rounded bg-[var(--input-bg)] border-[var(--input-border)] text-purple-500 focus:ring-purple-500"
 								/>
 							</div>
 
 							<div>
-								<h4 className="font-semibold text-slate-200 mb-2">
+								<h4 className="font-semibold text-[var(--text-color)] mb-2">
 									Work Authorization
 								</h4>
-								<div className="space-y-3">
-									{logistics.workAuthorization.map((auth, index) => (
-										<div
-											key={index}
-											className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-slate-900/50 rounded-lg items-center"
+								{logistics.workAuthorization.map((auth, index) => (
+									<div
+										key={index}
+										className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-[var(--card-bg-secondary)] rounded-lg items-center"
+									>
+										<input
+											type="text"
+											placeholder="Region (e.g., European Union)"
+											value={auth.region}
+											onChange={e => {
+												const updatedAuth = [...logistics.workAuthorization];
+												updatedAuth[index] = {
+													...auth,
+													region: e.target.value,
+												};
+												setLogistics({
+													...logistics,
+													workAuthorization: updatedAuth,
+												});
+											}}
+											className={inputClasses}
+										/>
+										<input
+											type="text"
+											placeholder="Region Code (e.g., EU)"
+											value={auth.regionCode}
+											onChange={e => {
+												const updatedAuth = [...logistics.workAuthorization];
+												updatedAuth[index] = {
+													...auth,
+													regionCode: e.target.value,
+												};
+												setLogistics({
+													...logistics,
+													workAuthorization: updatedAuth,
+												});
+											}}
+											className={inputClasses}
+										/>
+										<input
+											type="text"
+											placeholder="Status (e.g., Citizen)"
+											value={auth.status}
+											onChange={e => {
+												const updatedAuth = [...logistics.workAuthorization];
+												updatedAuth[index] = {
+													...auth,
+													status: e.target.value,
+												};
+												setLogistics({
+													...logistics,
+													workAuthorization: updatedAuth,
+												});
+											}}
+											className={inputClasses}
+										/>
+										<button
+											type="button"
+											onClick={() => {
+												const filteredAuth =
+													logistics.workAuthorization.filter(
+														(_, i) => i !== index,
+													);
+												setLogistics({
+													...logistics,
+													workAuthorization: filteredAuth,
+												});
+											}}
+											className={removeButtonClasses + ' h-10'}
 										>
-											<input
-												type="text"
-												placeholder="Region (e.g., European Union)"
-												value={auth.region}
-												onChange={e => {
-													const updatedAuth = [...logistics.workAuthorization];
-													updatedAuth[index] = {
-														...auth,
-														region: e.target.value,
-													};
-													setLogistics({
-														...logistics,
-														workAuthorization: updatedAuth,
-													});
-												}}
-												className={inputClasses}
-											/>
-											<input
-												type="text"
-												placeholder="Region Code (e.g., EU)"
-												value={auth.regionCode}
-												onChange={e => {
-													const updatedAuth = [...logistics.workAuthorization];
-													updatedAuth[index] = {
-														...auth,
-														regionCode: e.target.value,
-													};
-													setLogistics({
-														...logistics,
-														workAuthorization: updatedAuth,
-													});
-												}}
-												className={inputClasses}
-											/>
-											<input
-												type="text"
-												placeholder="Status (e.g., Citizen)"
-												value={auth.status}
-												onChange={e => {
-													const updatedAuth = [...logistics.workAuthorization];
-													updatedAuth[index] = {
-														...auth,
-														status: e.target.value,
-													};
-													setLogistics({
-														...logistics,
-														workAuthorization: updatedAuth,
-													});
-												}}
-												className={inputClasses}
-											/>
-											<button
-												type="button"
-												onClick={() => {
-													const filteredAuth =
-														logistics.workAuthorization.filter(
-															(_, i) => i !== index,
-														);
-													setLogistics({
-														...logistics,
-														workAuthorization: filteredAuth,
-													});
-												}}
-												className={removeButtonClasses + ' h-10'}
-											>
-												Remove
-											</button>
-										</div>
-									))}
-								</div>
+											Remove
+										</button>
+									</div>
+								))}
 								<button
 									type="button"
 									onClick={() => {
@@ -409,12 +406,12 @@ export default function ProfilePage() {
 
 					{/* Languages */}
 					<div className={cardClasses}>
-						<h3 className="text-lg font-bold text-white mb-4">Languages</h3>
+						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">Languages</h3>
 						<div className="space-y-3">
 							{languages.map((lang, index) => (
 								<div
 									key={index}
-									className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-slate-900/50 rounded-lg items-center"
+									className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-[var(--card-bg-secondary)] rounded-lg items-center"
 								>
 									<input
 										type="text"
@@ -469,8 +466,8 @@ export default function ProfilePage() {
 
 					{/* Preferences */}
 					<div className={cardClasses}>
-						<h3 className="text-lg font-bold text-white mb-4">Preferences</h3>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+						<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">Preferences</h3>
+						<div className="space-y-6">
 							<ArrayInput
 								label="Career Goals"
 								items={preferences.careerGoals}
@@ -505,10 +502,10 @@ export default function ProfilePage() {
 							/>
 
 							<div className="md:col-span-2">
-								<h4 className="text-lg font-semibold text-slate-200 mt-4 mb-2">
+								<h4 className="text-lg font-semibold text-[var(--text-color)] mt-4 mb-2">
 									Exclusions
 								</h4>
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-slate-900/50 rounded-lg">
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-[var(--card-bg-secondary)] rounded-lg">
 									<ArrayInput
 										label="Industries to Exclude"
 										items={preferences.exclusions.industries}

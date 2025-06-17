@@ -93,16 +93,6 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								>
 									Companies
 								</Link>
-								<Link
-									href="/profile"
-									className={`hover:text-[var(--text-color)] transition-colors ${
-										isActive('/profile')
-											? 'text-[var(--text-color)] font-semibold'
-											: ''
-									}`}
-								>
-									Profile
-								</Link>
 							</>
 						) : (
 							// Homepage navigation
@@ -251,17 +241,6 @@ export function Navbar({onDemoClick}: NavbarProps) {
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							Companies
-						</Link>
-						<Link
-							href="/profile"
-							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
-								isActive('/profile')
-									? 'text-[var(--text-color)] font-semibold'
-									: ''
-							}`}
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							Profile
 						</Link>
 					</>
 				) : (
