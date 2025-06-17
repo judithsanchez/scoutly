@@ -18,7 +18,6 @@ import {createUrlSet, filterLinksByUrlSet} from '@/utils/dataTransform';
 import {
 	createUsageStats,
 	checkDailyReset,
-	checkRateLimits,
 	getUsageSummary,
 	updateUsageStats,
 	type UsageStats,
