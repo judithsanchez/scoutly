@@ -131,9 +131,9 @@ describe('/api/jobs', () => {
 
 			mockUserService.getOrCreateUser.mockResolvedValue(mockUser as any);
 
-			mockCompanyService.findCompaniesByName
-				.mockResolvedValueOnce([mockCompanies[0]] as any)
-				.mockResolvedValueOnce([mockCompanies[1]] as any);
+			mockCompanyService.getCompanyById
+				.mockResolvedValueOnce(mockCompanies[0] as any)
+				.mockResolvedValueOnce(mockCompanies[1] as any);
 
 			const mockOrchestrator = {
 				orchestrateJobMatching: vi
@@ -176,13 +176,13 @@ describe('/api/jobs', () => {
 			expect(mockUserService.getOrCreateUser).toHaveBeenCalledWith(
 				'test@example.com',
 			);
-			expect(mockCompanyService.findCompaniesByName).toHaveBeenCalledTimes(2);
-			expect(mockCompanyService.findCompaniesByName).toHaveBeenCalledWith([
+			expect(mockCompanyService.getCompanyById).toHaveBeenCalledTimes(2);
+			expect(mockCompanyService.getCompanyById).toHaveBeenCalledWith(
 				'tech-corp',
-			]);
-			expect(mockCompanyService.findCompaniesByName).toHaveBeenCalledWith([
+			);
+			expect(mockCompanyService.getCompanyById).toHaveBeenCalledWith(
 				'startup-co',
-			]);
+			);
 			expect(mockOrchestrator.orchestrateJobMatching).toHaveBeenCalledTimes(2);
 		});
 
@@ -194,7 +194,7 @@ describe('/api/jobs', () => {
 
 			mockUserService.getOrCreateUser.mockResolvedValue(mockUser as any);
 
-			mockCompanyService.findCompaniesByName.mockResolvedValue([]);
+			mockCompanyService.getCompanyById.mockResolvedValue(null);
 
 			const mockOrchestrator = {
 				orchestrateJobMatching: vi.fn(),
@@ -231,9 +231,9 @@ describe('/api/jobs', () => {
 				],
 			});
 
-			expect(mockCompanyService.findCompaniesByName).toHaveBeenCalledWith([
+			expect(mockCompanyService.getCompanyById).toHaveBeenCalledWith(
 				'non-existent-company',
-			]);
+			);
 			expect(mockOrchestrator.orchestrateJobMatching).not.toHaveBeenCalled();
 		});
 
@@ -261,9 +261,9 @@ describe('/api/jobs', () => {
 
 			mockUserService.getOrCreateUser.mockResolvedValue(mockUser as any);
 
-			mockCompanyService.findCompaniesByName
-				.mockResolvedValueOnce([mockCompany] as any)
-				.mockResolvedValueOnce([]);
+			mockCompanyService.getCompanyById
+				.mockResolvedValueOnce(mockCompany as any)
+				.mockResolvedValueOnce(null);
 
 			const mockOrchestrator = {
 				orchestrateJobMatching: vi.fn().mockResolvedValue([mockJobResults[0]]),
@@ -324,7 +324,14 @@ describe('/api/jobs', () => {
 
 			expect(response.status).toBe(400);
 			expect(responseData).toEqual({
-				error: 'gmail, cvUrl, candidateInfo, and companyIds are required.',
+				error: 'Validation failed',
+				details: [
+					'cvUrl is required',
+					'candidateInfo is required',
+					'companyIds array with at least one company is required',
+				],
+				message:
+					'cvUrl is required, candidateInfo is required, companyIds array with at least one company is required',
 			});
 		});
 
@@ -347,7 +354,9 @@ describe('/api/jobs', () => {
 
 			expect(response.status).toBe(400);
 			expect(responseData).toEqual({
-				error: 'gmail, cvUrl, candidateInfo, and companyIds are required.',
+				error: 'Validation failed',
+				details: ['companyIds array with at least one company is required'],
+				message: 'companyIds array with at least one company is required',
 			});
 		});
 
@@ -370,7 +379,9 @@ describe('/api/jobs', () => {
 
 			expect(response.status).toBe(400);
 			expect(responseData).toEqual({
-				error: 'gmail, cvUrl, candidateInfo, and companyIds are required.',
+				error: 'Validation failed',
+				details: ['gmail credentials are required'],
+				message: 'gmail credentials are required',
 			});
 		});
 	});

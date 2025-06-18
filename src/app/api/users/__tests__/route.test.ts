@@ -56,6 +56,8 @@ describe('/api/users', () => {
 			expect(mockDbConnect).toHaveBeenCalledOnce();
 			expect(mockUserService.getOrCreateUser).toHaveBeenCalledWith(
 				'test@example.com',
+				undefined,
+				undefined,
 			);
 		});
 
@@ -85,6 +87,8 @@ describe('/api/users', () => {
 			expect(responseData.user.email).toBe('existing@example.com');
 			expect(mockUserService.getOrCreateUser).toHaveBeenCalledWith(
 				'existing@example.com',
+				undefined,
+				undefined,
 			);
 		});
 	});

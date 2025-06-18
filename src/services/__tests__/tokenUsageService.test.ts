@@ -1,8 +1,38 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {TokenUsageService} from '../tokenUsageService';
-import {TokenUsage, TokenOperation} from '@/models/TokenUsage';
-import {Logger} from '@/utils/logger';
 import type {Document} from 'mongoose';
+
+// Mock modules BEFORE importing them
+vi.mock('@/models/TokenUsage', () => ({
+	TokenOperation: {
+		INITIAL_MATCHING: 'initial_matching',
+		DEEP_DIVE_ANALYSIS: 'deep_dive_analysis',
+		JOB_BATCH_ANALYSIS: 'job_batch_analysis',
+	},
+	TokenUsage: {
+		create: vi
+			.fn()
+			.mockImplementation(doc => Promise.resolve({...doc, _id: 'mock-id'})),
+		aggregate: vi.fn(),
+	},
+}));
+
+vi.mock('@/utils/logger', () => ({
+	Logger: vi.fn().mockImplementation(() => ({
+		debug: vi.fn(),
+		error: vi.fn(),
+	})),
+}));
+
+// Now import the actual modules
+import {TokenUsageService} from '../tokenUsageService';
+import {TokenUsage} from '@/models/TokenUsage';
+
+// Mock TokenOperation enum - must match the actual enum values
+enum TokenOperation {
+	INITIAL_MATCHING = 'initial_matching',
+	DEEP_DIVE_ANALYSIS = 'deep_dive_analysis',
+	JOB_BATCH_ANALYSIS = 'job_batch_analysis',
+}
 
 interface TokenAggregateResult {
 	_id: null;
@@ -34,18 +64,17 @@ interface MockTokenUsageDocument extends Document {
 }
 
 vi.mock('@/models/TokenUsage', () => ({
-	TokenOperation,
+	TokenOperation: {
+		INITIAL_MATCHING: 'initial_matching',
+		DEEP_DIVE_ANALYSIS: 'deep_dive_analysis',
+		JOB_BATCH_ANALYSIS: 'job_batch_analysis',
+	},
 	TokenUsage: {
-		create: vi.fn().mockImplementation(doc => Promise.resolve(doc)),
+		create: vi
+			.fn()
+			.mockImplementation(doc => Promise.resolve({...doc, _id: 'mock-id'})),
 		aggregate: vi.fn(),
 	},
-}));
-
-vi.mock('@/utils/logger', () => ({
-	Logger: vi.fn().mockImplementation(() => ({
-		debug: vi.fn(),
-		error: vi.fn(),
-	})),
 }));
 
 const mockTokenUsage = vi.mocked(TokenUsage);
@@ -85,7 +114,10 @@ describe('TokenUsageService', () => {
 			const result = await TokenUsageService.recordUsage(usage);
 
 			expect(result).toEqual(expectedResult);
-			expect(mockTokenUsage.create).toHaveBeenCalledWith(expectedResult);
+			expect(mockTokenUsage.create).toHaveBeenCalledWith({
+				...usage,
+				timestamp: expect.any(Date),
+			});
 		});
 	});
 

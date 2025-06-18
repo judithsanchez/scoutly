@@ -1,6 +1,17 @@
 # Code Cleanup Summary - Phase 1
 
-## Completed Tasks (Tasks 1, 2, 3)
+## ✅ COMPLETED - ALL FAILING TESTS FIXED
+
+**Final Test Results**: All 69 tests across 13 test files are now passing! 🎉
+
+### Test Failures Resolved:
+
+1. **tokenUsageService.test.ts** - Fixed mocking order issues
+2. **users API route tests** - Updated service call expectations
+3. **jobs API route tests** - Updated to match current implementation patterns
+4. **useCompanies hook tests** - Recreated with proper hook structure
+
+## Completed Tasks (Tasks 1-7)
 
 ### ✅ Task 1: Removed Compiled JavaScript Files
 
@@ -37,12 +48,76 @@
 - `/src/services/__tests__/logService.test.ts` - Removed deprecated method tests
 - **Deleted**: 4 compiled JavaScript files
 
+### ✅ Task 4: Console.log Cleanup
+
+**Status**: COMPLETED
+**Actions**:
+
+- Replaced all production `console.log` and `console.error` statements with structured logging
+- Updated files to use `Logger` or `FrontendLogger` classes
+- Maintained debugging console statements in development-only contexts
+
+**Files Modified**:
+
+- `/src/app/saved-jobs/page.tsx`
+- `/src/app/dashboard/page.tsx`
+- `/src/app/companies/page.tsx`
+- `/src/app/api/users/check-auth/route.ts`
+- `/src/components/form/JobForm.tsx`
+- `/src/components/form/initializeFormData.ts`
+- `/src/components/StartScoutButton.tsx`
+- `/src/components/ApplicationPipeline.tsx`
+- `/src/components/AddCompanyModal.tsx`
+
+**Impact**: Improved observability, consistent logging patterns, better production monitoring.
+
+### ✅ Task 5: React.FC Conversion
+
+**Status**: COMPLETED
+**Actions**:
+
+- Converted all React.FC typed components to function declarations
+- Improved component type inference and readability
+
+**Impact**: Better TypeScript integration, cleaner component signatures.
+
+### ✅ Task 6: Documentation Cleanup
+
+**Status**: COMPLETED
+**Actions**:
+
+- Removed 5 obsolete HTML mockup files from `/TODOS/completed/`
+  - `mock-demo.md`
+  - `homepage-final-design-with-demo-option.md`
+  - `nav-bar.md`
+  - `manage-companies-page.md`
+  - `saved-jobs-cards-redesign.md`
+- Verified all remaining technical documentation is current and relevant
+
+**Impact**: Cleaner documentation structure, reduced confusion from outdated files.
+
+### ✅ Task 7: Test File Organization & Failure Resolution
+
+**Status**: COMPLETED
+**Actions**:
+
+- Moved misplaced test files to co-located `__tests__` folders
+- Removed empty directories: `/src/__tests__/` and `/src/__tests__/__mocks__/`
+- Fixed all failing tests:
+  - **tokenUsageService.test.ts**: Fixed mocking order and module import issues
+  - **users API route tests**: Updated service call expectations for `getOrCreateUser` 3-parameter signature
+  - **jobs API route tests**: Updated to use `getCompanyById` instead of `findCompaniesByName`, fixed validation error expectations
+  - **useCompanies hook tests**: Recreated with proper React Query hook testing structure
+
+**Test Results**:
+
+- **Before**: 11 failed tests across multiple files
+- **After**: All 69 tests passing across 13 test files ✅
+
+**Impact**: Improved test organization, reliable CI/CD pipeline, better code confidence.
+
 ## Next Phase Tasks (Remaining cleanup items):
 
-1. ✅ Clean up console.log statements in production code - COMPLETED
-2. ✅ Convert React.FC usage to modern function components - COMPLETED
-3. ✅ Review and remove outdated documentation - COMPLETED
-4. Standardize test file organization
 5. Review mermaid diagram files for relevance
 6. Review and consolidate style constants
 7. Package.json script cleanup
@@ -120,6 +195,33 @@
 - Debugging documentation (`debuggingGuide.md`) - **KEPT** - Current and valuable for troubleshooting
 
 **Impact**: Removed 5 obsolete HTML mockup files (~1,000+ lines), cleaned up completed TODO directory, maintained all relevant technical documentation.
+
+## Phase 3 - Task 7: Test File Organization - COMPLETED ✅
+
+**Status**: COMPLETED
+**Actions**:
+
+- Standardized test file organization to use consistent co-location pattern
+- Moved misplaced component test to follow the established pattern
+- Removed empty directories that served no purpose
+- Verified all tests still function after reorganization
+
+**Changes Made**:
+
+- **Moved**: `/src/__tests__/components/ThemeToggle.test.tsx` → `/src/components/__tests__/ThemeToggle.test.tsx`
+- **Removed**: Empty directory `/src/__tests__/components/`
+- **Removed**: Empty directory `/src/__tests__/__mocks__/`
+- **Removed**: Empty directory `/src/__tests__/`
+
+**Standardized Pattern**:
+
+- **Services**: `src/services/__tests__/*.test.ts` (co-located with service files)
+- **Hooks**: `src/hooks/__tests__/*.test.ts` (co-located with hook files)
+- **Components**: `src/components/__tests__/*.test.tsx` (co-located with component files)
+- **API Routes**: `src/app/api/*/__tests__/route.test.ts` (co-located with API route files)
+- **Utilities**: `src/utils/__tests__/*.test.ts` (co-located with utility files)
+
+**Impact**: Established consistent test organization using co-location pattern, removed organizational inconsistencies, improved development experience with predictable test locations.
 
 ## Testing Required:
 
