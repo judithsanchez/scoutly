@@ -134,7 +134,114 @@ ${batch
 	logger.info('  ↳ Received Gemini response, processing results...');
 
 	const analysis = JSON.parse(result.response.text());
-	const validResults = analysis.analysisResults
+
+	// Log all results for debugging (including rejected ones)
+	const allResults = analysis.analysisResults || [];
+	const rejectedResults = allResults.filter(
+		(result: any) => result.suitabilityScore === 0,
+	);
+	const lowScoreResults = allResults.filter(
+		(result: any) =>
+			result.suitabilityScore > 0 && result.suitabilityScore < 30,
+	);
+
+	if (rejectedResults.length > 0) {
+		logger.warn('🚫 AI rejected the following jobs with detailed analysis:', {
+			rejectedCount: rejectedResults.length,
+			rejections: rejectedResults.map((job: any) => ({
+				title: job.title,
+				url: job.url,
+				location: job.location || 'Not specified',
+				suitabilityScore: job.suitabilityScore,
+				languageRequirements: job.languageRequirements || [],
+				visaSponsorshipOffered: job.visaSponsorshipOffered || false,
+				relocationAssistanceOffered: job.relocationAssistanceOffered || false,
+				experienceLevel: job.experienceLevel || 'Not specified',
+				techStack: job.techStack?.slice(0, 5) || [], // First 5 technologies
+				considerationPoints: job.considerationPoints,
+				goodFitReasons: job.goodFitReasons || [],
+				stretchGoals: job.stretchGoals || [],
+			})),
+		});
+
+		// Log deal-breaker patterns for rejected jobs
+		const dealBreakerAnalysis = rejectedResults.map((job: any) => {
+			const rejectionReasons = [];
+
+			// Check for location/visa issues
+			if (
+				job.location &&
+				job.location.toLowerCase().includes('us') &&
+				!job.visaSponsorshipOffered
+			) {
+				rejectionReasons.push('US location without visa sponsorship');
+			}
+			if (
+				job.location &&
+				job.location.toLowerCase().includes('uk') &&
+				!job.visaSponsorshipOffered
+			) {
+				rejectionReasons.push('UK location without visa sponsorship');
+			}
+
+			// Check for language issues
+			if (job.languageRequirements && job.languageRequirements.length > 0) {
+				const candidateLanguages = ['spanish', 'english', 'dutch'];
+				const missingLanguages = job.languageRequirements.filter(
+					(lang: string) =>
+						!candidateLanguages.some(
+							candidateLang =>
+								candidateLang.toLowerCase().includes(lang.toLowerCase()) ||
+								lang.toLowerCase().includes(candidateLang.toLowerCase()),
+						),
+				);
+				if (missingLanguages.length > 0) {
+					rejectionReasons.push(
+						`Missing language requirements: ${missingLanguages.join(', ')}`,
+					);
+				}
+			}
+
+			// Check for experience level mismatches
+			if (
+				job.experienceLevel &&
+				job.experienceLevel.toLowerCase().includes('senior') &&
+				job.considerationPoints.some(
+					(point: string) =>
+						point.toLowerCase().includes('junior') ||
+						point.toLowerCase().includes('entry'),
+				)
+			) {
+				rejectionReasons.push('Experience level mismatch (domain transfer)');
+			}
+
+			return {
+				title: job.title,
+				url: job.url,
+				detectedDealBreakers: rejectionReasons,
+				aiConsiderationPoints: job.considerationPoints,
+			};
+		});
+
+		logger.warn(
+			'🔍 Deal-breaker analysis for rejected jobs:',
+			dealBreakerAnalysis,
+		);
+	}
+
+	if (lowScoreResults.length > 0) {
+		logger.info('⚠️ Low scoring jobs (0-30 points) - marginal fits:', {
+			lowScoreCount: lowScoreResults.length,
+			lowScoreJobs: lowScoreResults.map((job: any) => ({
+				title: job.title,
+				suitabilityScore: job.suitabilityScore,
+				mainConcerns: job.considerationPoints?.slice(0, 3) || [],
+				positives: job.goodFitReasons?.slice(0, 2) || [],
+			})),
+		});
+	}
+
+	const validResults = allResults
 		.filter((result: JobAnalysisResult) => result.suitabilityScore > 0)
 		.sort(
 			(a: JobAnalysisResult, b: JobAnalysisResult) =>
@@ -145,6 +252,7 @@ ${batch
 		batchSize: batch.length,
 		acceptedPositions: validResults.length,
 		rejectedPositions: batch.length - validResults.length,
+		totalAnalyzed: allResults.length,
 	});
 
 	return validResults;

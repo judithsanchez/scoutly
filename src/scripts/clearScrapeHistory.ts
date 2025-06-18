@@ -8,7 +8,7 @@
  * Usage: npx tsx src/scripts/clearScrapeHistory.ts
  */
 
-import {connectToDatabase} from '../lib/mongodb';
+import dbConnect from '../middleware/database';
 import {CompanyScrapeHistory} from '../models/CompanyScrapeHistory';
 import {Logger} from '../utils/logger';
 
@@ -17,7 +17,7 @@ const logger = new Logger('ClearScrapeHistory');
 async function clearScrapeHistory(): Promise<void> {
 	try {
 		logger.info('🚀 Connecting to database...');
-		await connectToDatabase();
+		await dbConnect();
 
 		logger.info('🔍 Checking current scrape history...');
 		const count = await CompanyScrapeHistory.countDocuments();

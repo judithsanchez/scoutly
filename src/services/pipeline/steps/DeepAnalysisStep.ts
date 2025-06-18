@@ -87,6 +87,34 @@ export class DeepAnalysisStep implements PipelineStep {
 			);
 
 			const totalResults = sortedResults.length;
+
+			// Log detailed analysis summary
+			logger.info('✓ Deep analysis completed with detailed breakdown:', {
+				totalAnalyzed: allResults.length,
+				totalAccepted: totalResults,
+				totalRejected: allResults.length - totalResults,
+				scoreDistribution: {
+					excellent: allResults.filter((r: any) => r.suitabilityScore >= 80)
+						.length,
+					good: allResults.filter(
+						(r: any) => r.suitabilityScore >= 60 && r.suitabilityScore < 80,
+					).length,
+					fair: allResults.filter(
+						(r: any) => r.suitabilityScore >= 30 && r.suitabilityScore < 60,
+					).length,
+					poor: allResults.filter(
+						(r: any) => r.suitabilityScore > 0 && r.suitabilityScore < 30,
+					).length,
+					rejected: allResults.filter((r: any) => r.suitabilityScore === 0)
+						.length,
+				},
+				topScores: sortedResults.slice(0, 3).map((r: any) => ({
+					title: r.title,
+					score: r.suitabilityScore,
+					topReason: r.goodFitReasons?.[0] || 'No reasons provided',
+				})),
+			});
+
 			logger.info(
 				`✓ Deep analysis completed. Generated ${totalResults} detailed job analyses.`,
 			);

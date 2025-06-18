@@ -15,7 +15,7 @@
  * - Clear everything: npx tsx src/scripts/clearData.ts --all
  */
 
-import {connectToDatabase} from '../lib/mongodb';
+import dbConnect from '../middleware/database';
 import {CompanyScrapeHistory} from '../models/CompanyScrapeHistory';
 import {SavedJob} from '../models/SavedJob';
 import {Logger} from '../utils/logger';
@@ -78,7 +78,7 @@ async function clearSavedJobs(userEmail?: string): Promise<void> {
 
 async function clearData(options: ClearDataOptions): Promise<void> {
 	try {
-		await connectToDatabase();
+		await dbConnect();
 		logger.info('📦 Connected to database');
 
 		if (options.all) {
