@@ -11,11 +11,19 @@ async function updateCompanyRankings() {
 		console.log(`Found ${companies.length} companies to update`);
 
 		// Update each company's ranking to 75
+		// NOTE: This script is currently disabled as the ranking functionality
+		// has been moved to the user's tracked companies relationship.
+		// TODO: Either rewrite this script to work with the new architecture
+		// or remove it if it's no longer needed.
+		/*
 		for (const company of companies) {
 			await CompanyService.updateCompanyRanking(company.companyID, 75);
 		}
+		*/
 
-		console.log('Successfully updated all company rankings to 75');
+		console.log(
+			'Script is currently disabled - ranking functionality has been moved to user tracked companies',
+		);
 
 		// Give time for any pending operations to complete
 		setTimeout(() => process.exit(0), 1000);

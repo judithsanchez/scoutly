@@ -12,7 +12,7 @@ export function CompanySelector({
 	selectedCompanies,
 	onCompaniesChange,
 }: CompanySelectorProps) {
-	const {data: companies, isLoading, error} = useCompanies();
+	const {companies, isLoading, error} = useCompanies();
 	const [searchQuery, setSearchQuery] = useState('');
 
 	const filteredCompanies = companies?.filter(company =>

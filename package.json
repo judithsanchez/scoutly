@@ -59,5 +59,9 @@
 		"tsx": "^4.6.2",
 		"typescript": "^5",
 		"vitest": "^3.2.3"
+	},
+	"overrides": {
+		"@typescript-eslint/parser": "^8.34.1",
+		"@typescript-eslint/eslint-plugin": "^8.34.1"
 	}
 }
