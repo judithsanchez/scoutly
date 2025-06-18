@@ -64,12 +64,17 @@ export async function GET() {
 				: (await getServerSession())?.user?.email;
 
 		if (!userEmail) {
-			logger.warn('Authentication required attempt');
+			logger.warn('Authentication required - no user email found', {
+				nodeEnv: process.env.NODE_ENV,
+				hasSession: !!(await getServerSession()),
+			});
 			return NextResponse.json(
 				{error: 'Authentication required'},
 				{status: 401},
 			);
 		}
+
+		logger.info('Looking up user profile', {userEmail});
 
 		let user = await User.findOne({email: userEmail}).populate(
 			'trackedCompanies',
@@ -83,16 +88,35 @@ export async function GET() {
 			});
 			logger.success(`User ${userEmail} created in dev mode.`);
 		} else if (!user) {
-			logger.warn(`User ${userEmail} not found.`);
+			logger.warn(`User ${userEmail} not found in database.`, {
+				userEmail,
+				nodeEnv: process.env.NODE_ENV,
+			});
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
+
+		// Log profile completeness for debugging
+		logger.info('User profile retrieved', {
+			userEmail,
+			hasCvUrl: !!user.cvUrl,
+			hasCandidateInfo: !!user.candidateInfo,
+			trackedCompaniesCount: user.trackedCompanies?.length || 0,
+			cvUrl: user.cvUrl || 'NOT SET',
+			candidateInfoKeys: user.candidateInfo
+				? Object.keys(user.candidateInfo).join(', ')
+				: 'NOT SET',
+		});
 
 		logger.success(`Retrieved profile for user ${userEmail}`);
 		// Return all user fields, Mongoose lean() can be used for plain JS object
 		// and to exclude virtuals if any, but for now, direct object is fine.
 		return NextResponse.json(user);
 	} catch (error: any) {
-		logger.error('Error fetching user profile', error);
+		logger.error('Error fetching user profile', {
+			message: error.message,
+			stack: error.stack,
+			name: error.name,
+		});
 		return NextResponse.json(
 			{error: 'Internal server error', details: error.message},
 			{status: 500},

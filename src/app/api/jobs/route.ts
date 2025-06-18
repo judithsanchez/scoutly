@@ -23,18 +23,52 @@ export async function POST(request: NextRequest) {
 		const body = (await request.json()) as JobAnalysisRequest;
 		const {credentials, companyIds, cvUrl, candidateInfo} = body;
 
-		if (
-			!credentials?.gmail ||
-			!cvUrl ||
-			!candidateInfo ||
-			!companyIds ||
-			companyIds.length === 0
-		) {
+		// Enhanced validation with detailed error messages
+		const validationErrors = [];
+
+		if (!credentials?.gmail) {
+			validationErrors.push('gmail credentials are required');
+		}
+		if (!cvUrl) {
+			validationErrors.push('cvUrl is required');
+		}
+		if (!candidateInfo) {
+			validationErrors.push('candidateInfo is required');
+		}
+		if (!companyIds || !Array.isArray(companyIds) || companyIds.length === 0) {
+			validationErrors.push(
+				'companyIds array with at least one company is required',
+			);
+		}
+
+		if (validationErrors.length > 0) {
+			logger.warn('Job search request validation failed:', {
+				errors: validationErrors,
+				requestBody: {
+					hasCredentials: !!credentials,
+					hasGmail: !!credentials?.gmail,
+					hasCvUrl: !!cvUrl,
+					hasCandidateInfo: !!candidateInfo,
+					companyIdsCount: companyIds?.length || 0,
+					userEmail: credentials?.gmail || 'unknown',
+				},
+			});
+
 			return NextResponse.json(
-				{error: 'gmail, cvUrl, candidateInfo, and companyIds are required.'},
+				{
+					error: 'Validation failed',
+					details: validationErrors,
+					message: validationErrors.join(', '),
+				},
 				{status: 400},
 			);
 		}
+
+		logger.info('Starting job search for user:', {
+			userEmail: credentials.gmail,
+			companiesCount: companyIds.length,
+			companies: companyIds,
+		});
 
 		// Ensure the user exists (this is quick)
 		await UserService.getOrCreateUser(credentials.gmail);
@@ -45,6 +79,7 @@ export async function POST(request: NextRequest) {
 		// Process each company sequentially
 		const results = [];
 		for (const companyId of companyIds) {
+			let companyName = companyId; // Default to companyId
 			try {
 				// Get the company details from the database by companyID
 				const company = await CompanyService.getCompanyById(companyId);
@@ -58,6 +93,10 @@ export async function POST(request: NextRequest) {
 					});
 					continue;
 				}
+
+				companyName = company.company; // Update with actual company name
+
+				logger.info(`Processing company: ${companyName} (${companyId})`);
 
 				// Run the main AI workflow
 				const analysisResults = await orchestrator.orchestrateJobMatching(
@@ -77,13 +116,24 @@ export async function POST(request: NextRequest) {
 					results: analysisResults,
 				});
 			} catch (error: any) {
-				logger.error(`Error processing company ${companyName}:`, error);
+				logger.error(
+					`Error processing company ${companyName} (${companyId}):`,
+					{
+						error: error.message,
+						stack: error.stack,
+						companyId,
+						companyName,
+						userEmail: credentials.gmail,
+					},
+				);
+
 				results.push({
 					company: companyName,
 					processed: false,
 					error:
 						error.message || 'An error occurred while processing this company',
 					results: [],
+					companyId, // Include companyId for debugging
 				});
 			}
 		}
