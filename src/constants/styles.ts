@@ -2,14 +2,6 @@
  * Common styling constants used throughout the application
  */
 
-// Background related classes
-export const GRADIENT_BACKGROUND =
-	'absolute inset-0 -z-10 h-full w-full bg-white dark:bg-slate-950 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#113_1px,transparent_1px),linear-gradient(to_bottom,#113_1px,transparent_1px)] bg-[size:6rem_4rem]';
-export const ANIMATED_GRADIENT =
-	'absolute -z-10 h-full w-full bg-white dark:bg-slate-950';
-export const GRADIENT_GLOW =
-	'absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_500px_at_50%_200px,#C9EBFF,transparent)] dark:bg-[radial-gradient(circle_500px_at_50%_200px,#133347,transparent)]';
-
 // Container and layout classes
 export const MAIN_CONTAINER = 'container mx-auto px-4 py-8';
 export const CARD_CONTAINER =
@@ -30,10 +22,21 @@ export const TEXT_ACCENT = 'text-purple-600 dark:text-purple-400';
 // Button classes
 export const BUTTON_PRIMARY =
 	'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors';
+export const BUTTON_PRIMARY_PURPLE =
+	'bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors';
 export const BUTTON_SECONDARY =
 	'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-medium py-2 px-4 rounded-md transition-colors';
 export const BUTTON_OUTLINE =
 	'border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white font-medium py-2 px-4 rounded-md transition-colors';
+
+// Modal classes
+export const MODAL_OVERLAY =
+	'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50';
+export const MODAL_BACKDROP_BLUR = 'backdrop-blur-sm';
+
+// Input field classes
+export const INPUT_FIELD =
+	'w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]';
 
 // Stat card classes
 export const STAT_CARD_CONTAINER =

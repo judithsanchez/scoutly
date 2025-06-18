@@ -4,7 +4,6 @@ import {useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {ThemeToggle} from './ThemeToggle';
 import Link from 'next/link';
-import './navbar.css';
 
 interface NavbarProps {
 	onDemoClick?: () => void;
