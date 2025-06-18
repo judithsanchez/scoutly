@@ -37,6 +37,23 @@ docker compose exec app npx tsx src/scripts/clearScrapeHistory.ts
 docker compose exec app npx tsx src/scripts/clearData.ts --help
 ```
 
+## Pre-Push Validation Commands
+
+Validate your code before pushing changes:
+
+```bash
+# Quick validation (lint + type-check + tests)
+npm run validate:docker
+
+# Full validation including build
+npm run validate:full:docker
+
+# Quick check (lint + type-check only)
+npm run quick-check:docker
+```
+
+See `/TODOS/pre-push-validation-commands.md` for complete documentation.
+
 ## Database Management
 
 ### Clear Scrape History
