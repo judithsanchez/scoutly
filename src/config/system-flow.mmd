@@ -1,3 +1,9 @@
+classDef default fill:#2d333b,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef process fill:#22272e,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef storage fill:#1d2229,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef special fill:#2d2b55,stroke:#adbac7,stroke-width:1px,color:#adbac7
+classDef important fill:#3e3426,stroke:#d4a75f,stroke-width:1px,color:#d4a75f
+
 graph TD
     A[Web Scraper] -->|Scrapes job listings| B[Job Data]
     B -->|Store new jobs| C[MongoDB]
@@ -44,3 +50,17 @@ graph TD
         G
         L
     end
+
+    %% Apply styling classes
+    A:::process
+    B:::default
+    C:::storage
+    D:::process
+    E:::default
+    F:::process
+    G:::process
+    H:::special
+    I:::important
+    J:::process
+    K:::process
+    L:::default

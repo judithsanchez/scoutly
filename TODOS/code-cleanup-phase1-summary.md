@@ -118,10 +118,10 @@
 
 ## Next Phase Tasks (Remaining cleanup items):
 
-5. Review mermaid diagram files for relevance
-6. Review and consolidate style constants
-7. Package.json script cleanup
-8. Frontend logger complexity review
+1. ~~Review mermaid diagram files for relevance~~ ✅ **COMPLETED**
+2. Review and consolidate style constants  
+3. Package.json script cleanup
+4. Frontend logger complexity review
 
 ## Phase 2 - Task 4: Console.log Cleanup - COMPLETED ✅
 
@@ -222,6 +222,52 @@
 - **Utilities**: `src/utils/__tests__/*.test.ts` (co-located with utility files)
 
 **Impact**: Established consistent test organization using co-location pattern, removed organizational inconsistencies, improved development experience with predictable test locations.
+
+### ✅ Task 8: Mermaid Diagram Review & Cleanup
+
+**Status**: COMPLETED
+**Actions**:
+
+- Reviewed all 11 Mermaid diagram files for relevance, accuracy, and duplication
+- Removed 3 redundant/outdated diagrams
+- Standardized styling across remaining diagrams to use consistent dark theme
+
+**Diagrams Removed**:
+
+- `/src/services/jobMatchingOrchestrator.mmd` - Legacy single-architecture view, superseded by dual architecture diagram
+- `/src/app/api/jobs/jobs-endpoint-example-flow.mmd` - Overly verbose example (108 lines), redundant with general flow
+- `/src/app/api/jobs/jobs-endpoint-flow.mmd` - Unreferenced API flow diagram, orchestrator diagrams cover this functionality
+
+**Diagrams Kept & Updated** (8 total):
+
+1. `/src/services/orchestrator-pipeline-architecture.mmd` - Current dual architecture (pipeline vs legacy) ✅
+2. `/src/services/tokenUsageService.mmd` - Current token usage service flow ✅
+3. `/src/services/scrapeHistoryService.mmd` - Current scrape history service flow ✅
+4. `/src/config/system-flow.mmd` - Overall system architecture ✅ (added styling)
+5. `/src/config/rate-limits.mmd` - Current Gemini API rate limits ✅ (standardized styling)
+6. `/src/models/database-schema.mmd` - Current database schema (ERD) ✅
+7. `/src/components/job-status-flow.mmd` - UI application status workflow ✅
+8. `/src/components/start-scout-flow.mmd` - UI job search initiation flow ✅
+
+**Styling Standardization**:
+
+- Applied consistent dark theme colors across all flowchart diagrams
+- Updated `rate-limits.mmd` from custom colors to standard theme
+- Added styling classes to `system-flow.mmd` for better visual consistency
+- Maintained ERD styling for database schema (appropriate for diagram type)
+
+**Documentation Updates**:
+
+- Updated `/src/services/jobMatchingOrchestrator.md` to remove reference to deleted legacy diagram
+- All remaining diagrams are actively referenced in corresponding documentation
+
+**Impact**: Reduced diagram count from 11 to 8, eliminated redundancy, improved visual consistency, cleaner codebase with only relevant and current diagrams.
+
+## Next Phase Tasks (Remaining cleanup items):
+
+9. Review and consolidate style constants
+10. Package.json script cleanup
+11. Frontend logger complexity review
 
 ## Testing Required:
 

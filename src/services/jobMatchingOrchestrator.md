@@ -15,7 +15,7 @@ The orchestrator now supports two distinct architectures:
 1. **Pipeline-Based Architecture** (Default): Modular, step-based processing with shared context
 2. **Legacy Architecture**: Original monolithic implementation for backward compatibility
 
-See [orchestrator-pipeline-architecture.mmd](./orchestrator-pipeline-architecture.mmd) for the new dual architecture diagram and [jobMatchingOrchestrator.mmd](./jobMatchingOrchestrator.mmd) for the original flow diagram.
+See [orchestrator-pipeline-architecture.mmd](./orchestrator-pipeline-architecture.mmd) for the dual architecture flow diagram.
 
 ### Architecture Selection
 
