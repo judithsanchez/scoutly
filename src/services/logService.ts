@@ -36,15 +36,4 @@ export class LogService {
 			throw new Error(`Error creating log batch: ${error.message}`);
 		}
 	}
-
-	// Keep for backwards compatibility, but mark as deprecated
-	/** @deprecated Use saveBatchedLogs instead */
-	public static async createLog(logEntry: LogEntry): Promise<ILog> {
-		return this.saveBatchedLogs([logEntry]);
-	}
-
-	/** @deprecated Use saveBatchedLogs instead */
-	public static async createLogs(logEntries: LogEntry[]): Promise<ILog> {
-		return this.saveBatchedLogs(logEntries);
-	}
 }

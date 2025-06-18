@@ -119,32 +119,4 @@ describe('LogService', () => {
 			expect(mockLog.create).toHaveBeenCalledWith(expectedBatch);
 		});
 	});
-
-	// Test deprecated methods
-	describe('createLog (deprecated)', () => {
-		it('should create a single log entry using saveBatchedLogs', async () => {
-			const logEntry = {
-				timestamp: new Date('2023-01-01T00:00:00.000Z'),
-				level: 'info' as const,
-				message: 'Test log',
-				context: 'test-context',
-				sequence: 1,
-			};
-
-			const expectedBatch = {
-				processId: '12345678-1234-1234-1234-123456789012',
-				context: 'test-context',
-				startTime: logEntry.timestamp,
-				endTime: logEntry.timestamp,
-				entries: [logEntry],
-			};
-
-			mockLog.create.mockResolvedValueOnce(expectedBatch as any);
-
-			const result = await LogService.createLog(logEntry);
-
-			expect(result).toEqual(expectedBatch);
-			expect(mockLog.create).toHaveBeenCalledWith(expectedBatch);
-		});
-	});
 });
