@@ -6,6 +6,7 @@ import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
 import {DEFAULT_USER_EMAIL} from '@/constants/common';
 import {API_ENDPOINTS} from '@/constants/config';
 import {API_CONFIG, API_ERRORS} from '@/constants/api';
+import {createLogger} from '@/utils/frontendLogger';
 import {
 	HEADING_LG,
 	FLEX_COL,
@@ -23,6 +24,7 @@ export default function SavedJobsPage() {
 	const [jobs, setJobs] = useState<ISavedJob[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const logger = createLogger('SavedJobsPage', DEFAULT_USER_EMAIL);
 
 	const handleStatusChange = async (
 		jobId: string,
@@ -73,7 +75,7 @@ export default function SavedJobsPage() {
 			setError(
 				err instanceof Error ? err.message : 'Failed to update job status',
 			);
-			console.error('Error updating job status:', err);
+			logger.error('Failed to update job status', {error: err, jobId, status});
 		}
 	};
 
@@ -88,7 +90,7 @@ export default function SavedJobsPage() {
 					return;
 				}
 
-				console.log('Fetching jobs for email:', DEFAULT_USER_EMAIL);
+				logger.info('Fetching saved jobs', {email: DEFAULT_USER_EMAIL});
 				const response = await fetch(
 					`${API_ENDPOINTS.SAVED_JOBS}?${
 						API_CONFIG.QUERY_PARAMS.EMAIL
@@ -101,7 +103,7 @@ export default function SavedJobsPage() {
 				}
 
 				const jobs = data as SavedJobResponse;
-				console.log('Fetched jobs:', jobs);
+				logger.debug('Fetched saved jobs', {jobCount: jobs.jobs.length, jobs});
 
 				const sortedJobs = jobs.jobs.sort((a, b) => {
 					const statusDiff =
@@ -115,14 +117,14 @@ export default function SavedJobsPage() {
 				setJobs(sortedJobs);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : 'An error occurred');
-				console.error('Error fetching jobs:', err);
+				logger.error('Failed to fetch saved jobs', {error: err});
 			} finally {
 				setIsLoading(false);
 			}
 		}
 
 		fetchSavedJobs();
-	}, []);
+	}, [logger]);
 
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>

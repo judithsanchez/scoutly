@@ -1,4 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {Logger} from '@/utils/logger';
+
+const logger = new Logger('AuthCheckAPI');
 
 export async function POST(req: NextRequest) {
 	try {
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
 			{status: 401},
 		);
 	} catch (error) {
-		console.error('Auth check error:', error);
+		await logger.error('Auth check failed', {error});
 		return NextResponse.json(
 			{isAuthorized: false, message: 'Server error'},
 			{status: 500},
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
 
 		return NextResponse.json({isAuthorized: false}, {status: 401});
 	} catch (error) {
-		console.error('Auth check error:', error);
+		await logger.error('GET auth check failed', {error});
 		return NextResponse.json({isAuthorized: false}, {status: 500});
 	}
 }

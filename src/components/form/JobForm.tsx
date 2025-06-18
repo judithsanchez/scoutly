@@ -3,6 +3,7 @@
 import React from 'react';
 import {Button} from '@/components/ui/button';
 import {DynamicField} from './DynamicField';
+import {createLogger} from '@/utils/frontendLogger';
 
 interface FormState {
 	credentials: {
@@ -24,6 +25,7 @@ const INITIAL_STATE: FormState = {
 };
 
 export function JobForm() {
+	const logger = createLogger('JobForm');
 	const [formData, setFormData] = React.useState<FormState>(INITIAL_STATE);
 
 	React.useEffect(() => {
@@ -143,21 +145,13 @@ export function JobForm() {
 								body: JSON.stringify(formData),
 							});
 							const data = await response.json();
-							console.log('API Response:', data);
+							logger.logApiResponse('/api/jobs', response.status, data);
 						} catch (error) {
-							console.error('Error calling API:', error);
+							logger.logApiError('/api/jobs', error);
 						}
 					}}
 				>
 					Search for Jobs
-				</Button>
-				<Button
-					variant="outline"
-					onClick={() =>
-						console.log('Form Data:', JSON.stringify(formData, null, 2))
-					}
-				>
-					Log Form Data
 				</Button>
 			</div>
 		</form>

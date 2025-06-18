@@ -5,6 +5,7 @@ import {useCompanies} from '@/hooks/useCompanies';
 import {ICompany} from '@/types/company';
 import {useEffect, useState} from 'react';
 import {AddCompanyModal} from '@/components/AddCompanyModal';
+import {createLogger} from '@/utils/frontendLogger';
 import {
 	PAGE_BACKGROUND_CONTAINER,
 	PAGE_BACKGROUND_GLOW,
@@ -18,6 +19,7 @@ import {
 } from '@/constants/styles';
 
 const CompanyCard = ({company}: {company: ICompany}) => {
+	const logger = createLogger('CompanyCard', company.companyID);
 	const {
 		trackedCompanies,
 		trackCompany,
@@ -56,7 +58,10 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 				await trackCompany(company.companyID, optimisticRanking);
 			}
 		} catch (error) {
-			console.error('Failed to update tracking status', error);
+			logger.error('Failed to update company tracking status', {
+				error,
+				companyId: company.companyID,
+			});
 			setOptimisticIsTracked(optimisticIsTracked); // Revert on error
 		} finally {
 			setIsToggleLoading(false);
@@ -72,10 +77,11 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 		try {
 			await updateRanking(company.companyID, optimisticRanking);
 		} catch (error) {
-			console.error(
-				`Failed to update ranking for company ${company.companyID}:`,
+			logger.error('Failed to update company ranking', {
 				error,
-			);
+				companyId: company.companyID,
+				newRanking: optimisticRanking,
+			});
 			setOptimisticRanking(companyRanking); // Revert on error
 		} finally {
 			setIsRankingLoading(false);
@@ -340,6 +346,7 @@ const CompanyFilters = ({
 };
 
 export default function CompaniesPage() {
+	const logger = createLogger('CompaniesPage');
 	const {
 		companies: allCompanies,
 		trackedCompanies,
@@ -506,7 +513,7 @@ export default function CompaniesPage() {
 
 						setIsAddCompanyModalOpen(false);
 					} catch (error) {
-						console.error('Failed to create company:', error);
+						logger.error('Failed to create company', {error});
 						throw error;
 					}
 				}}

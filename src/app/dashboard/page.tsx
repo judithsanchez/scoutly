@@ -120,7 +120,7 @@ export default function DashboardPage() {
 			});
 
 			setError(errorMessage);
-			console.error('Error updating job status:', err);
+			logger.error('Failed to update job status', {error: err, jobId, status});
 		}
 	};
 
@@ -168,7 +168,7 @@ export default function DashboardPage() {
 				stack: err.stack,
 				userEmail: authInfo.gmail,
 			});
-			console.error('Error fetching saved jobs:', err);
+			logger.error('Failed to fetch saved jobs', {error: err});
 		} finally {
 			setIsLoadingJobs(false);
 			logger.debug('Finished fetching saved jobs (loading state set to false)');
@@ -418,7 +418,7 @@ export default function DashboardPage() {
 											selectedCompanies: selectedCompanyIds,
 										});
 
-										console.error('Failed to start scout:', err);
+										logger.error('Failed to start scout', {error: err});
 
 										// Store the error message for user feedback
 										const errorMessage =
@@ -427,7 +427,7 @@ export default function DashboardPage() {
 
 										// You can enhance this by setting error state if you want to show specific error messages to users
 										// For now, we'll log the detailed error and show the search as incomplete
-										console.error('Detailed error info:', {
+										logger.error('Detailed scout error info', {
 											message: errorMessage,
 											stack: err?.stack,
 											timestamp: new Date().toISOString(),

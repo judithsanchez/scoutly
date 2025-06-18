@@ -17,12 +17,12 @@ interface ApplicationColumnProps {
 	onStatusChange: (jobId: string, status: ApplicationStatus) => Promise<void>;
 }
 
-const ApplicationColumn: React.FC<ApplicationColumnProps> = ({
+function ApplicationColumn({
 	title,
 	status,
 	jobs,
 	onStatusChange,
-}) => {
+}: ApplicationColumnProps) {
 	const getBorderColor = () => {
 		const color = statusColors[status] || 'slate-400';
 		return `border-${color}`;
@@ -57,17 +57,14 @@ const ApplicationColumn: React.FC<ApplicationColumnProps> = ({
 			</div>
 		</div>
 	);
-};
+}
 
 interface ApplicationPipelineProps {
 	jobs: ISavedJob[];
 	onStatusChange: (jobId: string, status: ApplicationStatus) => Promise<void>;
 }
 
-const ApplicationPipeline: React.FC<ApplicationPipelineProps> = ({
-	jobs,
-	onStatusChange,
-}) => {
+function ApplicationPipeline({jobs, onStatusChange}: ApplicationPipelineProps) {
 	// Group jobs by status
 	const groupedJobs = React.useMemo(() => {
 		const groups: Record<string, ISavedJob[]> = {};
@@ -119,6 +116,6 @@ const ApplicationPipeline: React.FC<ApplicationPipelineProps> = ({
 			</div>
 		</>
 	);
-};
+}
 
 export default ApplicationPipeline;

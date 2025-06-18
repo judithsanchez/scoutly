@@ -60,6 +60,6 @@ const formData = {
 export function initializeFormData() {
 	if (typeof window !== 'undefined') {
 		localStorage.setItem('jobFormData', JSON.stringify(formData));
-		console.log('Form data initialized in localStorage');
+		// Form data initialization completed silently
 	}
 }

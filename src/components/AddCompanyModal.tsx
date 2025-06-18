@@ -13,11 +13,11 @@ interface AddCompanyModalProps {
 	) => Promise<void>;
 }
 
-export const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
+export function AddCompanyModal({
 	isOpen,
 	onClose,
 	onAddCompany,
-}) => {
+}: AddCompanyModalProps) {
 	const [companyData, setCompanyData] = useState({
 		companyID: '',
 		company: '',
@@ -263,4 +263,4 @@ export const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
 			</div>
 		</div>
 	);
-};
+}

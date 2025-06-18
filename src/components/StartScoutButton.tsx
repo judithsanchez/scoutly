@@ -3,6 +3,7 @@
 import React, {useState} from 'react';
 import {useCompanies} from '@/hooks/useCompanies';
 import config from '@/config/appConfig';
+import {createLogger} from '@/utils/frontendLogger';
 
 interface StartScoutButtonProps {
 	onScoutStart?: (selectedCompanyIds: string[]) => Promise<void>;
@@ -13,6 +14,7 @@ export default function StartScoutButton({
 	onScoutStart,
 	className = '',
 }: StartScoutButtonProps) {
+	const logger = createLogger('StartScoutButton');
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +73,7 @@ export default function StartScoutButton({
 			setIsModalOpen(false);
 			setSelectedCompanies([]);
 		} catch (error) {
-			console.error('Failed to start scout:', error);
+			logger.error('Failed to start scout', {error, selectedCompanies});
 		} finally {
 			setIsLoading(false);
 		}
