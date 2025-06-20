@@ -389,6 +389,7 @@ export class JobMatchingOrchestrator {
 		candidateInfo: Record<string, any>,
 		userEmail: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
+		// Pipeline-only mode - legacy code commented out for testing
 		// Use pipeline if enabled (default), otherwise use legacy implementation
 		if (this.usePipeline) {
 			return this.processBatchCompaniesWithPipeline(
@@ -398,7 +399,19 @@ export class JobMatchingOrchestrator {
 				userEmail,
 			);
 		} else {
-			return this.processBatchCompaniesLegacy(
+			// TODO: Remove legacy code path after pipeline is proven stable
+			// return this.processBatchCompaniesLegacy(
+			// 	companies,
+			// 	cvUrl,
+			// 	candidateInfo,
+			// 	userEmail,
+			// );
+
+			// For now, force pipeline usage even if disabled
+			logger.warn(
+				'Legacy mode requested but disabled for testing - using pipeline',
+			);
+			return this.processBatchCompaniesWithPipeline(
 				companies,
 				cvUrl,
 				candidateInfo,
@@ -432,23 +445,26 @@ export class JobMatchingOrchestrator {
 			);
 			return results;
 		} catch (error) {
-			logger.error(
-				'❌ Pipeline execution failed, falling back to legacy implementation',
-				error,
-			);
+			logger.error('❌ Pipeline execution failed', error);
+			// TODO: Remove legacy fallback after pipeline is proven stable
 			// Fallback to legacy implementation on pipeline failure
-			return this.processBatchCompaniesLegacy(
-				companies,
-				cvUrl,
-				candidateInfo,
-				userEmail,
-			);
+			// return this.processBatchCompaniesLegacy(
+			// 	companies,
+			// 	cvUrl,
+			// 	candidateInfo,
+			// 	userEmail,
+			// );
+
+			// For now, re-throw the error to force proper pipeline error handling
+			throw error;
 		}
 	}
 
 	/**
-	 * Legacy batch processing implementation (preserved for backward compatibility)
+	 * Legacy batch processing implementation (COMMENTED OUT FOR TESTING)
+	 * TODO: Remove this entire method after confirming pipeline stability
 	 */
+	/*
 	private async processBatchCompaniesLegacy(
 		companies: ICompany[],
 		cvUrl: string,
@@ -632,6 +648,7 @@ export class JobMatchingOrchestrator {
 		);
 		return results;
 	}
+	*/
 
 	/**
 	 * Enable or disable pipeline architecture
