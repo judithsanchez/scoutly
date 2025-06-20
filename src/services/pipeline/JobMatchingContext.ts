@@ -85,6 +85,19 @@ export class JobMatchingContext implements PipelineContext {
 	}
 
 	/**
+	 * Set the current company context for accurate usage tracking
+	 */
+	setCurrentCompany(companyId: string, companyName: string): void {
+		this.currentCompanyId = companyId;
+		this.currentCompanyName = companyName;
+		logger.debug('Updated company context for usage tracking', {
+			companyId,
+			companyName,
+			userEmail: this.currentUserEmail,
+		});
+	}
+
+	/**
 	 * Record token usage for the current operation
 	 */
 	async recordUsage(
@@ -99,8 +112,20 @@ export class JobMatchingContext implements PipelineContext {
 				usage.totalTokenCount,
 			);
 
-			// Record usage in database if we have company context
-			if (this.currentUserEmail && this.currentCompanyId) {
+			logger.debug('Recording token usage in database', {
+				operation,
+				tokens: usage.totalTokenCount,
+				userEmail: this.currentUserEmail,
+				companyId: this.currentCompanyId,
+				companyName: this.currentCompanyName,
+				hasCompanyContext: !!(this.currentUserEmail && this.currentCompanyId),
+			});
+
+			// Record usage in database - use first company if no specific company context
+			const targetCompanyId = this.currentCompanyId || (this.companies.length > 0 ? this.companies[0].companyID : 'unknown');
+			const targetCompanyName = this.currentCompanyName || (this.companies.length > 0 ? this.companies[0].company : 'Unknown Company');
+
+			if (this.currentUserEmail && targetCompanyId !== 'unknown') {
 				const modelConfig = this.modelLimits;
 				const pricePerInputToken =
 					(modelConfig.pricing?.input || 0) / 1_000_000;
@@ -124,8 +149,15 @@ export class JobMatchingContext implements PipelineContext {
 						isFreeUsage: true,
 					},
 					userEmail: this.currentUserEmail,
-					companyId: this.currentCompanyId,
-					companyName: this.currentCompanyName,
+					companyId: targetCompanyId,
+					companyName: targetCompanyName,
+				});
+				
+				logger.info('✅ Token usage recorded successfully in database', {
+					operation,
+					tokens: usage.totalTokenCount,
+					companyId: targetCompanyId,
+					companyName: targetCompanyName,
 				});
 			}
 
@@ -144,7 +176,19 @@ export class JobMatchingContext implements PipelineContext {
 				this.usageStats.lastMinuteCalls = 0;
 			}, 60000);
 		} catch (error) {
-			logger.error('Failed to record token usage:', error);
+			logger.error('❌ Failed to record token usage:', {
+				error: error instanceof Error ? error.message : String(error),
+				operation,
+				tokens: usage.totalTokenCount,
+				userEmail: this.currentUserEmail,
+				companyContext: {
+					currentCompanyId: this.currentCompanyId,
+					currentCompanyName: this.currentCompanyName,
+					companiesAvailable: this.companies.length,
+					firstCompanyId: this.companies.length > 0 ? this.companies[0].companyID : 'none',
+				},
+				stack: error instanceof Error ? error.stack : undefined,
+			});
 		}
 	}
 

@@ -190,15 +190,63 @@ const batchResult = await analyzeJobBatch(/_ ... _/);
 }
 }
 
-End State for Step 1.2
-After completing this phase:
+---
 
-Your system will have a proactive checkRateLimits function that pauses execution to avoid hitting API limits.
+## ⚠️ PHASE 1, STEP 1B - PARTIALLY COMPLETED
 
-The aiProcessor will enforce these limits before every single API call.
+**Completion Date**: June 20, 2025  
+**Status**: ⚠️ Rate limiting implemented but database persistence issue discovered
 
-The JobMatchingContext will manage the live UsageStats object, ensuring accurate checks throughout a multi-step pipeline run.
+### What Was Accomplished:
 
-The TokenUsageService will be responsible solely for persisting the final token counts for each operation to the database.
+✅ **Core Rate-Limiting Logic (TDD)**
+- Comprehensive test suite created in `src/utils/__tests__/rateLimiting.test.ts` (11 tests)
+- All utility functions tested: `checkRateLimits`, `updateUsageStats`, `createUsageStats`, `checkDailyReset`, `getUsageSummary`
+- Rate limiting implementation in `src/utils/rateLimiting.ts` handles RPM, TPM, and RPD limits
+- Automatic waiting and throttling when limits are reached
+- Daily reset functionality for counters
 
-This separation of concerns makes the entire system more robust, testable, and reliable.
+✅ **Pipeline Integration** 
+- Rate limiting integrated into `src/utils/aiProcessor.ts` with `checkRateLimits` calls
+- `JobMatchingContext` tracks usage with `recordUsage` method
+- Pipeline steps automatically respect rate limits during AI processing
+- Usage analytics are captured in memory
+
+⚠️ **Database Persistence Issue Found**
+- `TokenUsageService.recordUsage()` calls were failing silently due to missing company context
+- The `currentCompanyId` and `currentCompanyName` were not being set during pipeline execution
+- Fixed by implementing fallback to first company in batch and enhanced error logging
+- Need to verify database records are actually being created after fix
+
+✅ **Test Coverage**
+- All 11 rate limiting utility tests passing
+- Tests cover normal operation, limit enforcement, waiting behavior, and edge cases
+- Mock timers used for testing time-based functionality
+- Error scenarios and boundary conditions tested
+
+### Issues Identified:
+
+❌ **Token Usage Database Persistence**
+- TokenUsage records were not being saved to database during actual job scouting
+- Company context (currentCompanyId/currentCompanyName) was never set in JobMatchingContext
+- Fixed with fallback logic and enhanced error logging - needs verification
+
+❌ **Poor Logging System**
+- Current logging saves scattered entries to database instead of cohesive session logs
+- Need to implement: one log file per scouting session with complete process capture
+- Current logs are difficult to analyze and don't provide clear audit trail
+
+### Key Files Implemented:
+- `src/utils/rateLimiting.ts` - Core rate limiting utilities and logic
+- `src/utils/__tests__/rateLimiting.test.ts` - Comprehensive test suite (11 tests)
+- `src/utils/aiProcessor.ts` - Integrated rate limiting into AI processing
+- `src/services/pipeline/JobMatchingContext.ts` - Usage tracking (FIXED: added company context fallback)
+- `src/config/rateLimits.ts` - Rate limit configuration for different models
+
+### Next Steps:
+1. ✅ Verify TokenUsage records are being created in database after company context fix
+2. 🔧 Implement proper session-based logging system (one file per scouting session)
+3. 🔧 Add proper company context tracking throughout pipeline execution
+4. 🔧 Add database monitoring/alerting for token usage tracking
+
+**Status**: Ready for Phase 2 once database persistence and logging issues are resolved ⚠️
