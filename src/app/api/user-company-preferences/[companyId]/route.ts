@@ -1,175 +1,21 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {getServerSession} from 'next-auth';
-import {authOptions} from '@/lib/auth';
 import dbConnect from '@/middleware/database';
 import {User} from '@/models/User';
+import {Company} from '@/models/Company';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
+import {UserService} from '@/services/userService';
 
-const logger = EnhancedLogger.getLogger('UserCompanyPreferenceAPI', {
+const logger = EnhancedLogger.getLogger('UserCompanyPreferencesByIdAPI', {
 	logToFile: true,
 	logToConsole: true,
 	logDir: '/tmp/scoutly-logs',
-	logFileName: 'user-company-preference-api.log',
+	logFileName: 'user-company-preferences-by-id-api.log',
 });
-
-/**
- * GET /api/user-company-preferences/[companyId]
- *
- * Returns the preference for a specific company
- */
-export async function GET(
-	req: NextRequest,
-	{params}: {params: {companyId: string}},
-) {
-	try {
-		await dbConnect();
-
-		const {companyId} = params;
-
-		// Get the authenticated user from the session
-		const session = await getServerSession(authOptions);
-		let userEmail;
-
-		// Development bypass for auth
-		if (
-			process.env.NODE_ENV === 'development' &&
-			process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-		) {
-			userEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@scoutly.app';
-			logger.info(`Using dev bypass auth with email: ${userEmail}`);
-		} else if (!session?.user?.email) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		} else {
-			userEmail = session.user.email;
-		}
-
-		// Get the user ID
-		const user = await User.findOne({email: userEmail});
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		// Get the company preference
-		const preference = await UserCompanyPreferenceService.getCompanyPreference(
-			user.id,
-			companyId,
-		);
-
-		if (!preference) {
-			return NextResponse.json(
-				{error: 'Company preference not found'},
-				{status: 404},
-			);
-		}
-
-		return NextResponse.json({preference});
-	} catch (error: any) {
-		logger.error(
-			`Error retrieving company preference for company ID ${params.companyId}:`,
-			error,
-		);
-		return NextResponse.json(
-			{error: error.message || 'Failed to retrieve company preference'},
-			{status: 500},
-		);
-	}
-}
-
-/**
- * PUT /api/user-company-preferences/[companyId]
- *
- * Update a company preference
- *
- * Request body:
- * {
- *   rank: number,
- *   isTracking: boolean
- * }
- */
-export async function PUT(
-	req: NextRequest,
-	{params}: {params: {companyId: string}},
-) {
-	try {
-		await dbConnect();
-
-		const {companyId} = params;
-
-		// Get the authenticated user from the session
-		const session = await getServerSession(authOptions);
-		let userEmail;
-
-		// Development bypass for auth
-		if (
-			process.env.NODE_ENV === 'development' &&
-			process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-		) {
-			userEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@scoutly.app';
-			logger.info(`Using dev bypass auth with email: ${userEmail}`);
-		} else if (!session?.user?.email) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		} else {
-			userEmail = session.user.email;
-		}
-
-		// Get the user ID
-		const user = await User.findOne({email: userEmail});
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		// Parse request body
-		const body = await req.json();
-		const {rank, isTracking} = body;
-
-		// Validate rank if provided
-		if (
-			rank !== undefined &&
-			(typeof rank !== 'number' || rank < 1 || rank > 100)
-		) {
-			return NextResponse.json(
-				{error: 'Rank must be a number between 1 and 100'},
-				{status: 400},
-			);
-		}
-
-		// Update the preference
-		const updatedPreference =
-			await UserCompanyPreferenceService.updateCompanyPreference(
-				user.id,
-				companyId,
-				{rank, isTracking},
-			);
-
-		if (!updatedPreference) {
-			return NextResponse.json(
-				{error: 'Company preference not found'},
-				{status: 404},
-			);
-		}
-
-		logger.info(
-			`Updated preference for company ${companyId} for user ${user.email}`,
-		);
-
-		return NextResponse.json({preference: updatedPreference});
-	} catch (error: any) {
-		logger.error(
-			`Error updating company preference for company ID ${params.companyId}:`,
-			error,
-		);
-		return NextResponse.json(
-			{error: error.message || 'Failed to update company preference'},
-			{status: 500},
-		);
-	}
-}
 
 /**
  * DELETE /api/user-company-preferences/[companyId]
  *
- * Delete a company preference (stop tracking)
+ * Remove a company from the user's tracked companies
  */
 export async function DELETE(
 	req: NextRequest,
@@ -178,54 +24,91 @@ export async function DELETE(
 	try {
 		await dbConnect();
 
+		// Development bypass for auth - use hardcoded email
+		const userEmail = 'judithv.sanchezc@gmail.com';
+		logger.info(`Using dev bypass auth with email: ${userEmail}`);
+
 		const {companyId} = params;
 
-		// Get the authenticated user from the session
-		const session = await getServerSession(authOptions);
-		let userEmail;
-
-		// Development bypass for auth
-		if (
-			process.env.NODE_ENV === 'development' &&
-			process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-		) {
-			userEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@scoutly.app';
-			logger.info(`Using dev bypass auth with email: ${userEmail}`);
-		} else if (!session?.user?.email) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		} else {
-			userEmail = session.user.email;
-		}
-
-		// Get the user ID
-		const user = await User.findOne({email: userEmail});
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		// Delete the preference (or set isTracking to false)
-		const result = await UserCompanyPreferenceService.stopTrackingCompany(
-			user.id,
-			companyId,
-		);
-
-		if (!result.success) {
+		if (!companyId) {
 			return NextResponse.json(
-				{error: 'Company preference not found'},
-				{status: 404},
+				{error: 'Company ID is required'},
+				{status: 400},
 			);
 		}
 
-		logger.info(`Stopped tracking company ${companyId} for user ${user.email}`);
+		// Remove the company from user's tracked companies using UserService
+		const user = await UserService.removeTrackedCompany(userEmail, companyId);
 
-		return NextResponse.json({success: true});
-	} catch (error: any) {
-		logger.error(
-			`Error deleting company preference for company ID ${params.companyId}:`,
-			error,
+		logger.info(
+			`Removed company ${companyId} from tracked companies for user ${userEmail}`,
 		);
+
+		return NextResponse.json({
+			success: true,
+			message: 'Company preference removed successfully',
+		});
+	} catch (error: any) {
+		logger.error('Error removing company preference:', error);
 		return NextResponse.json(
-			{error: error.message || 'Failed to delete company preference'},
+			{error: error.message || 'Internal server error'},
+			{status: 500},
+		);
+	}
+}
+
+/**
+ * PUT /api/user-company-preferences/[companyId]
+ *
+ * Update a company's rank for the user
+ */
+export async function PUT(
+	req: NextRequest,
+	{params}: {params: {companyId: string}},
+) {
+	try {
+		await dbConnect();
+
+		// Development bypass for auth - use hardcoded email
+		const userEmail = 'judithv.sanchezc@gmail.com';
+		logger.info(`Using dev bypass auth with email: ${userEmail}`);
+
+		const {companyId} = params;
+		const {rank} = await req.json();
+
+		if (!companyId) {
+			return NextResponse.json(
+				{error: 'Company ID is required'},
+				{status: 400},
+			);
+		}
+
+		if (rank === undefined || rank < 0 || rank > 100) {
+			return NextResponse.json(
+				{error: 'Rank must be between 0 and 100'},
+				{status: 400},
+			);
+		}
+
+		// Update the company's rank using UserService
+		const user = await UserService.updateTrackedCompanyRanking(
+			userEmail,
+			companyId,
+			rank,
+		);
+
+		logger.info(
+			`Updated rank for company ${companyId} to ${rank} for user ${userEmail}`,
+		);
+
+		return NextResponse.json({
+			success: true,
+			message: 'Company rank updated successfully',
+		});
+	} catch (error: any) {
+		logger.error('Error updating company rank:', error);
+		return NextResponse.json(
+			{error: error.message || 'Internal server error'},
 			{status: 500},
 		);
 	}

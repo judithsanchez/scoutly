@@ -5,11 +5,10 @@
  */
 
 import {Logger} from '@/utils/logger';
-import {analyzeJobBatch} from '@/utils/aiProcessor';
+import {analyzeJobBatch, type JobAnalysisResult} from '@/utils/aiProcessor';
 import {createBatches, processSequentialBatches} from '@/utils/batchProcessing';
 import {checkDailyReset, checkRateLimits} from '@/utils/rateLimiting';
 import type {PipelineStep, PipelineContext} from '../types';
-import type {JobAnalysisResult} from '@/utils/aiProcessor';
 
 const logger = new Logger('DeepAnalysisStep');
 const BATCH_SIZE = 5; // Process jobs in batches to manage API limits
@@ -60,20 +59,28 @@ export class DeepAnalysisStep implements PipelineStep {
 			// Update AI config with current usage stats
 			context.aiConfig.usageStats = context.usageStats;
 
-			// Process jobs in batches
+			// Process jobs in batches with token usage tracking
 			const batches = createBatches(jobsWithContent, BATCH_SIZE);
-			const allResults = await processSequentialBatches(
-				batches,
-				async (batch: typeof jobsWithContent) => {
-					return await analyzeJobBatch(
-						batch,
-						context.cvContent!,
-						context.candidateProfile!,
-						context.aiConfig,
-					);
-				},
-				'jobs',
-			);
+			const allResults: JobAnalysisResult[] = [];
+			
+			// Process each batch sequentially and record token usage
+			for (let i = 0; i < batches.length; i++) {
+				const batch = batches[i];
+				logger.info(`Processing batch ${i + 1}/${batches.length} with ${batch.length} jobs...`);
+				
+				const batchResult = await analyzeJobBatch(
+					batch,
+					context.cvContent!,
+					context.candidateProfile!,
+					context.aiConfig,
+				);
+				
+				// Collect results
+				allResults.push(...batchResult.results);
+				
+				// Record token usage for this batch
+				await context.recordUsage(batchResult.tokenUsage);
+			}
 
 			// Sort results by suitability score
 			const sortedResults = allResults.sort(

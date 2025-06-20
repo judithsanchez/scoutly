@@ -2,7 +2,21 @@
  * AI processing utilities for job matching and analysis using Gemini
  */
 
-import {GoogleGenerativeAI, GenerationConfig} from '@google/generative-ai';
+import {GoogleGenerativeAI,/**
+ * Performs deep analysis on a batch of jobs using AI
+ *
+ * @param batch - Array of job positions with content
+ * @param cvContent - CV content as text
+ * @param candidateInfo - Candidate information object
+ * @param config - AI processor configuration
+ * @returns Analysis results with token usage metadata
+ */
+export async function analyzeJobBatch(
+	batch: Array<{title: string; url: string; content: string}>,
+	cvContent: string,
+	candidateInfo: Record<string, any>,
+	config: AIProcessorConfig,
+): Promise<AnalysisResultWithUsage> {ig} from '@google/generative-ai';
 import {Logger} from './logger';
 import {initialMatchingSchema, deepDiveSchema} from './geminiSchemas';
 import {objectToXML} from './dataTransform';
@@ -15,12 +29,28 @@ import {type ExtractedLink} from './scraper';
 const logger = new Logger('AIProcessor');
 
 export interface JobAnalysisResult {
+	// Required fields (from Gemini deepDiveSchema)
 	title: string;
 	url: string;
 	goodFitReasons: string[];
 	considerationPoints: string[];
 	stretchGoals: string[];
 	suitabilityScore: number;
+	
+	// Optional fields (from Gemini deepDiveSchema)
+	location?: string;
+	timezone?: string;
+	salary?: {
+		min?: number;
+		max?: number;
+		currency?: string;
+		period?: string;
+	};
+	techStack?: string[];
+	experienceLevel?: string;
+	languageRequirements?: string[];
+	visaSponsorshipOffered?: boolean;
+	relocationAssistanceOffered?: boolean;
 }
 
 export interface AnalysisResultWithUsage {
@@ -95,14 +125,14 @@ ${links
  * @param cvContent - CV content as text
  * @param candidateInfo - Candidate information object
  * @param config - AI processor configuration
- * @returns Analysis results with token usage metadata
+ * @returns Array of job analysis results
  */
 export async function analyzeJobBatch(
 	batch: Array<{title: string; url: string; content: string}>,
 	cvContent: string,
 	candidateInfo: Record<string, any>,
 	config: AIProcessorConfig,
-): Promise<AnalysisResultWithUsage> {
+): Promise<JobAnalysisResult[]> {
 	const candidateXML = objectToXML(candidateInfo);
 
 	logger.debug('Analyzing batch:', {
@@ -138,14 +168,15 @@ ${batch
 		generationConfig,
 	});
 
-	// Extract token usage metadata from Gemini response
-	const tokenUsage = {
-		promptTokenCount: result.response.usageMetadata?.promptTokenCount || 0,
-		candidatesTokenCount: result.response.usageMetadata?.candidatesTokenCount || 0,
-		totalTokenCount: result.response.usageMetadata?.totalTokenCount || 0,
-	};
+	// Log the full response to see what metadata is available
+	logger.debug('Gemini response metadata:', {
+		usageMetadata: result.response.usageMetadata,
+		promptTokenCount: result.response.usageMetadata?.promptTokenCount,
+		candidatesTokenCount: result.response.usageMetadata?.candidatesTokenCount,
+		totalTokenCount: result.response.usageMetadata?.totalTokenCount,
+	});
 
-	logger.debug('Gemini response token usage:', tokenUsage);
+	// Note: Usage recording should be handled by the caller
 
 	logger.info('  ↳ Received Gemini response, processing results...');
 
@@ -271,10 +302,7 @@ ${batch
 		totalAnalyzed: allResults.length,
 	});
 
-	return {
-		results: validResults,
-		tokenUsage,
-	};
+	return validResults;
 }
 
 /**

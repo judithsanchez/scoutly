@@ -19,15 +19,39 @@ export enum ApplicationStatus {
 
 export interface ISavedJob extends Document {
 	userId: string; // Reference to the User who saved this job
-	jobId: string; // Reference to the Job that was saved
+	jobId: string; // Reference to the Job that was saved (using URL as identifier)
 	companyId: mongoose.Schema.Types.ObjectId; // Reference to the Company offering the job
 	status: string; // Current application status
+	
+	// Core job information (required by Gemini schema)
+	title: string; // Job title
+	url: string; // Job URL
+	goodFitReasons: string[]; // AI analysis - why it's a good fit
+	considerationPoints: string[]; // AI analysis - points to consider
+	stretchGoals: string[]; // AI analysis - stretch goals
+	suitabilityScore: number; // AI analysis - overall suitability score (0-100)
+	
+	// Optional job details (optional in Gemini schema)
+	location?: string; // Job location
+	timezone?: string; // Timezone or working hours
+	salary?: {
+		min?: number;
+		max?: number;
+		currency?: string;
+		period?: string;
+	};
+	techStack?: string[]; // Required technologies
+	experienceLevel?: string; // Required experience level
+	languageRequirements?: string[]; // Required languages
+	visaSponsorshipOffered?: boolean; // Visa sponsorship availability
+	relocationAssistanceOffered?: boolean; // Relocation assistance availability
+	
 	notes?: string; // Optional field for user notes
 	createdAt: Date;
 	updatedAt: Date;
 }
 
-// Simplified SavedJob schema for tracking user job preferences
+// SavedJob schema matching Gemini AI analysis structure
 const SavedJobSchema = new Schema<ISavedJob>(
 	{
 		userId: {
@@ -46,9 +70,72 @@ const SavedJobSchema = new Schema<ISavedJob>(
 		},
 		status: {
 			type: String,
-			default: 'saved',
+			default: 'WANT_TO_APPLY',
 			required: true,
 		},
+		
+		// Core job information (required by Gemini schema)
+		title: {
+			type: String,
+			required: true,
+		},
+		url: {
+			type: String,
+			required: true,
+		},
+		goodFitReasons: {
+			type: [String],
+			required: true,
+			default: [],
+		},
+		considerationPoints: {
+			type: [String], 
+			required: true,
+			default: [],
+		},
+		stretchGoals: {
+			type: [String],
+			required: true,
+			default: [],
+		},
+		suitabilityScore: {
+			type: Number,
+			required: true,
+			min: 0,
+			max: 100,
+		},
+		
+		// Optional job details (optional in Gemini schema)
+		location: {
+			type: String,
+		},
+		timezone: {
+			type: String,
+		},
+		salary: {
+			min: Number,
+			max: Number,
+			currency: String,
+			period: String,
+		},
+		techStack: {
+			type: [String],
+			default: [],
+		},
+		experienceLevel: {
+			type: String,
+		},
+		languageRequirements: {
+			type: [String],
+			default: [],
+		},
+		visaSponsorshipOffered: {
+			type: Boolean,
+		},
+		relocationAssistanceOffered: {
+			type: Boolean,
+		},
+		
 		notes: {
 			type: String,
 		},

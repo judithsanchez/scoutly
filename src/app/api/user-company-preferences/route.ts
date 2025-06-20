@@ -1,10 +1,9 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {getServerSession} from 'next-auth';
-import {authOptions} from '@/lib/auth';
 import dbConnect from '@/middleware/database';
 import {User} from '@/models/User';
+import {Company} from '@/models/Company';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
+import {UserService} from '@/services/userService';
 
 const logger = EnhancedLogger.getLogger('UserCompanyPreferencesAPI', {
 	logToFile: true,
@@ -22,42 +21,60 @@ export async function GET(req: NextRequest) {
 	try {
 		await dbConnect();
 
-		// Get the authenticated user from the session
-		const session = await getServerSession(authOptions);
-		let userEmail;
+		// Development bypass for auth - use hardcoded email
+		const userEmail = 'judithv.sanchezc@gmail.com';
+		logger.info(`Using dev bypass auth with email: ${userEmail}`);
 
-		// Development bypass for auth
-		if (
-			process.env.NODE_ENV === 'development' &&
-			process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-		) {
-			userEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@scoutly.app';
-			logger.info(`Using dev bypass auth with email: ${userEmail}`);
-		} else if (!session?.user?.email) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		} else {
-			userEmail = session.user.email;
-		}
-
-		// Get the user ID
+		// Get the user with their tracked companies
 		const user = await User.findOne({email: userEmail});
 		if (!user) {
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
 
-		// Get tracked companies with preferences using the service
-		const trackedCompanies =
-			await UserCompanyPreferenceService.getTrackedCompanies(user.id);
+		// If user has no tracked companies, return empty array
+		if (!user.trackedCompanies || user.trackedCompanies.length === 0) {
+			logger.info(`User ${userEmail} has no tracked companies`);
+			return NextResponse.json({companies: []});
+		}
+
+		// Get the company details for tracked companies
+		const companyIds = user.trackedCompanies.map((tc: any) => tc.companyID);
+		const companies = await Company.find({companyID: {$in: companyIds}});
+
+		// Build the response with company details and user preferences
+		const trackedCompanies = companies.map(company => {
+			const userTrackingInfo = user.trackedCompanies.find(
+				(tc: any) => tc.companyID === company.companyID,
+			);
+			
+			return {
+				_id: company._id,
+				companyID: company.companyID,
+				company: company.company,
+				careers_url: company.careers_url,
+				logo_url: company.logo_url,
+				work_model: company.work_model,
+				headquarters: company.headquarters,
+				office_locations: company.office_locations,
+				fields: company.fields,
+				userPreference: {
+					rank: userTrackingInfo?.ranking || 75,
+					isTracking: true,
+					frequency: getRankingFrequency(userTrackingInfo?.ranking || 75),
+					lastUpdated: user.updatedAt,
+				},
+			};
+		});
 
 		logger.info(
-			`Retrieved ${trackedCompanies.length} tracked companies for user ${user.email}`,
+			`Retrieved ${trackedCompanies.length} tracked companies for user ${userEmail}`,
 		);
 
 		return NextResponse.json({companies: trackedCompanies});
 	} catch (error: any) {
-		logger.error('Error retrieving tracked companies:', error);
+		logger.error('Error getting tracked companies:', error);
 		return NextResponse.json(
-			{error: error.message || 'Failed to retrieve tracked companies'},
+			{error: error.message || 'Internal server error'},
 			{status: 500},
 		);
 	}
@@ -79,68 +96,51 @@ export async function POST(req: NextRequest) {
 	try {
 		await dbConnect();
 
-		// Get the authenticated user from the session
-		const session = await getServerSession(authOptions);
-		let userEmail;
-
-		// Development bypass for auth
-		if (
-			process.env.NODE_ENV === 'development' &&
-			process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-		) {
-			userEmail = process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@scoutly.app';
-			logger.info(`Using dev bypass auth with email: ${userEmail}`);
-		} else if (!session?.user?.email) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		} else {
-			userEmail = session.user.email;
-		}
-
-		// Get the user ID
-		const user = await User.findOne({email: userEmail});
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
+		// Development bypass for auth - use hardcoded email
+		const userEmail = 'judithv.sanchezc@gmail.com';
+		logger.info(`Using dev bypass auth with email: ${userEmail}`);
 
 		// Parse request body
-		const body = await req.json();
-		const {companyId, rank, isTracking = true} = body;
+		const {companyId, rank = 75, isTracking = true} = await req.json();
 
-		if (!companyId || typeof companyId !== 'string') {
+		if (!companyId) {
 			return NextResponse.json(
 				{error: 'Company ID is required'},
 				{status: 400},
 			);
 		}
 
-		if (!rank || typeof rank !== 'number' || rank < 1 || rank > 100) {
-			return NextResponse.json(
-				{error: 'Rank must be a number between 1 and 100'},
-				{status: 400},
-			);
+		// Verify company exists
+		const company = await Company.findOne({companyID: companyId});
+		if (!company) {
+			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
 
-		// Update or create the preference
-		const preference = await UserCompanyPreferenceService.setCompanyPreference(
-			user.id,
-			companyId,
-			rank,
-			isTracking,
-		);
+		// Add the company to user's tracked companies using UserService
+		const user = await UserService.addTrackedCompany(userEmail, companyId, rank);
 
 		logger.info(
-			`Updated preference for company ${companyId} for user ${user.email}`,
+			`Added company ${companyId} to tracked companies for user ${userEmail}`,
 		);
 
 		return NextResponse.json({
 			success: true,
-			preference,
+			message: 'Company preference updated successfully',
 		});
 	} catch (error: any) {
 		logger.error('Error updating company preference:', error);
 		return NextResponse.json(
-			{error: error.message || 'Failed to update company preference'},
+			{error: error.message || 'Internal server error'},
 			{status: 500},
 		);
 	}
+}
+
+// Helper function to convert ranking to frequency description
+function getRankingFrequency(ranking: number): string {
+	if (ranking >= 90) return 'Daily';
+	if (ranking >= 80) return 'Every 2 days';
+	if (ranking >= 70) return 'Weekly';
+	if (ranking >= 60) return 'Bi-weekly';
+	return 'Monthly';
 }

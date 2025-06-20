@@ -232,7 +232,7 @@ export default function SavedJobCard({
 						isExpanded ? 'expanded' : ''
 					}`}
 				>
-					{job.goodFitReasons.length > 0 && (
+					{job.goodFitReasons && job.goodFitReasons.length > 0 && (
 						<div>
 							<h4 className="font-semibold text-green-400 mb-2">
 								✅ Good Fit Reasons
@@ -245,7 +245,7 @@ export default function SavedJobCard({
 						</div>
 					)}
 
-					{job.considerationPoints.length > 0 && (
+					{job.considerationPoints && job.considerationPoints.length > 0 && (
 						<div>
 							<h4 className="font-semibold text-yellow-400 mb-2">
 								⚠️ Points to Consider
@@ -258,7 +258,7 @@ export default function SavedJobCard({
 						</div>
 					)}
 
-					{job.stretchGoals.length > 0 && (
+					{job.stretchGoals && job.stretchGoals.length > 0 && (
 						<div>
 							<h4 className="font-semibold text-blue-400 mb-2">
 								🚀 Stretch Goals
@@ -271,9 +271,24 @@ export default function SavedJobCard({
 						</div>
 					)}
 
+					{/* Fallback: Show notes if detailed analysis fields are missing */}
+					{(!job.goodFitReasons || job.goodFitReasons.length === 0) && 
+					 (!job.considerationPoints || job.considerationPoints.length === 0) && 
+					 (!job.stretchGoals || job.stretchGoals.length === 0) && 
+					 job.notes && (
+						<div>
+							<h4 className="font-semibold text-blue-400 mb-2">
+								🤖 AI Analysis
+							</h4>
+							<p className="text-slate-300 text-sm">
+								{job.notes}
+							</p>
+						</div>
+					)}
+
 					<div className="pt-2">
 						<a
-							href={job.url}
+							href={job.url || job.jobId}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-purple-400 hover:text-purple-300 font-semibold text-sm inline-flex items-center gap-1.5"

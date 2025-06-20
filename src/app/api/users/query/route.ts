@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {UserService} from '@/services/userService';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {SavedJobService} from '@/services/savedJobService';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
@@ -38,17 +37,12 @@ export async function POST(request: NextRequest) {
 			users.map(async user => {
 				if (!user) return null;
 
-				// Get only actually tracked companies (not all companies)
-				const trackedCompanies =
-					await UserCompanyPreferenceService.getTrackedCompanies(user.id);
-
 				// Get saved jobs
 				const savedJobs = await SavedJobService.getSavedJobsByUserId(user.id);
 
-				// Return enriched user data
+				// Return enriched user data (no tracked companies since background jobs removed)
 				return {
 					...user.toObject(),
-					trackedCompanies,
 					savedJobs,
 				};
 			}),

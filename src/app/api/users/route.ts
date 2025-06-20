@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {UserService} from '@/services/userService';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {SavedJobService} from '@/services/savedJobService';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
@@ -56,20 +55,15 @@ export async function GET(request: NextRequest) {
 		// Get all users
 		const users = await UserService.getAllUsers();
 
-		// For each user, fetch their tracked companies and saved jobs
+		// For each user, fetch their saved jobs
 		const enrichedUsers = await Promise.all(
 			users.map(async user => {
-				// Get only actually tracked companies (not all companies)
-				const trackedCompanies =
-					await UserCompanyPreferenceService.getTrackedCompanies(user.id);
-
 				// Get saved jobs
 				const savedJobs = await SavedJobService.getSavedJobsByUserId(user.id);
 
-				// Return enriched user data
+				// Return enriched user data (no tracked companies since background jobs removed)
 				return {
 					...user.toObject(),
-					trackedCompanies,
 					savedJobs,
 				};
 			}),

@@ -58,15 +58,13 @@ export class ResultsStorageStep implements PipelineStep {
 
 					logger.info(
 						`Saving ${results.length} job results for ${companyName}...`,
+					);				const {saved, skipped, failed, savedJobs} =
+					await this.saveCompanyResults(
+						results,
+						user.id,
+						company?._id?.toString() || companyId, // Convert ObjectId to string
+						companyName,
 					);
-
-					const {saved, skipped, failed, savedJobs} =
-						await this.saveCompanyResults(
-							results,
-							user.id,
-							companyId,
-							companyName,
-						);
 
 					totalSaved += saved;
 					totalSkipped += skipped;
@@ -139,7 +137,7 @@ export class ResultsStorageStep implements PipelineStep {
 	private async saveCompanyResults(
 		results: JobAnalysisResult[],
 		userId: string,
-		companyId: string,
+		companyObjectId: string,
 		companyName: string,
 	): Promise<{
 		saved: number;
@@ -156,10 +154,9 @@ export class ResultsStorageStep implements PipelineStep {
 			try {
 				// Check if job already exists (by URL + title for better duplicate detection)
 				const existingJob = await SavedJob.findOne({
-					user: userId,
+					userId: userId,
 					$or: [
-						{url: job.url}, // Same URL
-						{url: job.url, title: job.title}, // Same URL and title
+						{jobId: job.url}, // Same URL
 					],
 				});
 
@@ -169,12 +166,32 @@ export class ResultsStorageStep implements PipelineStep {
 					continue;
 				}
 
-				// Create new saved job
+				// Create new saved job with full Gemini schema data
 				await SavedJob.create({
-					...job,
-					user: userId,
-					company: companyId,
+					userId: userId,
+					jobId: job.url, // Use URL as unique job identifier
+					companyId: companyObjectId,
 					status: ApplicationStatus.WANT_TO_APPLY,
+					
+					// Core job information (required by Gemini schema)
+					title: job.title,
+					url: job.url,
+					goodFitReasons: job.goodFitReasons || [],
+					considerationPoints: job.considerationPoints || [],
+					stretchGoals: job.stretchGoals || [],
+					suitabilityScore: job.suitabilityScore || 0,
+					
+					// Optional job details (if present in Gemini response)
+					location: job.location,
+					timezone: job.timezone,
+					salary: job.salary,
+					techStack: job.techStack,
+					experienceLevel: job.experienceLevel,
+					languageRequirements: job.languageRequirements,
+					visaSponsorshipOffered: job.visaSponsorshipOffered,
+					relocationAssistanceOffered: job.relocationAssistanceOffered,
+					
+					notes: `AI Analysis Summary: ${job.suitabilityScore}% match - ${job.goodFitReasons.join(', ')}`,
 				});
 
 				saved++;

@@ -44,8 +44,17 @@ export const statusColors: Record<ApplicationStatus, string> = {
 
 export interface ISavedJob {
 	_id: string;
+	jobId: string; // Using URL as unique identifier
+	
+	// Core job information (required by Gemini schema)
 	title: string;
 	url: string;
+	goodFitReasons: string[];
+	considerationPoints: string[];
+	stretchGoals: string[];
+	suitabilityScore: number; // 0-100
+	
+	// Optional job details (optional in Gemini schema)
 	location?: string;
 	timezone?: string;
 	salary?: {
@@ -59,10 +68,8 @@ export interface ISavedJob {
 	languageRequirements?: string[];
 	visaSponsorshipOffered?: boolean;
 	relocationAssistanceOffered?: boolean;
-	goodFitReasons: string[];
-	considerationPoints: string[];
-	stretchGoals: string[];
-	suitabilityScore: number;
+	
+	// Application tracking
 	status: ApplicationStatus;
 	notes?: string;
 	user: string;

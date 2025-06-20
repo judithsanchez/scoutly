@@ -40,13 +40,13 @@ export async function GET(request: NextRequest) {
 		}
 		logger.info('Found user:', user._id.toString());
 
-		const total = await SavedJob.countDocuments({user: user._id});
+		const total = await SavedJob.countDocuments({userId: user._id.toString()});
 
 		logger.info('Finding saved jobs for user:', user._id.toString());
 
-		const savedJobs = await SavedJob.find({user: user._id})
+		const savedJobs = await SavedJob.find({userId: user._id.toString()})
 			.populate(
-				'company',
+				'companyId',
 				'company websiteUrl careerPageUrl logo companySize industry',
 			)
 			.sort({createdAt: -1})
@@ -56,12 +56,19 @@ export async function GET(request: NextRequest) {
 
 		logger.info('Populated saved jobs:', JSON.stringify(savedJobs));
 
+		// Transform the data to match frontend interface
+		const transformedJobs = savedJobs.map(job => ({
+			...job.toObject(),
+			user: job.userId,
+			company: job.companyId,
+		}));
+
 		logger.success(
 			`Retrieved ${savedJobs.length} saved jobs for user ${gmail}`,
 		);
 
 		return NextResponse.json({
-			jobs: savedJobs,
+			jobs: transformedJobs,
 			total,
 		});
 	} catch (error: any) {
