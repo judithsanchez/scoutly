@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import SavedJobCard from '@/components/SavedJobCard';
 import ApplicationPipeline from '@/components/ApplicationPipeline';
@@ -31,8 +31,8 @@ export default function DashboardPage() {
 		gmail: 'judithv.sanchezc@gmail.com',
 	};
 
-	// Initialize logger with user context
-	const logger = createLogger('Dashboard', authInfo.gmail);
+	// Initialize logger with user context (memoized to prevent recreations)
+	const logger = useMemo(() => createLogger('Dashboard', authInfo.gmail), [authInfo.gmail]);
 
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);

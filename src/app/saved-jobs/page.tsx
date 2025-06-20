@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useMemo} from 'react';
 import SavedJobCard from '@/components/SavedJobCard';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
 import {DEFAULT_USER_EMAIL} from '@/constants/common';
@@ -24,7 +24,9 @@ export default function SavedJobsPage() {
 	const [jobs, setJobs] = useState<ISavedJob[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const logger = createLogger('SavedJobsPage', DEFAULT_USER_EMAIL);
+	
+	// Use useMemo to prevent logger recreation on every render
+	const logger = useMemo(() => createLogger('SavedJobsPage', DEFAULT_USER_EMAIL), []);
 
 	const handleStatusChange = async (
 		jobId: string,
@@ -124,7 +126,7 @@ export default function SavedJobsPage() {
 		}
 
 		fetchSavedJobs();
-	}, [logger]);
+	}, [logger]); // Logger is now stable due to useMemo
 
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>
