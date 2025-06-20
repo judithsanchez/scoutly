@@ -208,12 +208,16 @@ export class JobMatchingOrchestrator {
 		// Process jobs in batches with token usage tracking
 		const batches = createBatches(validPositions, BATCH_SIZE);
 		const allResults: JobAnalysisResult[] = [];
-		
+
 		// Process each batch sequentially and record token usage
 		for (let i = 0; i < batches.length; i++) {
 			const batch = batches[i];
-			logger.info(`Processing batch ${i + 1}/${batches.length} with ${batch.length} jobs...`);
-			
+			logger.info(
+				`Processing batch ${i + 1}/${batches.length} with ${
+					batch.length
+				} jobs...`,
+			);
+
 			this.aiConfig.usageStats = this.usageStats;
 			const batchResult = await analyzeJobBatch(
 				batch,
@@ -221,10 +225,10 @@ export class JobMatchingOrchestrator {
 				candidateInfo,
 				this.aiConfig,
 			);
-			
+
 			// Collect results
 			allResults.push(...batchResult.results);
-			
+
 			// Record token usage for this batch
 			await this.recordUsage(batchResult.tokenUsage);
 		}

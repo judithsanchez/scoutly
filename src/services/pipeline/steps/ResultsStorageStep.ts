@@ -58,13 +58,14 @@ export class ResultsStorageStep implements PipelineStep {
 
 					logger.info(
 						`Saving ${results.length} job results for ${companyName}...`,
-					);				const {saved, skipped, failed, savedJobs} =
-					await this.saveCompanyResults(
-						results,
-						user.id,
-						company?._id?.toString() || companyId, // Convert ObjectId to string
-						companyName,
 					);
+					const {saved, skipped, failed, savedJobs} =
+						await this.saveCompanyResults(
+							results,
+							user.id,
+							company?._id?.toString() || companyId, // Convert ObjectId to string
+							companyName,
+						);
 
 					totalSaved += saved;
 					totalSkipped += skipped;
@@ -172,7 +173,7 @@ export class ResultsStorageStep implements PipelineStep {
 					jobId: job.url, // Use URL as unique job identifier
 					companyId: companyObjectId,
 					status: ApplicationStatus.WANT_TO_APPLY,
-					
+
 					// Core job information (required by Gemini schema)
 					title: job.title,
 					url: job.url,
@@ -180,7 +181,7 @@ export class ResultsStorageStep implements PipelineStep {
 					considerationPoints: job.considerationPoints || [],
 					stretchGoals: job.stretchGoals || [],
 					suitabilityScore: job.suitabilityScore || 0,
-					
+
 					// Optional job details (if present in Gemini response)
 					location: job.location,
 					timezone: job.timezone,
@@ -190,8 +191,10 @@ export class ResultsStorageStep implements PipelineStep {
 					languageRequirements: job.languageRequirements,
 					visaSponsorshipOffered: job.visaSponsorshipOffered,
 					relocationAssistanceOffered: job.relocationAssistanceOffered,
-					
-					notes: `AI Analysis Summary: ${job.suitabilityScore}% match - ${job.goodFitReasons.join(', ')}`,
+
+					notes: `AI Analysis Summary: ${
+						job.suitabilityScore
+					}% match - ${job.goodFitReasons.join(', ')}`,
 				});
 
 				saved++;

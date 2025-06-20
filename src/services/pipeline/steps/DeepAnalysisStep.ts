@@ -62,22 +62,26 @@ export class DeepAnalysisStep implements PipelineStep {
 			// Process jobs in batches with token usage tracking
 			const batches = createBatches(jobsWithContent, BATCH_SIZE);
 			const allResults: JobAnalysisResult[] = [];
-			
+
 			// Process each batch sequentially and record token usage
 			for (let i = 0; i < batches.length; i++) {
 				const batch = batches[i];
-				logger.info(`Processing batch ${i + 1}/${batches.length} with ${batch.length} jobs...`);
-				
+				logger.info(
+					`Processing batch ${i + 1}/${batches.length} with ${
+						batch.length
+					} jobs...`,
+				);
+
 				const batchResult = await analyzeJobBatch(
 					batch,
 					context.cvContent!,
 					context.candidateProfile!,
 					context.aiConfig,
 				);
-				
+
 				// Collect results
 				allResults.push(...batchResult.results);
-				
+
 				// Record token usage for this batch
 				await context.recordUsage(batchResult.tokenUsage);
 			}

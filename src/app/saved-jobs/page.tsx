@@ -24,9 +24,12 @@ export default function SavedJobsPage() {
 	const [jobs, setJobs] = useState<ISavedJob[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	
+
 	// Use useMemo to prevent logger recreation on every render
-	const logger = useMemo(() => createLogger('SavedJobsPage', DEFAULT_USER_EMAIL), []);
+	const logger = useMemo(
+		() => createLogger('SavedJobsPage', DEFAULT_USER_EMAIL),
+		[],
+	);
 
 	const handleStatusChange = async (
 		jobId: string,

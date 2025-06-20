@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 			const userTrackingInfo = user.trackedCompanies.find(
 				(tc: any) => tc.companyID === company.companyID,
 			);
-			
+
 			return {
 				_id: company._id,
 				companyID: company.companyID,
@@ -117,7 +117,11 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Add the company to user's tracked companies using UserService
-		const user = await UserService.addTrackedCompany(userEmail, companyId, rank);
+		const user = await UserService.addTrackedCompany(
+			userEmail,
+			companyId,
+			rank,
+		);
 
 		logger.info(
 			`Added company ${companyId} to tracked companies for user ${userEmail}`,

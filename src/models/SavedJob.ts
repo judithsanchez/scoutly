@@ -22,7 +22,7 @@ export interface ISavedJob extends Document {
 	jobId: string; // Reference to the Job that was saved (using URL as identifier)
 	companyId: mongoose.Schema.Types.ObjectId; // Reference to the Company offering the job
 	status: string; // Current application status
-	
+
 	// Core job information (required by Gemini schema)
 	title: string; // Job title
 	url: string; // Job URL
@@ -30,7 +30,7 @@ export interface ISavedJob extends Document {
 	considerationPoints: string[]; // AI analysis - points to consider
 	stretchGoals: string[]; // AI analysis - stretch goals
 	suitabilityScore: number; // AI analysis - overall suitability score (0-100)
-	
+
 	// Optional job details (optional in Gemini schema)
 	location?: string; // Job location
 	timezone?: string; // Timezone or working hours
@@ -45,7 +45,7 @@ export interface ISavedJob extends Document {
 	languageRequirements?: string[]; // Required languages
 	visaSponsorshipOffered?: boolean; // Visa sponsorship availability
 	relocationAssistanceOffered?: boolean; // Relocation assistance availability
-	
+
 	notes?: string; // Optional field for user notes
 	createdAt: Date;
 	updatedAt: Date;
@@ -73,7 +73,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 			default: 'WANT_TO_APPLY',
 			required: true,
 		},
-		
+
 		// Core job information (required by Gemini schema)
 		title: {
 			type: String,
@@ -89,7 +89,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 			default: [],
 		},
 		considerationPoints: {
-			type: [String], 
+			type: [String],
 			required: true,
 			default: [],
 		},
@@ -104,7 +104,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 			min: 0,
 			max: 100,
 		},
-		
+
 		// Optional job details (optional in Gemini schema)
 		location: {
 			type: String,
@@ -135,7 +135,7 @@ const SavedJobSchema = new Schema<ISavedJob>(
 		relocationAssistanceOffered: {
 			type: Boolean,
 		},
-		
+
 		notes: {
 			type: String,
 		},

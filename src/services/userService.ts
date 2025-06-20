@@ -75,7 +75,9 @@ export class UserService {
 			}
 
 			await user.save();
-			logger.info(`Added/updated tracked company ${companyID} for user ${email}`);
+			logger.info(
+				`Added/updated tracked company ${companyID} for user ${email}`,
+			);
 			return user;
 		} catch (error: any) {
 			logger.error(`Error adding tracked company:`, error);
@@ -133,11 +135,15 @@ export class UserService {
 
 			trackedCompany.ranking = ranking;
 			await user.save();
-			logger.info(`Updated ranking for company ${companyID} to ${ranking} for user ${email}`);
+			logger.info(
+				`Updated ranking for company ${companyID} to ${ranking} for user ${email}`,
+			);
 			return user;
 		} catch (error: any) {
 			logger.error(`Error updating tracked company ranking:`, error);
-			throw new Error(`Error updating tracked company ranking: ${error.message}`);
+			throw new Error(
+				`Error updating tracked company ranking: ${error.message}`,
+			);
 		}
 	}
 }

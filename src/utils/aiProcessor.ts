@@ -22,7 +22,7 @@ export interface JobAnalysisResult {
 	considerationPoints: string[];
 	stretchGoals: string[];
 	suitabilityScore: number;
-	
+
 	// Optional fields (from Gemini deepDiveSchema)
 	location?: string;
 	timezone?: string;
@@ -157,7 +157,8 @@ ${batch
 	// Extract token usage metadata from Gemini response
 	const tokenUsage = {
 		promptTokenCount: result.response.usageMetadata?.promptTokenCount || 0,
-		candidatesTokenCount: result.response.usageMetadata?.candidatesTokenCount || 0,
+		candidatesTokenCount:
+			result.response.usageMetadata?.candidatesTokenCount || 0,
 		totalTokenCount: result.response.usageMetadata?.totalTokenCount || 0,
 	};
 

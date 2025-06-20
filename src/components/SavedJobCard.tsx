@@ -272,19 +272,18 @@ export default function SavedJobCard({
 					)}
 
 					{/* Fallback: Show notes if detailed analysis fields are missing */}
-					{(!job.goodFitReasons || job.goodFitReasons.length === 0) && 
-					 (!job.considerationPoints || job.considerationPoints.length === 0) && 
-					 (!job.stretchGoals || job.stretchGoals.length === 0) && 
-					 job.notes && (
-						<div>
-							<h4 className="font-semibold text-blue-400 mb-2">
-								🤖 AI Analysis
-							</h4>
-							<p className="text-slate-300 text-sm">
-								{job.notes}
-							</p>
-						</div>
-					)}
+					{(!job.goodFitReasons || job.goodFitReasons.length === 0) &&
+						(!job.considerationPoints ||
+							job.considerationPoints.length === 0) &&
+						(!job.stretchGoals || job.stretchGoals.length === 0) &&
+						job.notes && (
+							<div>
+								<h4 className="font-semibold text-blue-400 mb-2">
+									🤖 AI Analysis
+								</h4>
+								<p className="text-slate-300 text-sm">{job.notes}</p>
+							</div>
+						)}
 
 					<div className="pt-2">
 						<a

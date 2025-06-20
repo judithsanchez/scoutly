@@ -43,10 +43,8 @@ describe('/api/jobs/saved', () => {
 			const mockSavedJobs = [
 				{
 					_id: '507f1f77bcf86cd799439012',
-					user: '507f1f77bcf86cd799439011',
-					jobTitle: 'Senior Software Engineer',
-					jobUrl: 'https://company.com/job1',
-					company: {
+					userId: '507f1f77bcf86cd799439011',
+					companyId: {
 						_id: '507f1f77bcf86cd799439013',
 						company: 'Tech Corp',
 						websiteUrl: 'https://techcorp.com',
@@ -55,8 +53,37 @@ describe('/api/jobs/saved', () => {
 						companySize: '100-500',
 						industry: 'Technology',
 					},
+					title: 'Senior Software Engineer',
+					url: 'https://company.com/job1',
+					goodFitReasons: ['Great tech stack'],
+					considerationPoints: ['Fast-paced'],
+					stretchGoals: ['Leadership'],
+					suitabilityScore: 85,
+					status: 'saved',
 					createdAt: '2023-01-01T00:00:00.000Z',
 					updatedAt: '2023-01-01T00:00:00.000Z',
+					toObject: () => ({
+						_id: '507f1f77bcf86cd799439012',
+						userId: '507f1f77bcf86cd799439011',
+						companyId: {
+							_id: '507f1f77bcf86cd799439013',
+							company: 'Tech Corp',
+							websiteUrl: 'https://techcorp.com',
+							careerPageUrl: 'https://techcorp.com/careers',
+							logo: 'https://techcorp.com/logo.png',
+							companySize: '100-500',
+							industry: 'Technology',
+						},
+						title: 'Senior Software Engineer',
+						url: 'https://company.com/job1',
+						goodFitReasons: ['Great tech stack'],
+						considerationPoints: ['Fast-paced'],
+						stretchGoals: ['Leadership'],
+						suitabilityScore: 85,
+						status: 'saved',
+						createdAt: '2023-01-01T00:00:00.000Z',
+						updatedAt: '2023-01-01T00:00:00.000Z',
+					}),
 				},
 			];
 
@@ -80,16 +107,49 @@ describe('/api/jobs/saved', () => {
 
 			const response = await GET(request);
 
-			if (response.status !== 200) {
-				const errorData = await response.json();
-				console.log('Error response:', errorData);
-			}
-
 			const responseData = await response.json();
+
+			if (response.status !== 200) {
+				console.log('Error response:', responseData);
+			}
 
 			expect(response.status).toBe(200);
 			expect(responseData).toEqual({
-				jobs: mockSavedJobs,
+				jobs: [
+					{
+						_id: '507f1f77bcf86cd799439012',
+						userId: '507f1f77bcf86cd799439011',
+						companyId: {
+							_id: '507f1f77bcf86cd799439013',
+							company: 'Tech Corp',
+							websiteUrl: 'https://techcorp.com',
+							careerPageUrl: 'https://techcorp.com/careers',
+							logo: 'https://techcorp.com/logo.png',
+							companySize: '100-500',
+							industry: 'Technology',
+						},
+						title: 'Senior Software Engineer',
+						url: 'https://company.com/job1',
+						goodFitReasons: ['Great tech stack'],
+						considerationPoints: ['Fast-paced'],
+						stretchGoals: ['Leadership'],
+						suitabilityScore: 85,
+						status: 'saved',
+						createdAt: '2023-01-01T00:00:00.000Z',
+						updatedAt: '2023-01-01T00:00:00.000Z',
+						// API transformation adds these fields
+						user: '507f1f77bcf86cd799439011',
+						company: {
+							_id: '507f1f77bcf86cd799439013',
+							company: 'Tech Corp',
+							websiteUrl: 'https://techcorp.com',
+							careerPageUrl: 'https://techcorp.com/careers',
+							logo: 'https://techcorp.com/logo.png',
+							companySize: '100-500',
+							industry: 'Technology',
+						},
+					},
+				],
 				total: 1,
 			});
 
@@ -98,9 +158,11 @@ describe('/api/jobs/saved', () => {
 				email: 'test@example.com',
 			});
 			expect(mockSavedJob.countDocuments).toHaveBeenCalledWith({
-				user: mockUserData._id,
+				userId: mockUserData._id,
 			});
-			expect(mockSavedJob.find).toHaveBeenCalledWith({user: mockUserData._id});
+			expect(mockSavedJob.find).toHaveBeenCalledWith({
+				userId: mockUserData._id,
+			});
 		});
 
 		it('should return 400 when gmail parameter is missing', async () => {

@@ -2,23 +2,33 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {POST, GET} from '../route';
 import {NextRequest} from 'next/server';
 import {UserService} from '@/services/userService';
+import {SavedJobService} from '@/services/savedJobService';
 import dbConnect from '@/middleware/database';
 
 vi.mock('@/services/userService');
+vi.mock('@/services/savedJobService');
 vi.mock('@/middleware/database');
-vi.mock('@/utils/logger', () => ({
-	Logger: vi.fn().mockImplementation(() => ({
-		error: vi.fn(),
-	})),
+vi.mock('@/utils/enhancedLogger', () => ({
+	EnhancedLogger: {
+		getLogger: vi.fn().mockReturnValue({
+			info: vi.fn(),
+			error: vi.fn(),
+			warn: vi.fn(),
+			debug: vi.fn(),
+		}),
+	},
 }));
 
 const mockUserService = vi.mocked(UserService);
+const mockSavedJobService = vi.mocked(SavedJobService);
 const mockDbConnect = vi.mocked(dbConnect);
 
 describe('/api/users', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockDbConnect.mockResolvedValue({} as any);
+		// Mock SavedJobService to return empty arrays for all users
+		mockSavedJobService.getSavedJobsByUserId.mockResolvedValue([]);
 	});
 
 	describe('POST /api/users', () => {
@@ -99,15 +109,33 @@ describe('/api/users', () => {
 			const mockUsers = [
 				{
 					_id: '507f1f77bcf86cd799439011',
+					id: '507f1f77bcf86cd799439011',
 					email: 'user1@example.com',
 					createdAt: new Date('2023-01-01T00:00:00.000Z'),
 					updatedAt: new Date('2023-01-01T00:00:00.000Z'),
+					toObject: function () {
+						return {
+							_id: this._id,
+							email: this.email,
+							createdAt: this.createdAt,
+							updatedAt: this.updatedAt,
+						};
+					},
 				},
 				{
 					_id: '507f1f77bcf86cd799439012',
+					id: '507f1f77bcf86cd799439012',
 					email: 'user2@example.com',
 					createdAt: new Date('2023-01-02T00:00:00.000Z'),
 					updatedAt: new Date('2023-01-02T00:00:00.000Z'),
+					toObject: function () {
+						return {
+							_id: this._id,
+							email: this.email,
+							createdAt: this.createdAt,
+							updatedAt: this.updatedAt,
+						};
+					},
 				},
 			];
 
@@ -128,17 +156,26 @@ describe('/api/users', () => {
 						email: 'user1@example.com',
 						createdAt: '2023-01-01T00:00:00.000Z',
 						updatedAt: '2023-01-01T00:00:00.000Z',
+						savedJobs: [],
 					},
 					{
 						_id: '507f1f77bcf86cd799439012',
 						email: 'user2@example.com',
 						createdAt: '2023-01-02T00:00:00.000Z',
 						updatedAt: '2023-01-02T00:00:00.000Z',
+						savedJobs: [],
 					},
 				],
 			});
 			expect(mockDbConnect).toHaveBeenCalledOnce();
 			expect(mockUserService.getAllUsers).toHaveBeenCalledOnce();
+			expect(mockSavedJobService.getSavedJobsByUserId).toHaveBeenCalledTimes(2);
+			expect(mockSavedJobService.getSavedJobsByUserId).toHaveBeenCalledWith(
+				'507f1f77bcf86cd799439011',
+			);
+			expect(mockSavedJobService.getSavedJobsByUserId).toHaveBeenCalledWith(
+				'507f1f77bcf86cd799439012',
+			);
 		});
 
 		it('should return empty array when no users exist', async () => {
@@ -156,6 +193,8 @@ describe('/api/users', () => {
 				users: [],
 			});
 			expect(mockUserService.getAllUsers).toHaveBeenCalledOnce();
+			// SavedJobService should not be called when there are no users
+			expect(mockSavedJobService.getSavedJobsByUserId).not.toHaveBeenCalled();
 		});
 	});
 });

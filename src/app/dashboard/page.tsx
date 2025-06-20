@@ -32,7 +32,10 @@ export default function DashboardPage() {
 	};
 
 	// Initialize logger with user context (memoized to prevent recreations)
-	const logger = useMemo(() => createLogger('Dashboard', authInfo.gmail), [authInfo.gmail]);
+	const logger = useMemo(
+		() => createLogger('Dashboard', authInfo.gmail),
+		[authInfo.gmail],
+	);
 
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
