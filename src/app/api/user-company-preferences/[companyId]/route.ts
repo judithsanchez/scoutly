@@ -1,9 +1,8 @@
 import {NextRequest, NextResponse} from 'next/server';
 import dbConnect from '@/middleware/database';
-import {User} from '@/models/User';
-import {Company} from '@/models/Company';
-import {EnhancedLogger} from '@/utils/enhancedLogger';
+import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {UserService} from '@/services/userService';
+import {EnhancedLogger} from '@/utils/enhancedLogger';
 
 const logger = EnhancedLogger.getLogger('UserCompanyPreferencesByIdAPI', {
 	logToFile: true,
@@ -15,7 +14,7 @@ const logger = EnhancedLogger.getLogger('UserCompanyPreferencesByIdAPI', {
 /**
  * DELETE /api/user-company-preferences/[companyId]
  *
- * Remove a company from the user's tracked companies
+ * Remove a company from the user's tracked companies by setting isTracking to false
  */
 export async function DELETE(
 	req: NextRequest,
@@ -28,6 +27,12 @@ export async function DELETE(
 		const userEmail = 'judithv.sanchezc@gmail.com';
 		logger.info(`Using dev bypass auth with email: ${userEmail}`);
 
+		// Get user by email to get the userId
+		const user = await UserService.getUserByEmail(userEmail);
+		if (!user) {
+			return NextResponse.json({error: 'User not found'}, {status: 404});
+		}
+
 		const {companyId} = params;
 
 		if (!companyId) {
@@ -37,16 +42,20 @@ export async function DELETE(
 			);
 		}
 
-		// Remove the company from user's tracked companies using UserService
-		const user = await UserService.removeTrackedCompany(userEmail, companyId);
+		// Set isTracking to false using the new service
+		const preference = await UserCompanyPreferenceService.upsert(
+			(user._id as any).toString(),
+			companyId,
+			{isTracking: false},
+		);
 
 		logger.info(
-			`Removed company ${companyId} from tracked companies for user ${userEmail}`,
+			`Set isTracking to false for company ${companyId} for user ${userEmail}`,
 		);
 
 		return NextResponse.json({
 			success: true,
-			message: 'Company preference removed successfully',
+			preference,
 		});
 	} catch (error: any) {
 		logger.error('Error removing company preference:', error);
@@ -60,7 +69,7 @@ export async function DELETE(
 /**
  * PUT /api/user-company-preferences/[companyId]
  *
- * Update a company's rank for the user
+ * Update a company's preferences (rank, isTracking) for the user
  */
 export async function PUT(
 	req: NextRequest,
@@ -73,8 +82,15 @@ export async function PUT(
 		const userEmail = 'judithv.sanchezc@gmail.com';
 		logger.info(`Using dev bypass auth with email: ${userEmail}`);
 
+		// Get user by email to get the userId
+		const user = await UserService.getUserByEmail(userEmail);
+		if (!user) {
+			return NextResponse.json({error: 'User not found'}, {status: 404});
+		}
+
 		const {companyId} = params;
-		const {rank} = await req.json();
+		const body = await req.json();
+		const {rank, isTracking} = body;
 
 		if (!companyId) {
 			return NextResponse.json(
@@ -83,30 +99,37 @@ export async function PUT(
 			);
 		}
 
-		if (rank === undefined || rank < 0 || rank > 100) {
+		// Validate rank if provided
+		if (rank !== undefined && (rank < 1 || rank > 100)) {
 			return NextResponse.json(
-				{error: 'Rank must be between 0 and 100'},
+				{error: 'Rank must be between 1 and 100'},
 				{status: 400},
 			);
 		}
 
-		// Update the company's rank using UserService
-		const user = await UserService.updateTrackedCompanyRanking(
-			userEmail,
+		// Prepare update data
+		const updateData: {rank?: number; isTracking?: boolean} = {};
+		if (rank !== undefined) updateData.rank = rank;
+		if (isTracking !== undefined) updateData.isTracking = isTracking;
+
+		// Update the preference using the new service
+		const preference = await UserCompanyPreferenceService.upsert(
+			(user._id as any).toString(),
 			companyId,
-			rank,
+			updateData,
 		);
 
 		logger.info(
-			`Updated rank for company ${companyId} to ${rank} for user ${userEmail}`,
+			`Updated preference for company ${companyId} for user ${userEmail}`,
+			{updateData},
 		);
 
 		return NextResponse.json({
 			success: true,
-			message: 'Company rank updated successfully',
+			preference,
 		});
 	} catch (error: any) {
-		logger.error('Error updating company rank:', error);
+		logger.error('Error updating company preference:', error);
 		return NextResponse.json(
 			{error: error.message || 'Internal server error'},
 			{status: 500},

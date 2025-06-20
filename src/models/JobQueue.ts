@@ -10,7 +10,10 @@ export enum JobStatus {
 export interface IJobQueue extends Document {
 	companyId: mongoose.Schema.Types.ObjectId;
 	status: JobStatus;
-	lastAttemptAt: Date | null;
+	createdAt: Date;
+	lastAttemptAt?: Date;
+	completedAt?: Date;
+	errorMessage?: string;
 	retryCount: number;
 }
 
@@ -29,11 +32,17 @@ const JobQueueSchema = new Schema<IJobQueue>(
 		},
 		lastAttemptAt: {
 			type: Date,
-			default: null,
+		},
+		completedAt: {
+			type: Date,
+		},
+		errorMessage: {
+			type: String,
 		},
 		retryCount: {
 			type: Number,
 			default: 0,
+			min: 0,
 		},
 	},
 	{timestamps: true},

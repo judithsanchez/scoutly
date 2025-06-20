@@ -1,9 +1,8 @@
 import {NextRequest, NextResponse} from 'next/server';
 import dbConnect from '@/middleware/database';
-import {User} from '@/models/User';
-import {Company} from '@/models/Company';
-import {EnhancedLogger} from '@/utils/enhancedLogger';
+import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {UserService} from '@/services/userService';
+import {EnhancedLogger} from '@/utils/enhancedLogger';
 
 const logger = EnhancedLogger.getLogger('UserCompanyPreferencesAPI', {
 	logToFile: true,
@@ -25,27 +24,20 @@ export async function GET(req: NextRequest) {
 		const userEmail = 'judithv.sanchezc@gmail.com';
 		logger.info(`Using dev bypass auth with email: ${userEmail}`);
 
-		// Get the user with their tracked companies
-		const user = await User.findOne({email: userEmail});
+		// Get user by email to get the userId
+		const user = await UserService.getUserByEmail(userEmail);
 		if (!user) {
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
 
-		// If user has no tracked companies, return empty array
-		if (!user.trackedCompanies || user.trackedCompanies.length === 0) {
-			logger.info(`User ${userEmail} has no tracked companies`);
-			return NextResponse.json({companies: []});
-		}
+		// Get user's tracked company preferences using the new service
+		const preferences = await UserCompanyPreferenceService.findByUserId(
+			(user._id as any).toString(),
+		);
 
-		// Get the company details for tracked companies
-		const companyIds = user.trackedCompanies.map((tc: any) => tc.companyID);
-		const companies = await Company.find({companyID: {$in: companyIds}});
-
-		// Build the response with company details and user preferences
-		const trackedCompanies = companies.map(company => {
-			const userTrackingInfo = user.trackedCompanies.find(
-				(tc: any) => tc.companyID === company.companyID,
-			);
+		// Transform the data to match the expected API response format
+		const trackedCompanies = preferences.map(preference => {
+			const company = preference.companyId as any; // Populated company data
 
 			return {
 				_id: company._id,
@@ -58,10 +50,10 @@ export async function GET(req: NextRequest) {
 				office_locations: company.office_locations,
 				fields: company.fields,
 				userPreference: {
-					rank: userTrackingInfo?.ranking || 75,
-					isTracking: true,
-					frequency: getRankingFrequency(userTrackingInfo?.ranking || 75),
-					lastUpdated: user.updatedAt,
+					rank: preference.rank,
+					isTracking: preference.isTracking,
+					frequency: getRankingFrequency(preference.rank),
+					lastUpdated: preference.updatedAt,
 				},
 			};
 		});
@@ -100,37 +92,37 @@ export async function POST(req: NextRequest) {
 		const userEmail = 'judithv.sanchezc@gmail.com';
 		logger.info(`Using dev bypass auth with email: ${userEmail}`);
 
+		// Get user by email to get the userId
+		const user = await UserService.getUserByEmail(userEmail);
+		if (!user) {
+			return NextResponse.json({error: 'User not found'}, {status: 404});
+		}
+
 		// Parse request body
 		const {companyId, rank = 75, isTracking = true} = await req.json();
 
 		if (!companyId) {
-			return NextResponse.json(
-				{error: 'Company ID is required'},
-				{status: 400},
-			);
+			return NextResponse.json({error: 'companyId is required'}, {status: 400});
 		}
 
-		// Verify company exists
-		const company = await Company.findOne({companyID: companyId});
-		if (!company) {
-			return NextResponse.json({error: 'Company not found'}, {status: 404});
-		}
-
-		// Add the company to user's tracked companies using UserService
-		const user = await UserService.addTrackedCompany(
-			userEmail,
+		// Create or update the preference using the new service
+		const preference = await UserCompanyPreferenceService.upsert(
+			(user._id as any).toString(),
 			companyId,
-			rank,
+			{rank, isTracking},
 		);
 
 		logger.info(
-			`Added company ${companyId} to tracked companies for user ${userEmail}`,
+			`Updated company preference for ${companyId} for user ${userEmail}`,
 		);
 
-		return NextResponse.json({
-			success: true,
-			message: 'Company preference updated successfully',
-		});
+		return NextResponse.json(
+			{
+				success: true,
+				preference,
+			},
+			{status: 201},
+		);
 	} catch (error: any) {
 		logger.error('Error updating company preference:', error);
 		return NextResponse.json(

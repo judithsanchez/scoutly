@@ -2,13 +2,15 @@ import {NextResponse} from 'next/server';
 import {connectDB} from '@/config/database';
 import {CompanyService} from '@/services/companyService';
 import {UserService} from '@/services/userService';
+import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
+import type {IUser} from '@/models/User';
 
 export async function POST() {
 	try {
 		await connectDB();
 
 		const companies = await CompanyService.getAllCompanies();
-		const user = await UserService.getUserByEmail(
+		let user = await UserService.getUserByEmail(
 			process.env.DEFAULT_EMAIL || '',
 		);
 
@@ -16,26 +18,34 @@ export async function POST() {
 		let addedCount = 0;
 
 		if (!user) {
-			await UserService.getOrCreateUser(process.env.DEFAULT_EMAIL || '');
+			user = await UserService.getOrCreateUser(process.env.DEFAULT_EMAIL || '');
 		}
 
+		// Get current user preferences
+		const userPreferences = await UserCompanyPreferenceService.findByUserId(
+			(user._id as any).toString(),
+		);
+
+		// Get set of currently tracked company IDs (note: these are MongoDB _ids, not companyID)
+		const trackedCompanyIds = new Set(
+			userPreferences.map(pref => (pref.companyId as any).companyID),
+		);
+
 		for (const company of companies) {
-			const isTracked = user?.trackedCompanies?.some(
-				tc => tc.companyID === company.companyID,
-			);
+			const isTracked = trackedCompanyIds.has(company.companyID);
 
 			if (isTracked) {
-				await UserService.updateTrackedCompanyRanking(
-					process.env.DEFAULT_EMAIL || '',
+				await UserCompanyPreferenceService.upsert(
+					(user._id as any).toString(),
 					company.companyID,
-					75,
+					{rank: 75},
 				);
 				updatedCount++;
 			} else {
-				await UserService.addTrackedCompany(
-					process.env.DEFAULT_EMAIL || '',
+				await UserCompanyPreferenceService.upsert(
+					(user._id as any).toString(),
 					company.companyID,
-					75,
+					{rank: 75, isTracking: true},
 				);
 				addedCount++;
 			}

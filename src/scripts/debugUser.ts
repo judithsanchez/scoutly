@@ -9,6 +9,7 @@
 
 import dbConnect from '../middleware/database';
 import {User} from '../models/User';
+import {UserCompanyPreferenceService} from '../services/userCompanyPreferenceService';
 import {Logger} from '../utils/logger';
 
 const logger = new Logger('UserDebugUtility');
@@ -45,7 +46,7 @@ async function debugUser(email: string): Promise<UserDebugInfo> {
 		await dbConnect();
 		logger.info(`Looking up user: ${email}`);
 
-		const user = await User.findOne({email}).populate('trackedCompanies');
+		const user = await User.findOne({email});
 
 		if (!user) {
 			result.exists = false;
@@ -60,14 +61,19 @@ async function debugUser(email: string): Promise<UserDebugInfo> {
 		result.exists = true;
 		result.userRecord = user.toObject();
 
+		// Get user company preferences using the new service
+		const userPreferences = await UserCompanyPreferenceService.findByUserId(
+			user._id.toString(),
+		);
+
 		// Check profile completeness
 		result.profileCompleteness.hasEmail = !!user.email;
 		result.profileCompleteness.hasCvUrl = !!user.cvUrl;
 		result.profileCompleteness.hasCandidateInfo = !!user.candidateInfo;
 		result.profileCompleteness.hasTrackedCompanies =
-			!!user.trackedCompanies && user.trackedCompanies.length > 0;
+			!!userPreferences && userPreferences.length > 0;
 		result.profileCompleteness.trackedCompaniesCount =
-			user.trackedCompanies?.length || 0;
+			userPreferences?.length || 0;
 
 		// Identify issues
 		if (!result.profileCompleteness.hasEmail) {
