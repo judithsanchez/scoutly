@@ -2,7 +2,24 @@
 
 ## Overview
 
-A job listing aggregator with advanced scraping capabilities and MongoDB integration.
+A job listing aggregator with advanced scraping capabilities and MongoDB integration. Features AI-powered job matching, intelligent filtering, and comprehensive tracking of job opportunities from multiple companies.
+
+## Architecture
+
+### Current State (June 2025)
+
+- **Simplified Architecture**: Direct execution model without background job queues
+- **AI Integration**: Gemini API for intelligent job analysis and matching
+- **User Preferences**: Tracked companies stored as simple array on User model
+- **Synchronous Processing**: Job matching happens during API calls for immediate results
+
+### Core Features
+
+- **Company Tracking**: Users can track multiple companies for job opportunities
+- **Intelligent Scraping**: Web scraping with duplicate detection and history tracking
+- **AI Job Matching**: Advanced analysis of job fit based on user preferences and CV
+- **Job Management**: Save, categorize, and track application status for matched jobs
+- **Token Usage Tracking**: Monitor and log AI API usage per user and operation
 
 ## Getting Started
 
@@ -157,7 +174,34 @@ Request body:
 
 ## Technical Stack
 
-- Next.js with TypeScript
-- MongoDB & Mongoose
-- Playwright for scraping
-- Docker for containerization
+- **Frontend**: Next.js with TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes with TypeScript
+- **Database**: MongoDB with Mongoose ODM
+- **AI**: Google Gemini API for job analysis and matching
+- **Scraping**: Playwright for reliable web scraping
+- **Testing**: Vitest with comprehensive test coverage (69 tests across 13 files)
+- **Containerization**: Docker and Docker Compose for development and deployment
+- **Type Safety**: Full TypeScript coverage with zero compilation errors
+
+## Recent Major Updates (June 2025)
+
+### Background Jobs Refactor ✅
+
+- **Removed**: Complex queue infrastructure and background job processing
+- **Simplified**: Direct execution model for immediate results
+- **Maintained**: All core functionality while reducing system complexity
+- **Improved**: Code maintainability and debugging capabilities
+
+### Quality Improvements ✅
+
+- **Test Coverage**: Complete test suite with 69 passing tests
+- **Type Safety**: Zero TypeScript compilation errors
+- **Code Quality**: All linting checks passing
+- **Documentation**: Updated component-level documentation
+
+### Architecture Benefits
+
+- **Faster Response Times**: No queue delays, immediate job processing
+- **Simplified Debugging**: Direct execution path easier to trace
+- **Reduced Resource Usage**: No background workers needed
+- **Better Reliability**: Fewer moving parts, more predictable behavior

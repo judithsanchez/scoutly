@@ -2,49 +2,73 @@
 
 This model stores jobs that users have saved or are tracking during their job search process.
 
-## Schema Definition
+**UPDATED (June 2025)**: Significantly enhanced to align with Gemini AI output schema and provide comprehensive job data.
+
+## Schema Definition (Current)
 
 ```typescript
 export interface ISavedJob extends Document {
-	userId: string; // Reference to the User who saved this job
-	jobId: string; // Reference to the Job that was saved
-	companyId: mongoose.Schema.Types.ObjectId; // Reference to the Company offering the job
-	status: string; // Current application status
-	notes?: string; // Optional field for user notes
+	// Core identification
+	userId: ObjectId;
+	companyId: string;
+	jobUrl: string;
+
+	// Job details from AI analysis
+	title?: string;
+	company?: string;
+	location?: string;
+	type?: string;
+	department?: string;
+	experienceLevel?: string;
+	postedDate?: string;
+
+	// Compensation and benefits
+	salary?: string;
+	benefits?: string[];
+
+	// Technical requirements
+	technologies?: string[];
+	skills?: string[];
+
+	// Logistics and requirements
+	visaSponsorship?: boolean;
+	languageRequirements?: string[];
+
+	// AI analysis results
+	matchScore?: number;
+	suitabilityAnalysis?: string;
+	keyHighlights?: string[];
+	notes?: string;
+
+	// Application tracking
+	status:
+		| 'interested'
+		| 'applied'
+		| 'interviewing'
+		| 'rejected'
+		| 'offer'
+		| 'not_interested';
+
+	// Metadata
 	createdAt: Date;
 	updatedAt: Date;
 }
-
-const SavedJobSchema = new Schema<ISavedJob>(
-	{
-		userId: {
-			type: String,
-			required: true,
-			index: true,
-		},
-		jobId: {
-			type: String,
-			required: true,
-		},
-		companyId: {
-			type: Schema.Types.ObjectId,
-			ref: 'Company',
-			required: true,
-		},
-		status: {
-			type: String,
-			default: 'saved',
-			required: true,
-		},
-		notes: {
-			type: String,
-		},
-	},
-	{
-		timestamps: true,
-	},
-);
 ```
+
+## Key Features (Post-Refactor)
+
+### Enhanced Data Capture
+
+- **Comprehensive Job Info**: All relevant job details from AI analysis
+- **Technology Tracking**: Explicit fields for required technologies and skills
+- **Logistics Information**: Visa sponsorship and language requirements
+- **AI Analysis Results**: Match scores and detailed suitability analysis
+
+### Application Status Management
+
+- **Rich Status Options**: From 'interested' to 'offer' with clear workflow
+- **Status History**: Tracked through updatedAt timestamps
+- **API Integration**: Easy status updates via REST endpoints
 
 ## Indexes
 

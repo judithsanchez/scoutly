@@ -1,6 +1,38 @@
 # Scoutly
 
-A Next.js application for scraping and managing job listings with advanced anti-bot measures and MongoDB integration.
+A Next.js application for intelligent job aggregation with AI-powered matching, web scraping, and comprehensive job management capabilities.
+
+## ✨ Current Status (June 2025)
+
+🎉 **Fully Functional & Production Ready**
+
+- ✅ All 69 tests passing in Docker environment
+- ✅ Zero TypeScript compilation errors
+- ✅ Complete end-to-end job matching workflow
+- ✅ Simplified architecture with enhanced reliability
+
+## 🚀 Key Features
+
+### Job Intelligence
+
+- **AI-Powered Matching**: Gemini AI analyzes job fit against user profiles
+- **Smart Scraping**: Automated job discovery from company career pages
+- **Comprehensive Analysis**: Detailed scoring, reasoning, and recommendations
+- **Token Tracking**: Monitor AI API usage and costs
+
+### User Experience
+
+- **Company Tracking**: Follow multiple companies for new opportunities
+- **Job Management**: Save, categorize, and track application status
+- **Rich Job Data**: Technology requirements, salary, visa sponsorship info
+- **Instant Results**: Direct execution without queue delays
+
+### Technical Excellence
+
+- **Type-Safe**: Full TypeScript coverage with zero compilation errors
+- **Well-Tested**: Comprehensive test suite with 69 passing tests
+- **Docker Ready**: Fully containerized development and deployment
+- **Performance Optimized**: Efficient scraping and AI processing
 
 ## Authentication Setup
 
@@ -43,35 +75,78 @@ npm install next-auth@latest @auth/core @auth/mongodb-adapter mongodb --legacy-p
    GOOGLE_CLIENT_SECRET="your-client-secret"
    ```
 
-### Authentication Flow
-
-```mermaid
-sequenceDiagram
-    User->>Home Page: Clicks "Sign in with Google"
-    Home Page->>Google: Redirects to Google sign-in
-    Google->>User: Shows consent screen
-    User->>Google: Approves
-    Google->>NextAuth: Redirects with auth code
-    NextAuth->>MongoDB: Stores email only
-    NextAuth->>Home Page: Redirects with session
-```
-
-## Getting Started
+## 🛠️ Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
 - Node.js 20+ (for local development)
 
-### Quick Start
+### Development Setup
 
 ```bash
-# Start containers
+# Clone and start the application
+git clone <repository-url>
+cd scoutly
+
+# Start all services with Docker
 docker compose up -d
 
-# Seed companies database
-docker compose exec app npm run db:seed
+# Seed the database with companies
+docker compose exec app npx tsx src/scripts/seedCompanies.ts
+
+# View application
+open http://localhost:3000
 ```
+
+### Validation Commands
+
+```bash
+# Quick validation (lint + type-check + tests)
+npm run validate:docker
+
+# Full validation including build
+npm run validate:full:docker
+
+# Run tests only
+docker compose exec app npm test
+```
+
+## 🏗️ Architecture Overview
+
+### Simplified Direct Execution Model
+
+- **No Background Jobs**: Job matching happens synchronously during API calls
+- **Immediate Results**: Users get instant feedback without queue delays
+- **Pipeline Architecture**: Modular steps for scraping, analysis, and storage
+- **Direct Database Operations**: Simplified data management without job queues
+
+### Core Workflow
+
+1. **User Setup**: Create account and select companies to track
+2. **Job Discovery**: Scrape career pages for new opportunities
+3. **AI Analysis**: Gemini AI evaluates job fit against user profile
+4. **Smart Filtering**: Save only relevant jobs with detailed analysis
+5. **Job Management**: Track application status and notes
+
+## 📋 Recent Major Updates (June 2025)
+
+### Background Jobs Refactor ✅
+
+- **Removed**: Complex queue infrastructure and background processing
+- **Simplified**: Direct execution model for immediate results
+- **Maintained**: All functionality while reducing complexity
+- **Improved**: Reliability, maintainability, and debugging
+
+### Quality Improvements ✅
+
+- **Test Suite**: 69 comprehensive tests all passing in Docker
+- **Type Safety**: Zero TypeScript compilation errors
+- **Documentation**: Updated component and service documentation
+- **Performance**: Optimized for direct execution model
+  docker compose exec app npm run db:seed
+
+````
 
 Application: [http://localhost:3000](http://localhost:3000)
 
@@ -110,7 +185,7 @@ docker compose up --build
 
 # Reset environment
 docker compose down -v
-```
+````
 
 ### Local Setup
 

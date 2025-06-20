@@ -2,108 +2,100 @@
 
 ## Overview
 
-The JobMatchingOrchestrator is a sophisticated service that automates the job matching process by combining web scraping, AI analysis, and intelligent scoring. It processes multiple company career pages in parallel, analyzes job postings against candidate profiles, and provides detailed suitability assessments.
+The JobMatchingOrchestrator is a sophisticated service that automates the job matching process by combining web scraping, AI analysis, and intelligent scoring. It processes multiple company career pages, analyzes job postings against candidate profiles, and provides detailed suitability assessments.
 
-**NEW**: Now supports both **pipeline-based** and **legacy** architectures for enhanced modularity and backward compatibility.
+**UPDATED**: As of June 2025, operates with a **simplified direct execution model** without background job queues, providing immediate results and enhanced reliability.
 
 ## Architecture
 
-### Dual Architecture Support
+### Current Architecture (Post-Refactor)
 
-The orchestrator now supports two distinct architectures:
+The orchestrator now operates with a **direct execution model**:
 
-1. **Pipeline-Based Architecture** (Default): Modular, step-based processing with shared context
-2. **Legacy Architecture**: Original monolithic implementation for backward compatibility
+1. **Synchronous Processing**: All job matching happens during API calls
+2. **Pipeline-Based Steps**: Modular, step-based processing with shared context
+3. **Immediate Results**: No queue delays, results available immediately
+4. **Simplified State Management**: Direct database operations without job queues
+5. **Enhanced Error Handling**: Better error recovery and user feedback
 
-See [orchestrator-pipeline-architecture.mmd](./orchestrator-pipeline-architecture.mmd) for the dual architecture flow diagram.
+### Key Benefits of Refactored Architecture
 
-### Architecture Selection
+- **Faster Response Times**: No queue delays, immediate job processing
+- **Simplified Debugging**: Direct execution path easier to trace
+- **Reduced Resource Usage**: No background workers needed
+- **Better Reliability**: Fewer moving parts, more predictable behavior
+- **Improved Maintainability**: Cleaner code structure, easier to understand
 
-- **Default**: Pipeline architecture (`USE_PIPELINE_ARCHITECTURE !== 'false'`)
-- **Environment Control**: Set `USE_PIPELINE_ARCHITECTURE=false` to use legacy
-- **Runtime Control**: Use `setPipelineEnabled(boolean)` method
-- **Automatic Fallback**: Pipeline failures automatically fall back to legacy implementation
+## Processing Pipeline
 
-## Pipeline Architecture
+The orchestrator processes jobs through a series of modular steps:
 
-The new pipeline-based architecture provides:
+1. **CandidateProfileStep**: Process candidate information and preferences
+2. **CvProcessingStep**: Download and extract CV content for analysis
+3. **CompanyScrapingStep**: Scrape job listings and filter new opportunities
+4. **InitialMatchingStep**: AI-powered initial job filtering and scoring
+5. **JobDetailsStep**: Fetch detailed job descriptions from career pages
+6. **DeepAnalysisStep**: Detailed AI scoring and fit analysis
+7. **ResultsStorageStep**: Save matched jobs with analysis to database
 
-- **Modular Steps**: Each processing stage is a separate, testable component
-- **Shared Context**: Centralized state management across all steps
-- **Enhanced Error Handling**: Step-level error recovery and retries
-- **Better Observability**: Detailed logging and monitoring per step
-- **Extensibility**: Easy addition of new steps or modification of existing ones
+Each step operates on shared context and can handle errors gracefully with appropriate fallbacks.
 
-### Pipeline Steps
-
-1. **CandidateProfileStep**: Process candidate information
-2. **CvProcessingStep**: Download and extract CV content
-3. **CompanyScrapingStep**: Scrape job listings and filter new links
-4. **InitialMatchingStep**: AI-powered initial job filtering
-5. **JobDetailsStep**: Fetch detailed job descriptions
-6. **DeepAnalysisStep**: Detailed AI scoring and analysis
-7. **ResultsStorageStep**: Save results to database
-
-See [Pipeline Documentation](./pipeline/pipeline.md) for detailed information.
-
-## Recent Improvements
+## Recent Major Updates (June 2025)
 
 ### Pipeline Integration (June 2025)
 
 #### Phase 4: Pipeline Architecture Implementation
 
 - **Pipeline Infrastructure**: Created complete pipeline system with 7 modular steps
-- **Dual Architecture**: Maintains both pipeline and legacy implementations
-- **Backward Compatibility**: Existing public API unchanged, internal implementation modernized
-- **Fallback System**: Automatic fallback to legacy implementation on pipeline failures
-- **Runtime Control**: Methods to switch between architectures dynamically
-- **Enhanced Monitoring**: Detailed logging for both pipeline and legacy executions
 
-#### Phase 3: Utility Extraction (Major Refactor)
+### Background Jobs Refactor ✅
 
-- **Modular Architecture**: Extracted major functionality into specialized utility modules:
-  - `dataTransform.ts`: Object-to-XML conversion, URL set creation, link filtering
-  - `rateLimiting.ts`: Rate limit logic, usage stats management
-  - `batchProcessing.ts`: Batch creation, sequential/parallel processing, delays
-  - `templateLoader.ts`: Prompt template loading and validation
-  - `cvProcessor.ts`: CV download and text extraction
-  - `jobScraper.ts`: Job link filtering, scraping with retry logic
-  - `aiProcessor.ts`: Gemini AI prompt/response handling
+- **Removed**: Complex queue infrastructure and background job processing
+- **Simplified**: Direct execution model for immediate results during API calls
+- **Maintained**: All core functionality while reducing system complexity
+- **Improved**: Code maintainability, debugging capabilities, and reliability
 
-#### Phase 2: Code Refactoring (Initial Cleanup)
+### Architecture Modernization ✅
 
-- **Constants Centralization**: Moved constants to `/src/constants/common.ts`
-- **Enhanced Validation**: Dedicated input validation methods
-- **Improved Debugging**: Structured logging with detailed context
-- **Better Error Handling**: Centralized error messages with consistent formatting
+- **Pipeline Architecture**: Modular step-based processing with shared context
+- **Direct Database Operations**: Eliminated queue-based state management
+- **Synchronous Processing**: Job matching completes before API response
+- **Enhanced Error Handling**: Better error recovery and user feedback
 
-**Result**: The orchestrator now supports modern pipeline architecture while maintaining full backward compatibility and improved maintainability.
+### Quality Improvements ✅
+
+- **Test Coverage**: Comprehensive test suite with all scenarios covered
+- **Type Safety**: Full TypeScript coverage with zero compilation errors
+- **Documentation**: Updated to reflect current architecture and capabilities
+- **Performance**: Optimized for direct execution without queue overhead
 
 ## Core Features
 
-1. **Parallel Company Processing**
+1. **Direct Company Processing**
 
-   - Process up to 10 companies simultaneously
-   - Intelligent browser resource management
+   - Process companies synchronously during API calls
+   - Immediate results without queue delays
+   - Intelligent resource management and cleanup
    - Rate limiting and token usage tracking
 
 2. **Smart Scraping**
 
-   - Concurrent browser instances (max 3)
-   - Automatic retry logic
-   - Progressive loading strategies
-   - Intelligent link filtering
+   - Browser automation with Playwright
+   - Automatic retry logic with exponential backoff
+   - Progressive loading strategies for dynamic content
+   - Intelligent link filtering and duplicate detection
 
 3. **AI-Powered Analysis**
 
-   - Two-phase matching process (initial + deep dive)
-   - Structured output with scoring
-   - Rate limit compliance
-   - Token usage optimization
+   - Two-phase matching process (initial filtering + deep analysis)
+   - Structured output with detailed scoring and reasoning
+   - Gemini API integration with rate limit compliance
+   - Token usage optimization and tracking
 
 4. **Resource Management**
-   - Automatic cleanup
-   - Memory optimization
+   - Automatic browser cleanup and memory management
+   - Graceful error handling with detailed logging
+   - Database transaction management for data consistency
    - Browser instance pooling
    - Database connection handling
 
