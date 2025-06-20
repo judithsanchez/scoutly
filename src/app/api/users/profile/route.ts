@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {getServerSession} from 'next-auth';
 import dbConnect from '@/middleware/database';
 import {User} from '@/models/User';
+import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {Logger} from '@/utils/logger';
 
 const logger = new Logger('UserProfileAPI');
@@ -33,7 +34,7 @@ export async function PUT(request: Request) {
 			{email: userEmail},
 			{$set: {cvUrl, candidateInfo}},
 			{new: true}, // Return updated document
-		).populate('trackedCompanies');
+		);
 
 		if (!user) {
 			logger.warn(`User ${userEmail} not found.`);
@@ -76,15 +77,12 @@ export async function GET() {
 
 		logger.info('Looking up user profile', {userEmail});
 
-		let user = await User.findOne({email: userEmail}).populate(
-			'trackedCompanies',
-		); // Populate tracked companies
+		let user = await User.findOne({email: userEmail});
 
 		if (!user && process.env.NODE_ENV === 'development') {
 			logger.info(`User ${userEmail} not found in dev, creating...`);
 			user = await User.create({
 				email: userEmail,
-				trackedCompanies: [],
 			});
 			logger.success(`User ${userEmail} created in dev mode.`);
 		} else if (!user) {
@@ -95,12 +93,17 @@ export async function GET() {
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
 
+		// Get tracked companies using the new UserCompanyPreferenceService
+		const trackedCompanies = await UserCompanyPreferenceService.findByUserId(
+			(user._id as any).toString(),
+		);
+
 		// Log profile completeness for debugging
 		logger.info('User profile retrieved', {
 			userEmail,
 			hasCvUrl: !!user.cvUrl,
 			hasCandidateInfo: !!user.candidateInfo,
-			trackedCompaniesCount: user.trackedCompanies?.length || 0,
+			trackedCompaniesCount: trackedCompanies?.length || 0,
 			cvUrl: user.cvUrl || 'NOT SET',
 			candidateInfoKeys: user.candidateInfo
 				? Object.keys(user.candidateInfo).join(', ')
@@ -108,9 +111,14 @@ export async function GET() {
 		});
 
 		logger.success(`Retrieved profile for user ${userEmail}`);
-		// Return all user fields, Mongoose lean() can be used for plain JS object
-		// and to exclude virtuals if any, but for now, direct object is fine.
-		return NextResponse.json(user);
+
+		// Create the response object with the user data and tracked companies
+		const userProfile = {
+			...user.toObject(),
+			trackedCompanies: trackedCompanies || [],
+		};
+
+		return NextResponse.json(userProfile);
 	} catch (error: any) {
 		logger.error('Error fetching user profile', {
 			message: error.message,
