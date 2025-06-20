@@ -3,13 +3,13 @@
  * This will test the actual database connection and record creation
  */
 
-import { connectToDatabase } from '@/lib/mongodb';
-import { TokenUsageService } from '@/services/tokenUsageService';
-import { TokenOperation } from '@/models/TokenUsage';
+import {connectToDatabase} from '@/lib/mongodb';
+import {TokenUsageService} from '@/services/tokenUsageService';
+import {TokenOperation} from '@/models/TokenUsage';
 
 async function testTokenUsageDatabase() {
 	console.log('🔍 Testing TokenUsage database persistence...');
-	
+
 	try {
 		// Connect to database
 		console.log('📦 Connecting to database...');
@@ -40,7 +40,7 @@ async function testTokenUsageDatabase() {
 		console.log('Test data:', JSON.stringify(testUsage, null, 2));
 
 		const result = await TokenUsageService.recordUsage(testUsage);
-		
+
 		console.log('✅ TokenUsage record created successfully!');
 		console.log('Created record ID:', result._id);
 		console.log('Created record:', JSON.stringify(result, null, 2));
@@ -50,11 +50,14 @@ async function testTokenUsageDatabase() {
 		const userStats = await TokenUsageService.getUserStats('test@example.com');
 		console.log('User stats:', JSON.stringify(userStats, null, 2));
 
-		const companyStats = await TokenUsageService.getCompanyStats('test-company-123');
+		const companyStats = await TokenUsageService.getCompanyStats(
+			'test-company-123',
+		);
 		console.log('Company stats:', JSON.stringify(companyStats, null, 2));
 
-		console.log('🎉 All tests passed! TokenUsage database persistence is working.');
-
+		console.log(
+			'🎉 All tests passed! TokenUsage database persistence is working.',
+		);
 	} catch (error) {
 		console.error('❌ TokenUsage database test failed:');
 		console.error('Error:', error);
@@ -71,7 +74,7 @@ testTokenUsageDatabase()
 		console.log('✅ TokenUsage database test completed successfully');
 		process.exit(0);
 	})
-	.catch((error) => {
+	.catch(error => {
 		console.error('❌ TokenUsage database test failed:', error);
 		process.exit(1);
 	});

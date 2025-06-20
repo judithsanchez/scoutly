@@ -1,11 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkRateLimits, updateUsageStats, createUsageStats, checkDailyReset, getUsageSummary } from '../rateLimiting';
-import { GeminiFreeTierLimits } from '@/config/rateLimits';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {
+	checkRateLimits,
+	updateUsageStats,
+	createUsageStats,
+	checkDailyReset,
+	getUsageSummary,
+} from '../rateLimiting';
+import {GeminiFreeTierLimits} from '@/config/rateLimits';
 
 vi.useFakeTimers();
 
 describe('Rate Limiting Utilities', () => {
-	const modelLimits = GeminiFreeTierLimits.findLimitForModel('gemini-2.0-flash-lite')!;
+	const modelLimits = GeminiFreeTierLimits.findLimitForModel(
+		'gemini-2.0-flash-lite',
+	)!;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -15,7 +23,7 @@ describe('Rate Limiting Utilities', () => {
 	describe('createUsageStats', () => {
 		it('should create initial usage stats with zero values', () => {
 			const stats = createUsageStats();
-			
+
 			expect(stats.minuteTokens).toBe(0);
 			expect(stats.dayTokens).toBe(0);
 			expect(stats.totalTokens).toBe(0);
@@ -30,25 +38,25 @@ describe('Rate Limiting Utilities', () => {
 		it('should not wait if limits are not reached', async () => {
 			const usageStats = createUsageStats();
 			const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
-			
+
 			await checkRateLimits(modelLimits, usageStats);
-			
+
 			expect(setTimeoutSpy).not.toHaveBeenCalled();
 		});
 
 		it('should wait if RPM limit is reached', async () => {
 			const usageStats = createUsageStats();
 			usageStats.lastMinuteCalls = modelLimits.rpm!; // Exceed the limit
-			
+
 			const promise = checkRateLimits(modelLimits, usageStats);
-			
+
 			// Verify setTimeout was called with 60000ms (1 minute)
 			expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 60000);
-			
+
 			// Fast-forward time to resolve the promise
 			vi.runAllTimers();
 			await promise;
-			
+
 			// Verify the counter was reset
 			expect(usageStats.lastMinuteCalls).toBe(0);
 		});
@@ -56,16 +64,16 @@ describe('Rate Limiting Utilities', () => {
 		it('should wait if TPM limit is reached', async () => {
 			const usageStats = createUsageStats();
 			usageStats.minuteTokens = modelLimits.tpm!; // Exceed the limit
-			
+
 			const promise = checkRateLimits(modelLimits, usageStats);
-			
+
 			// Verify setTimeout was called with 60000ms (1 minute)
 			expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 60000);
-			
+
 			// Fast-forward time to resolve the promise
 			vi.runAllTimers();
 			await promise;
-			
+
 			// Verify the counter was reset
 			expect(usageStats.minuteTokens).toBe(0);
 		});
@@ -74,17 +82,20 @@ describe('Rate Limiting Utilities', () => {
 			const usageStats = createUsageStats();
 			usageStats.lastDayCalls = modelLimits.rpd!; // Exceed the limit
 			usageStats.lastReset = new Date(Date.now() - 3600000); // 1 hour ago
-			
+
 			const promise = checkRateLimits(modelLimits, usageStats);
-			
+
 			// Should wait for the remaining time until tomorrow (23 hours)
 			const expectedWaitTime = 86400000 - 3600000; // 23 hours in ms
-			expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), expectedWaitTime);
-			
+			expect(setTimeout).toHaveBeenCalledWith(
+				expect.any(Function),
+				expectedWaitTime,
+			);
+
 			// Fast-forward time to resolve the promise
 			vi.runAllTimers();
 			await promise;
-			
+
 			// Verify the counter was reset
 			expect(usageStats.lastDayCalls).toBe(0);
 		});
@@ -125,7 +136,7 @@ describe('Rate Limiting Utilities', () => {
 			usageStats.lastReset = new Date(Date.now() - 3600000); // 1 hour ago
 
 			usageStats = checkDailyReset(usageStats);
-			
+
 			expect(usageStats.dayTokens).toBe(5000);
 			expect(usageStats.lastDayCalls).toBe(10);
 		});
@@ -138,10 +149,12 @@ describe('Rate Limiting Utilities', () => {
 
 			const originalReset = usageStats.lastReset;
 			usageStats = checkDailyReset(usageStats);
-			
+
 			expect(usageStats.dayTokens).toBe(0);
 			expect(usageStats.lastDayCalls).toBe(0);
-			expect(usageStats.lastReset.getTime()).toBeGreaterThan(originalReset.getTime());
+			expect(usageStats.lastReset.getTime()).toBeGreaterThan(
+				originalReset.getTime(),
+			);
 		});
 	});
 
@@ -154,7 +167,7 @@ describe('Rate Limiting Utilities', () => {
 			usageStats.calls = 10;
 
 			const summary = getUsageSummary(modelLimits, usageStats);
-			
+
 			expect(summary).toContain('Model: gemini-2.0-flash-lite');
 			expect(summary).toContain('Last minute: 500 tokens');
 			expect(summary).toContain('Today: 5000 tokens');
@@ -166,7 +179,7 @@ describe('Rate Limiting Utilities', () => {
 			const usageStats = createUsageStats();
 
 			const summary = getUsageSummary(modelLimits, usageStats);
-			
+
 			expect(summary).toContain('Average per call: 0 tokens');
 		});
 	});

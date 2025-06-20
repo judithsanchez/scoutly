@@ -5,6 +5,7 @@ This document contains commonly used commands for development, testing, and debu
 ## Quick Reference
 
 ### Type Checking & Linting
+
 ```bash
 # Check TypeScript compilation errors (no output files)
 docker-compose exec app npx tsc --noEmit
@@ -17,6 +18,7 @@ docker-compose exec app npm run lint -- --fix
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 docker-compose exec app npm test
@@ -35,6 +37,7 @@ docker-compose exec app npm test -- --grep "pattern"
 ```
 
 ### Building & Compilation
+
 ```bash
 # Build production bundle
 docker-compose exec app npm run build
@@ -47,6 +50,7 @@ docker-compose exec app npm start
 ```
 
 ### Database Operations
+
 ```bash
 # Connect to MongoDB shell
 docker-compose exec mongodb mongosh mongodb://mongodb:27017/scoutly
@@ -59,6 +63,7 @@ docker-compose exec mongodb mongosh --eval "use scoutly; db.dropDatabase()"
 ```
 
 ### Docker Management
+
 ```bash
 # Start all services
 docker-compose up -d
@@ -85,6 +90,7 @@ docker-compose down -v && docker-compose up -d
 ### Development Workflow Commands
 
 #### Complete Health Check
+
 ```bash
 # Run full project health check
 docker-compose exec app npx tsc --noEmit && \
@@ -93,12 +99,14 @@ docker-compose exec app npm test --run
 ```
 
 #### Quick Validation (Type + Lint)
+
 ```bash
 # Quick validation without tests
 docker-compose exec app npx tsc --noEmit && docker-compose exec app npm run lint
 ```
 
 #### Test Specific Areas
+
 ```bash
 # Test API endpoints only
 docker-compose exec app npm test src/app/api
@@ -114,26 +122,28 @@ docker-compose exec app npm test src/hooks
 ```
 
 #### Debug Database Issues
+
 ```bash
 # Check database collections
 docker-compose exec mongodb mongosh --eval "use scoutly; show collections"
 
 # Count documents in collections
 docker-compose exec mongodb mongosh --eval "
-use scoutly; 
-db.users.countDocuments(); 
-db.companies.countDocuments(); 
+use scoutly;
+db.users.countDocuments();
+db.companies.countDocuments();
 db.usercompanypreferences.countDocuments();
 "
 
 # Find user by email
 docker-compose exec mongodb mongosh --eval "
-use scoutly; 
+use scoutly;
 db.users.findOne({email: 'judithv.sanchezc@gmail.com'});
 "
 ```
 
 ### Performance & Monitoring
+
 ```bash
 # Monitor container resource usage
 docker stats
@@ -148,6 +158,7 @@ docker-compose exec mongodb mongosh --eval "db.serverStatus().connections"
 ### Troubleshooting Commands
 
 #### Clear Node Modules (if needed)
+
 ```bash
 # Stop containers, clear node_modules, reinstall
 docker-compose down
@@ -157,6 +168,7 @@ docker-compose up -d
 ```
 
 #### Reset Everything (nuclear option)
+
 ```bash
 # Complete reset: containers, volumes, cache
 docker-compose down -v
@@ -165,6 +177,7 @@ docker-compose up --build -d
 ```
 
 #### Check Dependencies
+
 ```bash
 # Check for outdated packages
 docker-compose exec app npm outdated
@@ -195,6 +208,7 @@ alias scoutfull='cd /home/judithsanchez/dev/scoutly && docker-compose exec app n
 ### Common Issues & Solutions
 
 #### Port Already in Use
+
 ```bash
 # Find process using port 3000
 sudo lsof -i :3000
@@ -204,6 +218,7 @@ sudo kill -9 $(sudo lsof -t -i:3000)
 ```
 
 #### Database Connection Issues
+
 ```bash
 # Restart MongoDB container
 docker-compose restart mongodb
@@ -213,6 +228,7 @@ docker-compose exec mongodb mongosh --eval "db.runCommand({ping: 1})"
 ```
 
 #### Memory Issues
+
 ```bash
 # Check container memory usage
 docker stats --no-stream
@@ -224,6 +240,7 @@ docker-compose exec app node --max-old-space-size=4096 node_modules/.bin/next bu
 ### Testing Specific Components
 
 #### Test User Company Preference Migration
+
 ```bash
 # Test the new user company preference system
 docker-compose exec app npm test src/services/__tests__/userCompanyPreferenceService.test.ts
@@ -231,6 +248,7 @@ docker-compose exec app npm test src/app/api/user-company-preferences/__tests__/
 ```
 
 #### Test API Endpoints
+
 ```bash
 # Test all API endpoints
 docker-compose exec app npm test src/app/api
@@ -261,5 +279,5 @@ The following scripts are available in `package.json`:
 
 ---
 
-*Last updated: June 20, 2025*
-*For project-specific documentation, see the `/docs` directory and individual `.md` files co-located with source code.*
+_Last updated: June 20, 2025_
+_For project-specific documentation, see the `/docs` directory and individual `.md` files co-located with source code._

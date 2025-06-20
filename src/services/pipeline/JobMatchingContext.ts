@@ -122,8 +122,14 @@ export class JobMatchingContext implements PipelineContext {
 			});
 
 			// Record usage in database - use first company if no specific company context
-			const targetCompanyId = this.currentCompanyId || (this.companies.length > 0 ? this.companies[0].companyID : 'unknown');
-			const targetCompanyName = this.currentCompanyName || (this.companies.length > 0 ? this.companies[0].company : 'Unknown Company');
+			const targetCompanyId =
+				this.currentCompanyId ||
+				(this.companies.length > 0 ? this.companies[0].companyID : 'unknown');
+			const targetCompanyName =
+				this.currentCompanyName ||
+				(this.companies.length > 0
+					? this.companies[0].company
+					: 'Unknown Company');
 
 			if (this.currentUserEmail && targetCompanyId !== 'unknown') {
 				const modelConfig = this.modelLimits;
@@ -152,7 +158,7 @@ export class JobMatchingContext implements PipelineContext {
 					companyId: targetCompanyId,
 					companyName: targetCompanyName,
 				});
-				
+
 				logger.info('✅ Token usage recorded successfully in database', {
 					operation,
 					tokens: usage.totalTokenCount,
@@ -185,7 +191,8 @@ export class JobMatchingContext implements PipelineContext {
 					currentCompanyId: this.currentCompanyId,
 					currentCompanyName: this.currentCompanyName,
 					companiesAvailable: this.companies.length,
-					firstCompanyId: this.companies.length > 0 ? this.companies[0].companyID : 'none',
+					firstCompanyId:
+						this.companies.length > 0 ? this.companies[0].companyID : 'none',
 				},
 				stack: error instanceof Error ? error.stack : undefined,
 			});
