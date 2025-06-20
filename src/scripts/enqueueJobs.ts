@@ -18,9 +18,14 @@ import {
 	calculateAnacronPriority,
 	isCompanyDueForScraping,
 } from '../utils/scrapeScheduling';
-import {SimpleLogger} from '../utils/simpleLogger';
+import { EnhancedLogger } from '../utils/enhancedLogger';
 
-const logger = new SimpleLogger('JobEnqueuer');
+const logger = EnhancedLogger.getLogger('JobEnqueuer', {
+  logToFile: true,
+  logToConsole: true,
+  logDir: '/tmp/scoutly-logs',
+  logFileName: 'JobEnqueuer.log'.toLowerCase()
+});
 
 async function enqueueJobs() {
 	try {

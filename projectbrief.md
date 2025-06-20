@@ -87,7 +87,7 @@ docker compose exec app npx tsx src/scripts/clearData.ts --all
 
 ### POST /api/users
 
-Creates a new user. No authentication currently implemented.
+Creates a new user with no tracked companies by default. Users must explicitly choose which companies to track. No authentication currently implemented.
 
 ```json
 {
@@ -101,6 +101,8 @@ curl -X POST http://localhost:3000/api/users \
   -d '{"email": "user@example.com"}'
 
 ```
+
+**Note**: New users are created with an empty list of tracked companies. Users must explicitly add companies they want to track using the user preferences API.
 
 ### POST /api/jobs
 

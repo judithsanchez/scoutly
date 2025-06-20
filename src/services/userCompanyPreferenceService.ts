@@ -3,10 +3,16 @@ import {
 	IUserCompanyPreference,
 } from '../models/UserCompanyPreference';
 import {Company, ICompany} from '../models/Company';
-import {SimpleLogger} from '../utils/simpleLogger';
+import {EnhancedLogger} from '../utils/enhancedLogger';
 import {getScrapeFrequencyDescription} from '../utils/scrapeScheduling';
+import mongoose from 'mongoose';
 
-const logger = new SimpleLogger('UserCompanyPreferenceService');
+const logger = EnhancedLogger.getLogger('UserCompanyPreferenceService', {
+	logToFile: true,
+	logToConsole: true,
+	logDir: '/tmp/scoutly-logs',
+	logFileName: 'user-company-preference-service.log',
+});
 
 export interface TrackedCompany extends ICompany {
 	userPreference: {
@@ -19,11 +25,27 @@ export interface TrackedCompany extends ICompany {
 
 export class UserCompanyPreferenceService {
 	/**
+	 * Helper method to build a query that works with both ObjectId and companyID
+	 */
+	private static buildCompanyQuery(companyIdOrObjectId: string) {
+		// Check if the value is a valid ObjectId
+		if (mongoose.Types.ObjectId.isValid(companyIdOrObjectId)) {
+			// If it's a valid ObjectId, search by both _id and companyID
+			return {
+				$or: [{_id: companyIdOrObjectId}, {companyID: companyIdOrObjectId}],
+			};
+		} else {
+			// If it's not a valid ObjectId, only search by companyID
+			return {companyID: companyIdOrObjectId};
+		}
+	}
+
+	/**
 	 * Add or update a company tracking preference for a user
 	 */
 	static async setCompanyPreference(
 		userId: string,
-		companyId: string,
+		companyIdOrObjectId: string,
 		rank: number,
 		isTracking: boolean = true,
 	): Promise<IUserCompanyPreference> {
@@ -33,15 +55,20 @@ export class UserCompanyPreferenceService {
 				throw new Error('Rank must be between 1 and 100');
 			}
 
-			// Verify company exists
-			const company = await Company.findById(companyId);
+			// Find company by either _id or companyID field
+			const company = await Company.findOne(
+				this.buildCompanyQuery(companyIdOrObjectId),
+			);
 			if (!company) {
 				throw new Error('Company not found');
 			}
 
+			// Use the MongoDB _id for the preference
+			const companyObjectId = company._id;
+
 			// Use upsert to create or update preference
 			const preference = await UserCompanyPreference.findOneAndUpdate(
-				{userId, companyId},
+				{userId, companyId: companyObjectId},
 				{
 					$set: {
 						rank,
@@ -102,9 +129,7 @@ export class UserCompanyPreferenceService {
 	/**
 	 * Get all companies with their tracking status for a user
 	 */
-	static async getAllCompaniesWithPreferences(
-		userId: string,
-	): Promise<
+	static async getAllCompaniesWithPreferences(userId: string): Promise<
 		Array<
 			ICompany & {
 				userPreference?: {rank: number; isTracking: boolean; frequency: string};
@@ -249,6 +274,115 @@ export class UserCompanyPreferenceService {
 		} catch (error: any) {
 			logger.error('Error getting tracking stats:', error);
 			throw new Error(`Failed to get tracking stats: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Get a specific company preference for a user
+	 */
+	static async getCompanyPreference(
+		userId: string,
+		companyId: string,
+	): Promise<IUserCompanyPreference | null> {
+		try {
+			const preference = await UserCompanyPreference.findOne({
+				userId,
+				companyId,
+			}).exec();
+			return preference;
+		} catch (error: any) {
+			logger.error(
+				`Error getting company preference for user ${userId}, company ${companyId}:`,
+				error,
+			);
+			throw new Error(`Failed to get company preference: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Update company preference with partial data
+	 */
+	static async updateCompanyPreference(
+		userId: string,
+		companyIdOrObjectId: string,
+		updates: {rank?: number; isTracking?: boolean},
+	): Promise<IUserCompanyPreference | null> {
+		try {
+			// Validate rank if provided
+			if (updates.rank && (updates.rank < 1 || updates.rank > 100)) {
+				throw new Error('Rank must be between 1 and 100');
+			}
+
+			// Find company by either _id or companyID field
+			const company = await Company.findOne(
+				this.buildCompanyQuery(companyIdOrObjectId),
+			);
+			if (!company) {
+				throw new Error('Company not found');
+			}
+
+			// Use the MongoDB _id for the preference lookup
+			const companyObjectId = company._id;
+
+			// Verify preference exists
+			const preference = await UserCompanyPreference.findOne({
+				userId,
+				companyId: companyObjectId,
+			});
+			if (!preference) {
+				return null;
+			}
+
+			// Apply updates
+			if (updates.rank !== undefined) {
+				preference.rank = updates.rank;
+			}
+			if (updates.isTracking !== undefined) {
+				preference.isTracking = updates.isTracking;
+			}
+
+			await preference.save();
+			return preference;
+		} catch (error: any) {
+			logger.error(
+				`Error updating company preference for user ${userId}, company ${companyIdOrObjectId}:`,
+				error,
+			);
+			throw new Error(`Failed to update company preference: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Stop tracking a company (set isTracking to false)
+	 */
+	static async stopTrackingCompany(
+		userId: string,
+		companyIdOrObjectId: string,
+	): Promise<{success: boolean}> {
+		try {
+			// Find company by either _id or companyID field
+			const company = await Company.findOne(
+				this.buildCompanyQuery(companyIdOrObjectId),
+			);
+			if (!company) {
+				throw new Error('Company not found');
+			}
+
+			// Use the MongoDB _id for the preference operation
+			const companyObjectId = company._id;
+
+			const result = await UserCompanyPreference.updateOne(
+				{userId, companyId: companyObjectId},
+				{$set: {isTracking: false}},
+			);
+
+			return {success: result.modifiedCount > 0};
+		} catch (error: any) {
+			logger.error(
+				`Error stopping tracking for user ${userId}, company ${companyIdOrObjectId}:`,
+				error,
+			);
+			throw new Error(`Failed to stop tracking company: ${error.message}`);
 		}
 	}
 }

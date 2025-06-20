@@ -66,6 +66,10 @@ const CandidateInfoSchema = new Schema(
 	{_id: false},
 );
 
+/**
+ * @deprecated Use UserCompanyPreference model instead
+ * This schema is kept for backwards compatibility but will be removed in future versions
+ */
 const TrackedCompanySchema = new Schema(
 	{
 		companyID: {
@@ -86,6 +90,9 @@ const TrackedCompanySchema = new Schema(
 
 export interface IUser extends Document {
 	email: string;
+	/**
+	 * @deprecated Use UserCompanyPreference model instead
+	 */
 	trackedCompanies: Array<{
 		companyID: string;
 		ranking: number;
@@ -105,6 +112,9 @@ const UserSchema = new Schema<IUser>(
 			lowercase: true,
 			trim: true,
 		},
+		/**
+		 * @deprecated Use UserCompanyPreference model instead
+		 */
 		trackedCompanies: [TrackedCompanySchema],
 		cvUrl: {
 			type: String,

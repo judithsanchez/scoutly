@@ -33,7 +33,7 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 		: undefined;
 
 	const isActuallyTracked = !!trackedCompany;
-	const companyRanking = trackedCompany?.ranking ?? 75;
+	const companyRanking = trackedCompany?.userPreference?.rank ?? 75;
 
 	const [optimisticIsTracked, setOptimisticIsTracked] =
 		useState(isActuallyTracked);

@@ -4,13 +4,18 @@
  * Saves job analysis results to the database and handles duplicates
  */
 
-import {Logger} from '@/utils/logger';
+import {EnhancedLogger} from '@/utils/enhancedLogger';
 import {SavedJob, ApplicationStatus} from '@/models/SavedJob';
 import {UserService} from '../../userService';
 import type {PipelineStep, PipelineContext} from '../types';
 import type {JobAnalysisResult} from '@/utils/aiProcessor';
 
-const logger = new Logger('ResultsStorageStep');
+const logger = EnhancedLogger.getLogger('ResultsStorageStep', {
+	logToFile: true,
+	logToConsole: true,
+	logDir: '/tmp/scoutly-logs',
+	logFileName: 'job-results-storage.log',
+});
 
 export class ResultsStorageStep implements PipelineStep {
 	readonly name = 'ResultsStorage';

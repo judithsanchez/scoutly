@@ -16,7 +16,7 @@
 
 ### Scripts
 
-- **seedUserPreferences.ts**: Creates realistic test data (✅ Working - created 77 preferences)
+- **~~seedUserPreferences.ts~~**: ❌ **REMOVED** - No longer needed as users don't auto-track companies
 - **backgroundJobsStatus.ts**: Comprehensive system monitoring (✅ Working - detailed status output)
 - **createTestJobs.ts**: Manual job creation for testing (✅ Working - created 3 test jobs)
 - **directEnqueue.ts**: Fast, direct job enqueuing (✅ Working - created 17 jobs)
@@ -26,28 +26,26 @@
 ### NPM Scripts Added
 
 ```json
-"db:seed-preferences": "tsx src/scripts/seedUserPreferences.ts",
 "jobs:status": "tsx src/scripts/backgroundJobsStatus.ts",
 "jobs:enqueue": "tsx src/scripts/enqueueJobs.ts",
 "jobs:direct-enqueue": "tsx src/scripts/directEnqueue.ts",
 "jobs:process": "tsx src/scripts/processQueue.ts",
-"docker:seed-preferences": "docker exec scoutly-app-1 tsx src/scripts/seedUserPreferences.ts",
 "docker:jobs-status": "docker exec scoutly-app-1 tsx src/scripts/backgroundJobsStatus.ts",
 "docker:jobs-enqueue": "docker exec scoutly-app-1 tsx src/scripts/enqueueJobs.ts",
 "docker:jobs-direct-enqueue": "docker exec scoutly-app-1 tsx src/scripts/directEnqueue.ts",
 "docker:jobs-process": "docker exec scoutly-app-1 tsx src/scripts/processQueue.ts"
 ```
 
+**Note**: All seedUserPreferences-related scripts have been removed as the system no longer auto-tracks companies for users.
+
 ## ✅ System Verification Results
 
 ### Database Data Status
 
 - **Companies**: 111 total companies
-- **User Preferences**: 77 tracked companies with realistic ranking distribution
-  - Daily (rank 81-100): 2 companies
-  - Every 2 days (rank 61-80): 15 companies
-  - Every 3 days (rank 31-60): 48 companies
-  - Every 4 days (rank 11-30): 12 companies
+- **User Preferences**: Users now start with no tracked companies (fixed behavior)
+  - Users must explicitly add companies they want to track
+  - Previous test data with 77 tracked companies has been cleaned up
 - **Job Queue**: 20 jobs created successfully (3 test + 17 from directEnqueue)
 - **Companies Due for Scraping**: 77 (all never scraped before)
 

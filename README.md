@@ -69,8 +69,8 @@ sequenceDiagram
 # Start containers
 docker compose up -d
 
-# Seed database
-docker compose exec app npm run seed
+# Seed companies database
+docker compose exec app npm run db:seed
 ```
 
 Application: [http://localhost:3000](http://localhost:3000)

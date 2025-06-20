@@ -67,14 +67,10 @@ export class JobMatchingOrchestrator {
 		if (!apiKey) {
 			throw new Error('GEMINI_API_KEY environment variable is required');
 		}
-
+		
 		// Log the API key format to debug without revealing the key
-		logger.info(
-			`Initializing with GEMINI_API_KEY: ${
-				apiKey ? 'Set (length: ' + apiKey.length + ')' : 'MISSING!'
-			}`,
-		);
-
+		logger.info(`Initializing with GEMINI_API_KEY: ${apiKey ? 'Set (length: ' + apiKey.length + ')' : 'MISSING!'}`);
+		
 		this.genAI = new GoogleGenerativeAI(apiKey);
 		this.model = this.genAI.getGenerativeModel({
 			model: MODEL_NAME,
@@ -85,10 +81,10 @@ export class JobMatchingOrchestrator {
 			rpd: null,
 			tpm: null,
 		};
-
+		
 		// Force pipeline architecture to be true
 		this.usePipeline = true;
-
+		
 		logger.debug('Rate limits initialized', {
 			model: MODEL_NAME,
 			limits: this.modelLimits,
@@ -97,9 +93,19 @@ export class JobMatchingOrchestrator {
 			logger.error('Failed to load prompt templates:', error);
 			throw new Error('Failed to load required prompt templates');
 		});
-		logger.info(
-			'JobMatchingOrchestrator initialized with pipeline architecture ENABLED',
-		);
+		logger.info('JobMatchingOrchestrator initialized with pipeline architecture ENABLED');
+	}
+
+	// Old constructor removed and merged with the new one above
+	private
+			model: MODEL_NAME,
+			limits: this.modelLimits,
+		});
+		this.loadPromptTemplates().catch(error => {
+			logger.error('Failed to load prompt templates:', error);
+			throw new Error('Failed to load required prompt templates');
+		});
+		logger.info('JobMatchingOrchestrator initialized');
 	}
 
 	private async loadPromptTemplates() {

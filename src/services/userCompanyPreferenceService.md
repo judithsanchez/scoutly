@@ -4,6 +4,8 @@
 
 The UserCompanyPreferenceService manages user-specific company tracking preferences, including rankings and tracking status. This service provides the core functionality for users to customize which companies they want to track and how frequently they should be scraped.
 
+**Important**: Users start with no tracked companies by default. All company tracking is explicit and must be configured through this service.
+
 ## Core Features
 
 1. **Company Tracking Management**
@@ -23,16 +25,21 @@ The UserCompanyPreferenceService manages user-specific company tracking preferen
    - Automatic frequency calculation based on rank
    - Real-time frequency descriptions
 
+## Important Behavior
+
+- **User Creation**: New users are created with NO tracked companies. All company tracking is explicit and must be configured through this service.
+- **Company ID Flexibility**: All methods accept either MongoDB `_id` or the custom `companyID` field, making the API more flexible for frontend usage.
+
 ## API Methods
 
-### setCompanyPreference(userId, companyId, rank, isTracking)
+### setCompanyPreference(userId, companyIdOrObjectId, rank, isTracking)
 
 Creates or updates a company tracking preference.
 
 **Parameters**:
 
 - `userId`: User identifier
-- `companyId`: Company ObjectId
+- `companyIdOrObjectId`: Company identifier (accepts either MongoDB \_id or companyID field)
 - `rank`: Priority rank (1-100, 100 = highest priority)
 - `isTracking`: Boolean tracking status (default: true)
 
@@ -43,7 +50,7 @@ Creates or updates a company tracking preference.
 ```typescript
 const preference = await UserCompanyPreferenceService.setCompanyPreference(
 	'user123',
-	'company456',
+	'10up', // Can use companyID field
 	85, // High priority
 	true,
 );

@@ -1,11 +1,22 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {ICompany, CreateCompanyInput} from '@/types/company';
 
+interface TrackedCompany {
+	_id: string;
+	companyID: string;
+	company: string;
+	careers_url: string;
+	logo_url?: string;
+	userPreference: {
+		rank: number;
+		isTracking: boolean;
+		frequency: string;
+		lastUpdated: Date;
+	};
+}
+
 interface TrackedCompaniesResponse {
-	companies: Array<{
-		companyID: string;
-		ranking: number;
-	}>;
+	companies: TrackedCompany[];
 }
 
 async function fetchCompanies() {
@@ -16,10 +27,8 @@ async function fetchCompanies() {
 	return response.json();
 }
 
-async function fetchTrackedCompanies(): Promise<
-	Array<{companyID: string; ranking: number}>
-> {
-	const response = await fetch('/api/users/tracked-companies');
+async function fetchTrackedCompanies(): Promise<TrackedCompany[]> {
+	const response = await fetch('/api/user-company-preferences');
 	if (!response.ok) {
 		throw new Error('Failed to fetch tracked companies');
 	}
@@ -28,24 +37,24 @@ async function fetchTrackedCompanies(): Promise<
 }
 
 async function trackCompany(
-	companyIdOrParams: string | {companyId: string; ranking?: number},
+	companyIdOrParams: string | {companyId: string; rank?: number},
 ) {
 	let companyId: string;
-	let ranking: number = 75;
+	let rank: number = 75;
 
 	if (typeof companyIdOrParams === 'string') {
 		companyId = companyIdOrParams;
 	} else {
 		companyId = companyIdOrParams.companyId;
-		ranking = companyIdOrParams.ranking ?? 75;
+		rank = companyIdOrParams.rank ?? 75;
 	}
 
-	const response = await fetch('/api/users/tracked-companies', {
+	const response = await fetch('/api/user-company-preferences', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({companyId, ranking}),
+		body: JSON.stringify({companyId, rank, isTracking: true}),
 	});
 	if (!response.ok) {
 		throw new Error('Failed to track company');
@@ -54,7 +63,7 @@ async function trackCompany(
 }
 
 async function untrackCompany(companyId: string) {
-	const response = await fetch(`/api/users/tracked-companies/${companyId}`, {
+	const response = await fetch(`/api/user-company-preferences/${companyId}`, {
 		method: 'DELETE',
 	});
 	if (!response.ok) {
@@ -63,14 +72,14 @@ async function untrackCompany(companyId: string) {
 	return response.json();
 }
 
-async function updateRanking(params: {companyId: string; ranking: number}) {
-	const {companyId, ranking} = params;
-	const response = await fetch(`/api/users/tracked-companies/${companyId}`, {
+async function updateRanking(params: {companyId: string; rank: number}) {
+	const {companyId, rank} = params;
+	const response = await fetch(`/api/user-company-preferences/${companyId}`, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({ranking}),
+		body: JSON.stringify({rank}),
 	});
 	if (!response.ok) {
 		throw new Error('Failed to update company ranking');
@@ -112,10 +121,7 @@ export function useCompanies() {
 		gcTime: 1000 * 60 * 30,
 	});
 
-	const trackedCompaniesQuery = useQuery<
-		Array<{companyID: string; ranking: number}>,
-		Error
-	>({
+	const trackedCompaniesQuery = useQuery<TrackedCompany[], Error>({
 		queryKey: ['trackedCompanies'],
 		queryFn: fetchTrackedCompanies,
 		retry: (failureCount, error) => {
@@ -171,11 +177,11 @@ export function useCompanies() {
 			companiesQuery.refetch();
 			trackedCompaniesQuery.refetch();
 		},
-		trackCompany: (companyId: string, ranking?: number) =>
-			trackMutation.mutate({companyId, ranking}),
+		trackCompany: (companyId: string, rank?: number) =>
+			trackMutation.mutate({companyId, rank}),
 		untrackCompany: untrackMutation.mutate,
-		updateRanking: (companyId: string, ranking: number) =>
-			updateRankingMutation.mutate({companyId, ranking}),
+		updateRanking: (companyId: string, rank: number) =>
+			updateRankingMutation.mutate({companyId, rank}),
 		createCompany: (companyData: any) =>
 			createCompanyMutation.mutateAsync(companyData),
 		isCreatingCompany: createCompanyMutation.isPending,

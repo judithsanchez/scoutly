@@ -1,9 +1,17 @@
 import {UserService} from '@/services/userService';
-import {Logger} from '@/utils/logger';
+import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
 
-const logger = new Logger('TrackedCompanyAPI');
+const logger = EnhancedLogger.getLogger('DeprecatedTrackedCompanyAPI', {
+	logToFile: true,
+	logToConsole: true,
+	logDir: '/tmp/scoutly-logs',
+	logFileName: 'deprecated-tracked-company-api.log',
+});
 
+/**
+ * @deprecated Use DELETE /api/user-company-preferences/[companyId] instead
+ */
 export async function DELETE(
 	request: Request,
 	{params}: {params: {companyId: string}},
@@ -29,7 +37,9 @@ export async function DELETE(
 	}
 }
 
-// Add the PUT endpoint for updating company ranking
+/**
+ * @deprecated Use PUT /api/user-company-preferences/[companyId] instead
+ */
 export async function PUT(
 	request: Request,
 	{params}: {params: {companyId: string}},

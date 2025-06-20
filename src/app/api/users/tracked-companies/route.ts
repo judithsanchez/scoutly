@@ -1,11 +1,19 @@
 import {UserService} from '@/services/userService';
-import {Logger} from '@/utils/logger';
+import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
 
-const logger = new Logger('TrackedCompaniesAPI');
+const logger = EnhancedLogger.getLogger('DeprecatedTrackedCompaniesAPI', {
+	logToFile: true,
+	logToConsole: true,
+	logDir: '/tmp/scoutly-logs',
+	logFileName: 'deprecated-tracked-companies-api.log',
+});
 
-// GET /api/users/tracked-companies
-// Get user's tracked companies
+/**
+ * @deprecated Use /api/user-company-preferences instead
+ * GET /api/users/tracked-companies
+ * Get user's tracked companies
+ */
 export async function GET(request: Request) {
 	try {
 		await dbConnect();
@@ -29,10 +37,11 @@ export async function GET(request: Request) {
 	}
 }
 
-// POST /api/users/tracked-companies
-// Start tracking a company
-// Update POST method to ensure ranking is saved
-// Update POST method to ensure ranking is saved
+/**
+ * @deprecated Use POST /api/user-company-preferences instead
+ * POST /api/users/tracked-companies
+ * Start tracking a company
+ */
 export async function POST(request: Request) {
 	try {
 		await dbConnect();

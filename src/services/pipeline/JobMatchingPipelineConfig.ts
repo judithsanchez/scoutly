@@ -20,11 +20,16 @@ import {createAIProcessorConfig} from '@/utils/aiProcessor';
 import {loadPromptTemplates, validateTemplates} from '@/utils/templateLoader';
 import {GoogleGenerativeAI} from '@google/generative-ai';
 import {GeminiFreeTierLimits} from '@/config/rateLimits';
-import {Logger} from '@/utils/logger';
+import {EnhancedLogger} from '@/utils/enhancedLogger';
 import type {ICompany} from '@/models/Company';
 import type {JobAnalysisResult} from '@/utils/aiProcessor';
 
-const logger = new Logger('JobMatchingPipelineConfig');
+const logger = EnhancedLogger.getLogger('JobMatchingPipelineConfig', {
+	logToFile: true,
+	logToConsole: true,
+	logDir: '/tmp/scoutly-logs',
+	logFileName: 'job-matching-pipeline.log',
+});
 const MODEL_NAME = 'gemini-2.0-flash-lite';
 
 /**

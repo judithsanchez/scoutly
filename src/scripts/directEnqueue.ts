@@ -12,9 +12,14 @@ import {
 	calculateAnacronPriority,
 	isCompanyDueForScraping,
 } from '../utils/scrapeScheduling';
-import {SimpleLogger} from '../utils/simpleLogger';
+import { EnhancedLogger } from '../utils/enhancedLogger';
 
-const logger = new SimpleLogger('DirectEnqueuer');
+const logger = EnhancedLogger.getLogger('DirectEnqueuer', {
+  logToFile: true,
+  logToConsole: true,
+  logDir: '/tmp/scoutly-logs',
+  logFileName: 'DirectEnqueuer.log'.toLowerCase()
+});
 
 const MONGODB_URI =
 	process.env.MONGODB_URI || 'mongodb://mongodb:27017/scoutly';

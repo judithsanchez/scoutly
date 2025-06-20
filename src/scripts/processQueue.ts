@@ -16,9 +16,14 @@ import {UserCompanyPreference} from '../models/UserCompanyPreference';
 import {JobQueue, JobStatus, IJobQueue} from '../models/JobQueue';
 import {JobMatchingOrchestrator} from '../services/jobMatchingOrchestrator';
 import {UserService} from '../services/userService';
-import {SimpleLogger} from '../utils/simpleLogger';
+import {EnhancedLogger} from '../utils/enhancedLogger';
 
-const logger = new SimpleLogger('QueueWorker');
+const logger = EnhancedLogger.getLogger('QueueWorker', {
+	logToFile: true,
+	logToConsole: true,
+	logDir: '/tmp/scoutly-logs', // Use /tmp to ensure Docker has write access
+	logFileName: 'queue-processor.log',
+});
 
 // Configuration
 const BATCH_SIZE = 5; // Process up to 5 companies concurrently (Raspberry Pi optimized)
@@ -75,6 +80,17 @@ async function processQueue() {
 	await connectDB();
 
 	const orchestrator = new JobMatchingOrchestrator();
+
+	// Force pipeline architecture to be used
+	try {
+		// This is a workaround to access and modify private property
+		logger.info('Configuring orchestrator to use pipeline architecture...');
+		(orchestrator as any).usePipeline = true;
+		(orchestrator as any).setPipelineEnabled?.(true);
+		logger.info('Pipeline architecture configured for better debugging');
+	} catch (error) {
+		logger.warn('Failed to configure pipeline architecture:', error);
+	}
 	let isShuttingDown = false;
 
 	// Graceful shutdown handling
@@ -146,7 +162,10 @@ async function processJob(
 			DEFAULT_CANDIDATE_INFO as any,
 		);
 
-		// Run the job matching orchestrator
+		// Run the job matching orchestrator with additional logging
+		logger.info(
+			`🔍 Starting job matching for ${company.company} with pipeline architecture`,
+		);
 		const results = (await Promise.race([
 			orchestrator.orchestrateJobMatching(
 				company,
@@ -160,11 +179,36 @@ async function processJob(
 			),
 		])) as any[];
 
+		logger.info(`✅ Job matching completed for ${company.company}, results:`, {
+			resultsCount: results ? results.length : 0,
+			resultTypes: results ? typeof results : 'undefined',
+			isArray: Array.isArray(results),
+			sample:
+				Array.isArray(results) && results.length > 0
+					? results.slice(0, Math.min(2, results.length)).map(r => ({
+							title: r.title,
+							url: r.url,
+							score: r.suitabilityScore,
+					  }))
+					: 'No results',
+		});
+
 		// Update company's last successful scrape timestamp
 		await Company.updateOne(
 			{_id: company._id},
 			{$set: {lastSuccessfulScrape: new Date()}},
 		);
+
+		// Additional debug info
+		logger.info(`📊 Results details for ${company.company}:`, {
+			resultsLength: results ? results.length : 0,
+			resultsType: results ? typeof results : 'undefined',
+			isArray: Array.isArray(results),
+			sample:
+				Array.isArray(results) && results.length > 0
+					? JSON.stringify(results.slice(0, 1))
+					: 'No results',
+		});
 
 		// Mark job as completed
 		job.status = JobStatus.COMPLETED;

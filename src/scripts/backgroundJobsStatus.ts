@@ -18,9 +18,14 @@ import {
 	calculateAnacronPriority,
 	isCompanyDueForScraping,
 } from '../utils/scrapeScheduling';
-import {SimpleLogger} from '../utils/simpleLogger';
+import { EnhancedLogger } from '../utils/enhancedLogger';
 
-const logger = new SimpleLogger('BackgroundJobsStatus');
+const logger = EnhancedLogger.getLogger('BackgroundJobsStatus', {
+  logToFile: true,
+  logToConsole: true,
+  logDir: '/tmp/scoutly-logs',
+  logFileName: 'BackgroundJobsStatus.log'.toLowerCase()
+});
 
 // Default user for status checking
 const DEFAULT_USER_ID = 'judithv.sanchezc@gmail.com';
