@@ -15,12 +15,28 @@ import {type ExtractedLink} from './scraper';
 const logger = new Logger('AIProcessor');
 
 export interface JobAnalysisResult {
+	// Required fields (from Gemini deepDiveSchema)
 	title: string;
 	url: string;
 	goodFitReasons: string[];
 	considerationPoints: string[];
 	stretchGoals: string[];
 	suitabilityScore: number;
+	
+	// Optional fields (from Gemini deepDiveSchema)
+	location?: string;
+	timezone?: string;
+	salary?: {
+		min?: number;
+		max?: number;
+		currency?: string;
+		period?: string;
+	};
+	techStack?: string[];
+	experienceLevel?: string;
+	languageRequirements?: string[];
+	visaSponsorshipOffered?: boolean;
+	relocationAssistanceOffered?: boolean;
 }
 
 export interface AnalysisResultWithUsage {

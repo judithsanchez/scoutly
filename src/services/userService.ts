@@ -63,7 +63,7 @@ export class UserService {
 
 			// Check if company is already tracked
 			const existingIndex = user.trackedCompanies.findIndex(
-				tc => tc.companyID === companyID,
+				(tc: any) => tc.companyID === companyID,
 			);
 
 			if (existingIndex >= 0) {
@@ -97,7 +97,7 @@ export class UserService {
 			}
 
 			user.trackedCompanies = user.trackedCompanies.filter(
-				tc => tc.companyID !== companyID,
+				(tc: any) => tc.companyID !== companyID,
 			);
 
 			await user.save();
@@ -124,7 +124,7 @@ export class UserService {
 			}
 
 			const trackedCompany = user.trackedCompanies.find(
-				tc => tc.companyID === companyID,
+				(tc: any) => tc.companyID === companyID,
 			);
 
 			if (!trackedCompany) {

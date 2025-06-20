@@ -1,5 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {POST, GET} from '../route';
+import {NextRequest} from 'next/server';
 import {UserService} from '@/services/userService';
 import dbConnect from '@/middleware/database';
 
@@ -31,7 +32,7 @@ describe('/api/users', () => {
 
 			mockUserService.getOrCreateUser.mockResolvedValue(mockUser as any);
 
-			const request = new Request('http://localhost:3000/api/users', {
+			const request = new NextRequest('http://localhost:3000/api/users', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -71,7 +72,7 @@ describe('/api/users', () => {
 
 			mockUserService.getOrCreateUser.mockResolvedValue(existingUser as any);
 
-			const request = new Request('http://localhost:3000/api/users', {
+			const request = new NextRequest('http://localhost:3000/api/users', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ describe('/api/users', () => {
 
 			mockUserService.getAllUsers.mockResolvedValue(mockUsers as any);
 
-			const request = new Request('http://localhost:3000/api/users', {
+			const request = new NextRequest('http://localhost:3000/api/users', {
 				method: 'GET',
 			});
 
@@ -143,7 +144,7 @@ describe('/api/users', () => {
 		it('should return empty array when no users exist', async () => {
 			mockUserService.getAllUsers.mockResolvedValue([]);
 
-			const request = new Request('http://localhost:3000/api/users', {
+			const request = new NextRequest('http://localhost:3000/api/users', {
 				method: 'GET',
 			});
 

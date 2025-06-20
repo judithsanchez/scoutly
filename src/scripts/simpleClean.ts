@@ -13,6 +13,11 @@ async function cleanTestData() {
 		// Connect to MongoDB
 		await mongoose.connect('mongodb://localhost:27017/scoutly');
 
+		// Ensure database connection is established
+		if (!mongoose.connection.db) {
+			throw new Error('Database connection not established');
+		}
+
 		// Delete data from collections
 		const jobQueueResult = await mongoose.connection.db
 			.collection('jobqueues')

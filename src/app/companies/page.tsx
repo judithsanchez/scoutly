@@ -382,7 +382,7 @@ export default function CompaniesPage() {
 
 	const getCompanyRanking = (companyId: string): number => {
 		const tracked = trackedCompanies.find(t => t.companyID === companyId);
-		return tracked?.ranking ?? 0;
+		return tracked?.userPreference?.rank ?? 0;
 	};
 
 	const filteredCompanies = (allCompanies ?? ([] as ICompany[]))

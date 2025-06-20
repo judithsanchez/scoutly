@@ -19,27 +19,27 @@ const logger = EnhancedLogger.getLogger('PipelineDebugger', {
  */
 export function enablePipelineArchitecture() {
 	// Access the orchestrator's prototype to modify methods
-	const proto = JobMatchingOrchestrator.prototype;
+	const proto = JobMatchingOrchestrator.prototype as any;
 
 	// Store the original method so we can call it
 	const originalProcessBatchCompanies = proto.processBatchCompanies;
 
 	// Replace the processBatchCompanies method with our instrumented version
 	proto.processBatchCompanies = function (
-		companies,
-		cvUrl,
-		candidateInfo,
-		userEmail,
+		companies: any,
+		cvUrl: any,
+		candidateInfo: any,
+		userEmail: any,
 	) {
 		// Force pipeline architecture to be true
-		this.usePipeline = true;
+		(this as any).usePipeline = true;
 
 		logger.info(
 			'🔧 JobMatchingOrchestrator patched to use pipeline architecture',
 		);
 		logger.info(
 			`Pipeline architecture status: ${
-				this.usePipeline ? 'ENABLED' : 'DISABLED'
+				(this as any).usePipeline ? 'ENABLED' : 'DISABLED'
 			}`,
 		);
 
