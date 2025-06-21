@@ -58,10 +58,6 @@ export class JobMatchingOrchestrator {
 	private candidateInfo: Record<string, any> | null = null;
 	private detailedJobContents: Map<string, string> = new Map();
 
-	// Pipeline integration - can be controlled via environment variable
-	private usePipeline: boolean =
-		process.env.USE_PIPELINE_ARCHITECTURE !== 'false';
-
 	constructor() {
 		const apiKey = process.env.GEMINI_API_KEY;
 		if (!apiKey) {
@@ -85,9 +81,6 @@ export class JobMatchingOrchestrator {
 			rpd: null,
 			tpm: null,
 		};
-
-		// Force pipeline architecture to be true
-		this.usePipeline = true;
 
 		logger.debug('Rate limits initialized', {
 			model: MODEL_NAME,
@@ -389,35 +382,13 @@ export class JobMatchingOrchestrator {
 		candidateInfo: Record<string, any>,
 		userEmail: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
-		// Pipeline-only mode - legacy code commented out for testing
-		// Use pipeline if enabled (default), otherwise use legacy implementation
-		if (this.usePipeline) {
-			return this.processBatchCompaniesWithPipeline(
-				companies,
-				cvUrl,
-				candidateInfo,
-				userEmail,
-			);
-		} else {
-			// TODO: Remove legacy code path after pipeline is proven stable
-			// return this.processBatchCompaniesLegacy(
-			// 	companies,
-			// 	cvUrl,
-			// 	candidateInfo,
-			// 	userEmail,
-			// );
-
-			// For now, force pipeline usage even if disabled
-			logger.warn(
-				'Legacy mode requested but disabled for testing - using pipeline',
-			);
-			return this.processBatchCompaniesWithPipeline(
-				companies,
-				cvUrl,
-				candidateInfo,
-				userEmail,
-			);
-		}
+		// Pipeline-only architecture
+		return this.processBatchCompaniesWithPipeline(
+			companies,
+			cvUrl,
+			candidateInfo,
+			userEmail,
+		);
 	}
 
 	/**
@@ -446,217 +417,19 @@ export class JobMatchingOrchestrator {
 			return results;
 		} catch (error) {
 			logger.error('❌ Pipeline execution failed', error);
-			// TODO: Remove legacy fallback after pipeline is proven stable
-			// Fallback to legacy implementation on pipeline failure
-			// return this.processBatchCompaniesLegacy(
-			// 	companies,
-			// 	cvUrl,
-			// 	candidateInfo,
-			// 	userEmail,
-			// );
-
-			// For now, re-throw the error to force proper pipeline error handling
 			throw error;
 		}
 	}
 
 	/**
-	 * Legacy batch processing implementation (COMMENTED OUT FOR TESTING)
-	 * TODO: Remove this entire method after confirming pipeline stability
-	 */
-	/*
-	private async processBatchCompaniesLegacy(
-		companies: ICompany[],
-		cvUrl: string,
-		candidateInfo: Record<string, any>,
-		userEmail: string,
-	): Promise<Map<string, JobAnalysisResult[]>> {
-		logger.info('🔧 Using legacy architecture for job matching');
-		const results = new Map<string, JobAnalysisResult[]>();
-		const startTime = Date.now();
-
-		// Step 1: Scrape all companies in parallel
-		const scrapingResults = await Promise.all(
-			companies.map(company =>
-				this.scrapeCompanyJobs(company, userEmail).catch(error => {
-					logger.error(`Failed to scrape company ${company.company}:`, error);
-					return {
-						companyId: company.id,
-						allScrapedLinks: [],
-						newLinks: [],
-					};
-				}),
-			),
-		);
-
-		// Step 2: Initialize candidate data
-		logger.info('📋 Step 2: Processing candidate profile and CV...');
-		this.initializeCandidateProfile(candidateInfo);
-		await this.initializeCV(cvUrl);
-
-		// Step 3: Combine all new links for a single AI analysis
-		const companyLinks = new Map<string, ExtractedLink[]>();
-		const allNewLinks: ExtractedLink[] = [];
-
-		scrapingResults.forEach(({companyId, newLinks}) => {
-			if (newLinks.length > 0) {
-				companyLinks.set(companyId, newLinks);
-				allNewLinks.push(...newLinks);
-			}
-		});
-
-		if (allNewLinks.length === 0) {
-			logger.warn('No new jobs found across all companies. Ending pipeline.');
-			return results;
-		}
-
-		// Step 4: Perform initial matching on all links at once
-		logger.info(
-			`🔍 Step 4: Running initial job matching analysis for ${allNewLinks.length} jobs...`,
-		);
-		this.aiConfig.usageStats = this.usageStats;
-		const matchedJobs = await performInitialMatching(
-			allNewLinks,
-			this.cvContent,
-			this.candidateInfo!,
-			this.aiConfig,
-		);
-
-		// Step 5: Group matched jobs by company
-		const matchedJobsByCompany = new Map<
-			string,
-			Array<{title: string; url: string}>
-		>();
-
-		matchedJobs.forEach(job => {
-			for (const [companyId, links] of companyLinks.entries()) {
-				if (links.some(link => link.url === job.url)) {
-					const companyMatches = matchedJobsByCompany.get(companyId) || [];
-					companyMatches.push(job);
-					matchedJobsByCompany.set(companyId, companyMatches);
-					break;
-				}
-			}
-		});
-
-		// Step 6: Process each company's matched jobs
-		for (const [companyId, companyMatches] of matchedJobsByCompany.entries()) {
-			if (companyMatches.length === 0) continue;
-
-			try {
-				const company = companies.find(c => c.id === companyId);
-				if (!company) continue;
-
-				this.currentCompanyId = companyId;
-				this.currentCompanyName = company.company;
-
-				logger.info(
-					`🌐 Step 5: Fetching content for ${companyMatches.length} matched positions from ${company.company}...`,
-				);
-
-				const urls = companyMatches.map(match => match.url);
-				this.detailedJobContents = await this.scrapeJobDetailsBatch(urls);
-
-				if (this.detailedJobContents.size === 0) {
-					logger.warn(
-						`Failed to fetch content for any matched positions from ${company.company}.`,
-					);
-					results.set(companyId, []);
-					continue;
-				}
-
-				logger.info(
-					`🔬 Step 6: Starting deep dive analysis for ${company.company}...`,
-				);
-				const analysisResults = await this.performDeepDiveAnalysis(
-					companyMatches,
-					this.cvContent,
-					this.candidateInfo!,
-				);
-
-				if (analysisResults.length === 0) {
-					logger.warn(
-						`Deep dive analysis resulted in 0 suitable jobs for ${company.company}.`,
-					);
-					results.set(companyId, []);
-					continue;
-				}
-
-				const user = await UserService.getUserByEmail(userEmail);
-				if (user) {
-					let savedCount = 0;
-					let skippedCount = 0;
-					const savedJobs: JobAnalysisResult[] = [];
-
-					for (const job of analysisResults) {
-						try {
-							// Check for duplicates by URL + title for better duplicate detection
-							const existingJob = await SavedJob.findOne({
-								user: user.id,
-								$or: [
-									{url: job.url}, // Same URL
-									{url: job.url, title: job.title}, // Same URL and title
-								],
-							});
-
-							if (existingJob) {
-								logger.debug(
-									`Skipping duplicate job: "${job.title}" (${job.url})`,
-								);
-								skippedCount++;
-								continue;
-							}
-
-							await SavedJob.create({
-								...job,
-								user: user.id,
-								company: companyId,
-								status: ApplicationStatus.WANT_TO_APPLY,
-							});
-							savedCount++;
-							savedJobs.push(job); // Track actually saved jobs
-						} catch (dbError) {
-							logger.error(`Failed to process job "${job.title}"`, {
-								error: dbError,
-								url: job.url,
-							});
-						}
-					}
-
-					logger.success(
-						`✓ Database update complete for ${company.company}: ${savedCount} new jobs saved, ${skippedCount} duplicates skipped.`,
-					);
-
-					// Store only the actually saved jobs for return
-					results.set(companyId, savedJobs);
-				} else {
-					logger.error('User not found, cannot save jobs to database');
-					results.set(companyId, []);
-				}
-			} catch (error) {
-				logger.error(
-					`Failed to process matched jobs for company ${companyId}:`,
-					error,
-				);
-				results.set(companyId, []);
-			}
-		}
-
-		const totalTime = (Date.now() - startTime) / 1000;
-		logger.info(
-			`🏁 Legacy batch processing completed in ${totalTime}s for ${companies.length} companies`,
-		);
-		return results;
-	}
-	*/
-
-	/**
-	 * Enable or disable pipeline architecture
-	 * @param enabled - Whether to use the pipeline architecture
+	 * Pipeline architecture status (always enabled)
+	 * @deprecated Pipeline is now the only architecture
 	 */
 	public setPipelineEnabled(enabled: boolean): void {
-		this.usePipeline = enabled;
-		logger.info(`Pipeline architecture ${enabled ? 'enabled' : 'disabled'}`);
+		// Pipeline is always enabled in this version
+		logger.info(
+			`Pipeline architecture is always enabled (pipeline-only version)`,
+		);
 	}
 
 	/**
@@ -664,8 +437,8 @@ export class JobMatchingOrchestrator {
 	 */
 	public getArchitectureInfo(): {usePipeline: boolean; version: string} {
 		return {
-			usePipeline: this.usePipeline,
-			version: this.usePipeline ? 'pipeline-based' : 'legacy',
+			usePipeline: true,
+			version: 'pipeline-only',
 		};
 	}
 }
