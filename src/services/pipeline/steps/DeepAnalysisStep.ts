@@ -22,6 +22,14 @@ export class DeepAnalysisStep implements PipelineStep {
 	 * Execute deep analysis of matched jobs
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'DeepAnalysis',
+			'🔬 Starting comprehensive AI analysis of the matched job positions to determine the best opportunities for you...',
+		);
+
+		// Debug logging
 		logger.info('🔬 Starting deep dive analysis...');
 
 		try {
@@ -31,6 +39,11 @@ export class DeepAnalysisStep implements PipelineStep {
 
 			if (!context.matchedJobs || context.matchedJobs.length === 0) {
 				logger.warn('No matched jobs available for deep analysis');
+				context.storyLogger.addToStory(
+					'warn',
+					'DeepAnalysis',
+					'No matched jobs found for deep analysis - skipping this step',
+				);
 				context.analysisResults = new Map();
 				return context;
 			}
@@ -40,9 +53,22 @@ export class DeepAnalysisStep implements PipelineStep {
 
 			if (jobsWithContent.length === 0) {
 				logger.warn('No jobs with content available for analysis');
+				context.storyLogger.addToStory(
+					'warn',
+					'DeepAnalysis',
+					'No jobs with detailed content available for AI analysis - may need to retry job details fetching',
+				);
 				context.analysisResults = new Map();
 				return context;
 			}
+
+			// Story logging for process start
+			context.storyLogger.addToStory(
+				'info',
+				'DeepAnalysis',
+				`Running detailed AI analysis on ${jobsWithContent.length} jobs with complete descriptions. This will evaluate each position against your skills, experience, and career goals...`,
+				{jobsToAnalyze: jobsWithContent.length},
+			);
 
 			logger.info(
 				`Processing ${jobsWithContent.length} jobs for deep analysis...`,
@@ -62,6 +88,14 @@ export class DeepAnalysisStep implements PipelineStep {
 			// Process jobs in batches with token usage tracking
 			const batches = createBatches(jobsWithContent, BATCH_SIZE);
 			const allResults: JobAnalysisResult[] = [];
+
+			// Story logging for batch processing
+			context.storyLogger.addToStory(
+				'info',
+				'DeepAnalysis',
+				`Processing jobs in ${batches.length} batches of ${BATCH_SIZE} to manage API rate limits efficiently...`,
+				{batchCount: batches.length, batchSize: BATCH_SIZE},
+			);
 
 			// Process each batch sequentially and record token usage
 			for (let i = 0; i < batches.length; i++) {
@@ -98,6 +132,37 @@ export class DeepAnalysisStep implements PipelineStep {
 			);
 
 			const totalResults = sortedResults.length;
+			const excellentJobs = allResults.filter(
+				r => r.suitabilityScore >= 80,
+			).length;
+			const goodJobs = allResults.filter(
+				r => r.suitabilityScore >= 60 && r.suitabilityScore < 80,
+			).length;
+			const fairJobs = allResults.filter(
+				r => r.suitabilityScore >= 30 && r.suitabilityScore < 60,
+			).length;
+			const topJobs = sortedResults.slice(0, 3);
+
+			// Story logging for results
+			context.storyLogger.addToStory(
+				'success',
+				'DeepAnalysis',
+				`✅ Deep AI analysis completed successfully! Analyzed ${
+					allResults.length
+				} job positions and generated comprehensive match scores. Results: ${excellentJobs} excellent matches (80%+ score), ${goodJobs} good matches (60-79%), ${fairJobs} fair matches (30-59%). Top matches: ${topJobs
+					.map(job => `${job.title} (${job.suitabilityScore}%)`)
+					.join(', ')}.`,
+				{
+					totalAnalyzed: allResults.length,
+					excellentMatches: excellentJobs,
+					goodMatches: goodJobs,
+					fairMatches: fairJobs,
+					topJobScores: topJobs.map(job => ({
+						title: job.title,
+						score: job.suitabilityScore,
+					})),
+				},
+			);
 
 			// Log detailed analysis summary
 			logger.info('✓ Deep analysis completed with detailed breakdown:', {

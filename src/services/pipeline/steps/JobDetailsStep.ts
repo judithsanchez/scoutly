@@ -18,16 +18,42 @@ export class JobDetailsStep implements PipelineStep {
 	 * Scrape detailed job content for matched positions
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'JobDetails',
+			'🌐 Now fetching detailed job descriptions for the matched positions...',
+		);
+
+		// Debug logging
 		logger.info('🌐 Fetching detailed job content...');
 
 		try {
 			if (!context.matchedJobs || context.matchedJobs.length === 0) {
 				logger.warn('No matched jobs to fetch details for');
+				context.storyLogger.addToStory(
+					'warn',
+					'JobDetails',
+					'No matched jobs found to fetch details for - skipping this step',
+				);
 				context.jobDetails = new Map();
 				return context;
 			}
 
 			const urls = context.matchedJobs.map(job => job.url);
+
+			// Story logging for process start
+			context.storyLogger.addToStory(
+				'info',
+				'JobDetails',
+				`Fetching detailed job descriptions for ${
+					urls.length
+				} matched positions: ${context.matchedJobs
+					.map(job => job.title)
+					.join(', ')}`,
+				{jobCount: urls.length},
+			);
+
 			logger.info(`Fetching content for ${urls.length} matched positions...`);
 
 			// Use the job scraper utility to get detailed content
@@ -44,7 +70,24 @@ export class JobDetailsStep implements PipelineStep {
 
 			if (successfullyScraped === 0) {
 				logger.warn('Failed to fetch content for any matched positions');
+				context.storyLogger.addToStory(
+					'error',
+					'JobDetails',
+					'❌ Failed to fetch detailed content for any of the matched job positions',
+				);
 			} else {
+				// Story logging for results
+				context.storyLogger.addToStory(
+					'success',
+					'JobDetails',
+					`✅ Job details fetched successfully! Retrieved detailed descriptions for ${successfullyScraped} positions. ${
+						failed > 0
+							? `${failed} positions failed to load.`
+							: 'All jobs loaded successfully.'
+					}`,
+					{successfullyScraped, failed, totalJobs: urls.length},
+				);
+
 				logger.info(
 					`✓ Job details fetched successfully: ${successfullyScraped} scraped, ${failed} failed`,
 				);

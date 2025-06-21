@@ -17,16 +17,45 @@ export class CandidateProfileStep implements PipelineStep {
 	 * Process candidate profile information
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'CandidateProfile',
+			'👤 Processing your candidate profile information and preferences...',
+		);
+
+		// Debug logging
 		logger.info('Processing candidate profile information');
 
 		try {
 			// Process and validate candidate info
 			context.candidateProfile = this.processProfile(context.candidateInfo);
 
+			// Story logging for results
+			const profileKeys = Object.keys(context.candidateProfile);
+			context.storyLogger.addToStory(
+				'success',
+				'CandidateProfile',
+				`✅ Candidate profile processed successfully! Your profile includes: ${profileKeys.join(
+					', ',
+				)}. This information will help match you with the most suitable job opportunities.`,
+				{profileFields: profileKeys.length},
+			);
+
+			// Debug logging
 			logger.info('✓ Candidate profile processed successfully');
 
 			return context;
 		} catch (error) {
+			// Story logging for errors
+			context.storyLogger.addToStory(
+				'error',
+				'CandidateProfile',
+				`❌ Failed to process candidate profile: ${
+					error instanceof Error ? error.message : 'Unknown error'
+				}`,
+			);
+
 			logger.error('Failed to process candidate profile:', error);
 			throw new Error(
 				`Candidate profile processing failed: ${

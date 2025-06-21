@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { JobQueue, JobStatus } from '../JobQueue';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {JobQueue, JobStatus} from '../JobQueue';
 
 // Mock the JobQueue model
 vi.mock('../JobQueue', () => ({
@@ -65,10 +65,12 @@ describe('JobQueue Model', () => {
 			const error = new Error('ValidationError: companyId is required');
 			mockJobQueue.create.mockRejectedValue(error);
 
-			await expect(JobQueue.create({
-				status: JobStatus.PENDING,
-				// missing companyId
-			} as any)).rejects.toThrow('ValidationError: companyId is required');
+			await expect(
+				JobQueue.create({
+					status: JobStatus.PENDING,
+					// missing companyId
+				} as any),
+			).rejects.toThrow('ValidationError: companyId is required');
 		});
 	});
 
@@ -103,13 +105,19 @@ describe('JobQueue Model', () => {
 		});
 
 		it('should reject invalid status values', async () => {
-			const error = new Error('ValidationError: INVALID_STATUS is not a valid enum value');
+			const error = new Error(
+				'ValidationError: INVALID_STATUS is not a valid enum value',
+			);
 			mockJobQueue.create.mockRejectedValue(error);
 
-			await expect(JobQueue.create({
-				companyId: 'company123',
-				status: 'INVALID_STATUS' as any,
-			})).rejects.toThrow('ValidationError: INVALID_STATUS is not a valid enum value');
+			await expect(
+				JobQueue.create({
+					companyId: 'company123',
+					status: 'INVALID_STATUS' as any,
+				}),
+			).rejects.toThrow(
+				'ValidationError: INVALID_STATUS is not a valid enum value',
+			);
 		});
 	});
 
@@ -178,15 +186,15 @@ describe('JobQueue Model', () => {
 			mockJobQueue.findOneAndUpdate.mockResolvedValue(mockJob as any);
 
 			const result = await JobQueue.findOneAndUpdate(
-				{ status: JobStatus.PENDING },
-				{ $set: { status: JobStatus.PROCESSING, lastAttemptAt: new Date() } },
-				{ sort: { createdAt: 1 }, new: true }
+				{status: JobStatus.PENDING},
+				{$set: {status: JobStatus.PROCESSING, lastAttemptAt: new Date()}},
+				{sort: {createdAt: 1}, new: true},
 			);
 
 			expect(JobQueue.findOneAndUpdate).toHaveBeenCalledWith(
-				{ status: JobStatus.PENDING },
-				{ $set: { status: JobStatus.PROCESSING, lastAttemptAt: expect.any(Date) } },
-				{ sort: { createdAt: 1 }, new: true }
+				{status: JobStatus.PENDING},
+				{$set: {status: JobStatus.PROCESSING, lastAttemptAt: expect.any(Date)}},
+				{sort: {createdAt: 1}, new: true},
 			);
 			expect(result?.status).toBe(JobStatus.PROCESSING);
 		});
@@ -195,8 +203,8 @@ describe('JobQueue Model', () => {
 			mockJobQueue.findOneAndUpdate.mockResolvedValue(null);
 
 			const result = await JobQueue.findOneAndUpdate(
-				{ status: JobStatus.PENDING },
-				{ $set: { status: JobStatus.PROCESSING } }
+				{status: JobStatus.PENDING},
+				{$set: {status: JobStatus.PROCESSING}},
 			);
 
 			expect(result).toBeNull();

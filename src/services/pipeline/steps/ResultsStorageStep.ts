@@ -25,11 +25,24 @@ export class ResultsStorageStep implements PipelineStep {
 	 * Save analysis results to database
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'ResultsStorage',
+			'💾 Saving your personalized job analysis results to the database for future access...',
+		);
+
+		// Debug logging
 		logger.info('💾 Saving job analysis results to database...');
 
 		try {
 			if (!context.analysisResults || context.analysisResults.size === 0) {
 				logger.warn('No analysis results to save');
+				context.storyLogger.addToStory(
+					'warn',
+					'ResultsStorage',
+					'No analysis results found to save - this pipeline run found no suitable job matches',
+				);
 				// Initialize saved results tracking
 				context.savedJobsCount = 0;
 				context.savedJobsMap = new Map();
@@ -46,6 +59,20 @@ export class ResultsStorageStep implements PipelineStep {
 			let totalSkipped = 0;
 			let totalFailed = 0;
 			const savedJobsMap = new Map<string, JobAnalysisResult[]>();
+
+			// Count total jobs to be processed
+			const totalResults = Array.from(context.analysisResults.values()).reduce(
+				(sum, results) => sum + results.length,
+				0,
+			);
+
+			// Story logging for process start
+			context.storyLogger.addToStory(
+				'info',
+				'ResultsStorage',
+				`Processing ${totalResults} analyzed job positions for database storage...`,
+				{totalResults},
+			);
 
 			// Process results for each company
 			for (const [companyId, results] of context.analysisResults.entries()) {
@@ -91,6 +118,50 @@ export class ResultsStorageStep implements PipelineStep {
 			// Store summary in context for API response
 			context.savedJobsCount = totalSaved;
 			context.savedJobsMap = savedJobsMap;
+
+			// Story logging for final results
+			if (totalSaved > 0) {
+				const companyNames = Array.from(savedJobsMap.keys()).map(
+					companyId =>
+						context.companies.find(c => c.id === companyId)?.company ||
+						companyId,
+				);
+				context.storyLogger.addToStory(
+					'success',
+					'ResultsStorage',
+					`🎉 Successfully saved ${totalSaved} new job opportunities to your database! ${
+						totalSkipped > 0
+							? `${totalSkipped} duplicates were skipped (already in your saved jobs). `
+							: ''
+					}${
+						totalFailed > 0 ? `${totalFailed} jobs failed to save. ` : ''
+					}New jobs saved from: ${companyNames.join(
+						', ',
+					)}. You can now view these personalized job matches in your dashboard!`,
+					{
+						totalSaved,
+						totalSkipped,
+						totalFailed,
+						companiesWithSavedJobs: companyNames.length,
+						companies: companyNames,
+					},
+				);
+			} else {
+				context.storyLogger.addToStory(
+					'warn',
+					'ResultsStorage',
+					`No new jobs were saved to the database. ${
+						totalSkipped > 0
+							? `${totalSkipped} jobs were duplicates of positions already in your saved jobs. `
+							: ''
+					}${
+						totalFailed > 0
+							? `${totalFailed} jobs failed to save due to errors.`
+							: ''
+					}`,
+					{totalSaved, totalSkipped, totalFailed},
+				);
+			}
 
 			logger.info(
 				`✅ Database storage completed: ${totalSaved} saved, ${totalSkipped} duplicates, ${totalFailed} failed`,

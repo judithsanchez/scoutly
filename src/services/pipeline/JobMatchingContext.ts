@@ -11,7 +11,13 @@ import {
 	getUsageSummary,
 } from '@/utils/rateLimiting';
 import crypto from 'crypto';
-import type {PipelineContext, TokenUsage} from './types';
+import {PipelineStoryLogger} from './utils/PipelineStoryLogger';
+import type {
+	PipelineContext,
+	TokenUsage,
+	StoryLogger,
+	StoryLogEntry,
+} from './types';
 import type {ICompany} from '@/models/Company';
 import type {ExtractedLink} from '@/utils/scraper';
 import type {JobAnalysisResult, AIProcessorConfig} from '@/utils/aiProcessor';
@@ -47,6 +53,15 @@ export class JobMatchingContext implements PipelineContext {
 	currentCompanyId: string;
 	currentCompanyName: string;
 
+	// Story logging for complete narrative
+	storyLogger: StoryLogger;
+	logger: Logger;
+
+	// Computed property to access story logs
+	get storyLogs(): StoryLogEntry[] {
+		return this.storyLogger.getStory();
+	}
+
 	constructor(
 		companies: ICompany[],
 		cvUrl: string,
@@ -66,6 +81,13 @@ export class JobMatchingContext implements PipelineContext {
 		this.currentUserEmail = userEmail;
 		this.currentCompanyId = '';
 		this.currentCompanyName = '';
+
+		// Initialize story logging
+		this.logger = new Logger('JobMatchingPipeline');
+		this.storyLogger = new PipelineStoryLogger(
+			this.logger,
+			crypto.randomUUID(),
+		);
 
 		// Initialize processing state
 		this.scrapedData = new Map();
@@ -205,9 +227,14 @@ export class JobMatchingContext implements PipelineContext {
 	async cleanup(): Promise<void> {
 		logger.debug('Starting context cleanup...');
 
+		// Save the complete pipeline story before cleanup
+		await this.storyLogger.saveStory();
+
 		const usageSummary = getUsageSummary(this.modelLimits, this.usageStats);
 		logger.info('🔢 Final AI usage statistics:', {
-			usage: usageSummary.split('\n'),
+			usage: usageSummary
+				? usageSummary.split('\n')
+				: ['No usage data available'],
 		});
 
 		// Clear processing state

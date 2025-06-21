@@ -18,18 +18,44 @@ export class CvProcessingStep implements PipelineStep {
 	 * Process the CV and extract text content
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'CvProcessing',
+			`📄 Starting to download and extract content from your CV: ${context.cvUrl}`,
+		);
+
+		// Debug logging
 		logger.info(`Processing CV from URL: ${context.cvUrl}`);
 
 		try {
 			// Extract CV content using existing utility
 			context.cvContent = await getCvContentAsText(context.cvUrl);
 
+			// Story logging for results
+			context.storyLogger.addToStory(
+				'success',
+				'CvProcessing',
+				`✅ CV processed successfully! Extracted ${context.cvContent.length} characters of text content from your resume. This will be used to match you with relevant job opportunities.`,
+				{contentLength: context.cvContent.length},
+			);
+
+			// Debug logging
 			logger.info(
 				`✓ CV processed. Extracted ${context.cvContent.length} characters.`,
 			);
 
 			return context;
 		} catch (error) {
+			// Story logging for errors
+			context.storyLogger.addToStory(
+				'error',
+				'CvProcessing',
+				`❌ Failed to process CV: ${
+					error instanceof Error ? error.message : 'Unknown error'
+				}`,
+			);
+
 			logger.error('Failed to process CV:', error);
 			throw new Error(
 				`CV processing failed: ${

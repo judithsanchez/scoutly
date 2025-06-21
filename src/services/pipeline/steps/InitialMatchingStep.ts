@@ -20,6 +20,14 @@ export class InitialMatchingStep implements PipelineStep {
 	 * Execute initial job matching using AI
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'InitialMatching',
+			'🔍 Starting AI-powered initial job filtering to identify potentially suitable positions...',
+		);
+
+		// Debug logging
 		logger.info('🔍 Starting initial job matching analysis...');
 
 		try {
@@ -37,9 +45,22 @@ export class InitialMatchingStep implements PipelineStep {
 
 			if (allNewLinks.length === 0) {
 				logger.warn('No job links available for initial matching');
+				context.storyLogger.addToStory(
+					'warn',
+					'InitialMatching',
+					'No new job links found to analyze - skipping initial matching',
+				);
 				context.matchedJobs = [];
 				return context;
 			}
+
+			// Story logging for process start
+			context.storyLogger.addToStory(
+				'info',
+				'InitialMatching',
+				`Running AI analysis on ${allNewLinks.length} job postings to find matches based on your CV and profile...`,
+				{jobLinksCount: allNewLinks.length},
+			);
 
 			logger.info(
 				`Running initial matching analysis for ${allNewLinks.length} jobs...`,
@@ -62,6 +83,24 @@ export class InitialMatchingStep implements PipelineStep {
 				context.cvContent,
 				context.candidateProfile,
 				context.aiConfig,
+			);
+
+			// Story logging for results
+			context.storyLogger.addToStory(
+				'success',
+				'InitialMatching',
+				`✅ AI analysis completed! Found ${
+					context.matchedJobs.length
+				} potentially suitable job matches out of ${
+					allNewLinks.length
+				} total jobs analyzed. The AI filtered out ${
+					allNewLinks.length - context.matchedJobs.length
+				} jobs that weren't a good fit.`,
+				{
+					matchedJobs: context.matchedJobs.length,
+					totalJobs: allNewLinks.length,
+					filteredOut: allNewLinks.length - context.matchedJobs.length,
+				},
 			);
 
 			logger.info(

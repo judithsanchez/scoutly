@@ -8,6 +8,39 @@ import {JobAnalysisResult, AIProcessorConfig} from '@/utils/aiProcessor';
 import {UsageStats} from '@/utils/rateLimiting';
 import {IGeminiRateLimit} from '@/config/rateLimits';
 import {TokenOperation} from '@/models/TokenUsage';
+import {Logger} from '@/utils/logger';
+
+/**
+ * Story log entry for narrative pipeline logging
+ */
+export interface StoryLogEntry {
+	timestamp: Date;
+	level: 'info' | 'warn' | 'error' | 'success' | 'debug';
+	stepName: string;
+	message: string;
+	data?: Record<string, any>;
+	metrics?: {
+		duration?: number;
+		count?: number;
+		tokens?: number;
+		[key: string]: any;
+	};
+}
+
+/**
+ * Helper type for adding story logs to context
+ */
+export interface StoryLogger {
+	addToStory(
+		level: StoryLogEntry['level'],
+		stepName: string,
+		message: string,
+		data?: Record<string, any>,
+		metrics?: StoryLogEntry['metrics'],
+	): void;
+	getStory(): StoryLogEntry[];
+	saveStory(): Promise<void>;
+}
 
 /**
  * Shared context passed between all pipeline steps
@@ -18,6 +51,13 @@ export interface PipelineContext {
 	cvUrl: string;
 	candidateInfo: Record<string, any>;
 	userEmail: string;
+
+	// Shared logger - all steps should use this for unified logging
+	logger: Logger;
+
+	// Story logging - collect narrative for complete pipeline story
+	storyLogs: StoryLogEntry[];
+	storyLogger: StoryLogger;
 
 	// Processing state - updated by steps
 	cvContent?: string;

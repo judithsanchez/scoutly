@@ -21,6 +21,16 @@ export class CompanyScrapingStep implements PipelineStep {
 	 * Scrape job listings from all companies
 	 */
 	async execute(context: PipelineContext): Promise<PipelineContext> {
+		// Story logging for narrative
+		context.storyLogger.addToStory(
+			'info',
+			'CompanyScraping',
+			`Starting to scrape job listings from ${
+				context.companies.length
+			} companies: ${context.companies.map(c => c.company).join(', ')}`,
+		);
+
+		// Debug logging
 		logger.info(
 			`📝 Scraping job listings from ${context.companies.length} companies...`,
 		);
@@ -34,14 +44,24 @@ export class CompanyScrapingStep implements PipelineStep {
 			// Process companies in parallel
 			const scrapingResults = await Promise.all(
 				context.companies.map(company =>
-					this.scrapeCompanyJobs(company, context.userEmail).catch(error => {
-						logger.error(`Failed to scrape company ${company.company}:`, error);
-						return {
-							companyId: company.id,
-							allScrapedLinks: [],
-							newLinks: [],
-						};
-					}),
+					this.scrapeCompanyJobs(company, context.userEmail, context).catch(
+						error => {
+							logger.error(
+								`Failed to scrape company ${company.company}:`,
+								error,
+							);
+							context.storyLogger.addToStory(
+								'error',
+								'CompanyScraping',
+								`❌ Failed to scrape ${company.company}: ${error.message}`,
+							);
+							return {
+								companyId: company.id,
+								allScrapedLinks: [],
+								newLinks: [],
+							};
+						},
+					),
 				),
 			);
 
@@ -57,6 +77,24 @@ export class CompanyScrapingStep implements PipelineStep {
 				0,
 			);
 
+			// Story logging for results
+			context.storyLogger.addToStory(
+				'success',
+				'CompanyScraping',
+				`✅ Company scraping completed successfully! Found ${totalNewLinks} new job links across ${
+					context.companies.length
+				} companies. ${scrapingResults
+					.map(
+						r =>
+							`${context.companies.find(c => c.id === r.companyId)?.company}: ${
+								r.newLinks.length
+							} new jobs`,
+					)
+					.join(', ')}`,
+				{totalNewLinks, companiesScraped: context.companies.length},
+			);
+
+			// Debug logging
 			logger.info(
 				`✓ Company scraping completed. Found ${totalNewLinks} new job links across ${context.companies.length} companies.`,
 			);
@@ -107,6 +145,7 @@ export class CompanyScrapingStep implements PipelineStep {
 	private async scrapeCompanyJobs(
 		company: any,
 		userEmail: string,
+		context: PipelineContext,
 	): Promise<{
 		companyId: string;
 		allScrapedLinks: ExtractedLink[];
@@ -119,6 +158,11 @@ export class CompanyScrapingStep implements PipelineStep {
 
 		if (jobsResult.error) {
 			logger.error(`Scraping failed for ${company.company}:`, jobsResult.error);
+			context.storyLogger.addToStory(
+				'error',
+				'CompanyScraping',
+				`Failed to scrape ${company.company}: ${jobsResult.error}`,
+			);
 			return {
 				companyId: company.id,
 				allScrapedLinks: [],
@@ -133,6 +177,11 @@ export class CompanyScrapingStep implements PipelineStep {
 
 		if (allScrapedLinks.length === 0) {
 			logger.warn(`No job links found for ${company.company}`);
+			context.storyLogger.addToStory(
+				'warn',
+				'CompanyScraping',
+				`No job links found for ${company.company} - they may not be hiring right now`,
+			);
 			return {
 				companyId: company.id,
 				allScrapedLinks: [],
@@ -158,6 +207,17 @@ export class CompanyScrapingStep implements PipelineStep {
 				allScrapedLinks.length - newLinks.length
 			} already seen)`,
 		);
+
+		// Story logging for individual company results
+		if (newLinks.length > 0) {
+			context.storyLogger.addToStory(
+				'info',
+				'CompanyScraping',
+				`Found ${newLinks.length} new job postings at ${company.company} (${
+					allScrapedLinks.length - newLinks.length
+				} were already seen previously)`,
+			);
+		}
 
 		// Record scrape history for all links
 		if (allScrapedLinks.length > 0) {
