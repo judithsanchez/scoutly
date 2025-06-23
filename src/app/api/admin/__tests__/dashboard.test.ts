@@ -62,7 +62,7 @@ vi.mock('@/models/UserCompanyPreference', () => ({
 
 // Mock the admin utils
 vi.mock('@/utils/adminUtils', () => ({
-	isAdminUser: vi.fn(),
+	isAdminUserAsync: vi.fn(),
 }));
 
 describe('Admin Dashboard API', () => {
@@ -81,8 +81,8 @@ describe('Admin Dashboard API', () => {
 	describe('GET /api/admin/dashboard', () => {
 		it('should return dashboard data for admin user', async () => {
 			// Mock admin check
-			const {isAdminUser} = await import('@/utils/adminUtils');
-			vi.mocked(isAdminUser).mockReturnValue(true);
+			const {isAdminUserAsync} = await import('@/utils/adminUtils');
+			vi.mocked(isAdminUserAsync).mockResolvedValue(true);
 
 			// Mock session with admin email
 			const {getServerSession} = await import('next-auth/next');
@@ -102,8 +102,8 @@ describe('Admin Dashboard API', () => {
 
 		it('should return 403 for non-admin user', async () => {
 			// Mock non-admin check
-			const {isAdminUser} = await import('@/utils/adminUtils');
-			vi.mocked(isAdminUser).mockReturnValue(false);
+			const {isAdminUserAsync} = await import('@/utils/adminUtils');
+			vi.mocked(isAdminUserAsync).mockResolvedValue(false);
 
 			// Mock session with non-admin email
 			const {getServerSession} = await import('next-auth/next');
@@ -128,8 +128,8 @@ describe('Admin Dashboard API', () => {
 
 		it('should handle database errors gracefully', async () => {
 			// Mock admin check
-			const {isAdminUser} = await import('@/utils/adminUtils');
-			vi.mocked(isAdminUser).mockReturnValue(true);
+			const {isAdminUserAsync} = await import('@/utils/adminUtils');
+			vi.mocked(isAdminUserAsync).mockResolvedValue(true);
 
 			// Mock session
 			const {getServerSession} = await import('next-auth/next');

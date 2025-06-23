@@ -7,6 +7,14 @@ import AdminDashboard from '../page';
 vi.mock('next-auth/react');
 const mockUseSession = vi.mocked(useSession);
 
+// Mock admin utils
+vi.mock('@/utils/adminUtils', () => ({
+	isBootstrapAdmin: vi.fn(),
+}));
+
+import {isBootstrapAdmin} from '@/utils/adminUtils';
+const mockIsBootstrapAdmin = vi.mocked(isBootstrapAdmin);
+
 // Mock fetch
 global.fetch = vi.fn();
 const mockFetch = vi.mocked(fetch);
@@ -39,6 +47,8 @@ const mockDashboardData = {
 describe('AdminDashboard', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Set up environment variable for tests
+		vi.stubEnv('ADMIN_EMAIL', 'judithv.sanchezc@gmail.com');
 	});
 
 	it('should redirect unauthenticated users', async () => {
@@ -65,6 +75,9 @@ describe('AdminDashboard', () => {
 			update: vi.fn(),
 		});
 
+		// Mock non-admin user
+		mockIsBootstrapAdmin.mockReturnValue(false);
+
 		await act(async () => {
 			render(<AdminDashboard />);
 		});
@@ -81,6 +94,9 @@ describe('AdminDashboard', () => {
 			status: 'authenticated',
 			update: vi.fn(),
 		});
+
+		// Mock admin user
+		mockIsBootstrapAdmin.mockReturnValue(true);
 
 		// Mock pending fetch
 		mockFetch.mockReturnValue(
@@ -105,6 +121,9 @@ describe('AdminDashboard', () => {
 			status: 'authenticated',
 			update: vi.fn(),
 		});
+
+		// Mock admin user
+		mockIsBootstrapAdmin.mockReturnValue(true);
 
 		mockFetch.mockResolvedValue({
 			ok: true,
@@ -156,6 +175,9 @@ describe('AdminDashboard', () => {
 			update: vi.fn(),
 		});
 
+		// Mock admin user
+		mockIsBootstrapAdmin.mockReturnValue(true);
+
 		mockFetch.mockResolvedValue({
 			ok: false,
 			status: 500,
@@ -183,6 +205,9 @@ describe('AdminDashboard', () => {
 			update: vi.fn(),
 		});
 
+		// Mock admin user
+		mockIsBootstrapAdmin.mockReturnValue(true);
+
 		mockFetch.mockResolvedValue({
 			ok: true,
 			json: () => Promise.resolve(mockDashboardData),
@@ -206,6 +231,9 @@ describe('AdminDashboard', () => {
 			status: 'authenticated',
 			update: vi.fn(),
 		});
+
+		// Mock admin user
+		mockIsBootstrapAdmin.mockReturnValue(true);
 
 		mockFetch.mockResolvedValue({
 			ok: true,

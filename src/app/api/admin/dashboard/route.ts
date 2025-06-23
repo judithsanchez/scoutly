@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {getServerSession} from 'next-auth/next';
-import {isAdminUser} from '@/utils/adminUtils';
+import {isAdminUserAsync} from '@/utils/adminUtils';
 import {connectToDatabase} from '@/lib/mongodb';
 import {Log} from '@/models/Log';
 import {TokenUsage} from '@/models/TokenUsage';
@@ -16,13 +16,14 @@ export async function GET(request: NextRequest) {
 			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 		}
 
-		// Check admin access
-		if (!isAdminUser(session.user.email)) {
+		// Connect to database first (needed for admin check)
+		await connectToDatabase();
+
+		// Check admin access (both bootstrap and database admins)
+		const isAdmin = await isAdminUserAsync(session.user.email);
+		if (!isAdmin) {
 			return NextResponse.json({error: 'Forbidden'}, {status: 403});
 		}
-
-		// Connect to database
-		await connectToDatabase();
 
 		// Fetch dashboard data
 		const dashboardData = await getDashboardData();

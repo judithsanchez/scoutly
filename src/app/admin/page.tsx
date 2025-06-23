@@ -2,7 +2,7 @@
 
 import {useSession} from 'next-auth/react';
 import {useState, useEffect} from 'react';
-import {isAdminUser} from '@/utils/adminUtils';
+import {isBootstrapAdmin} from '@/utils/adminUtils';
 import {Button} from '@/components/ui/button';
 
 interface SystemHealth {
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
 	}
 
 	// Check if user is admin
-	if (!isAdminUser(session?.user?.email)) {
+	if (!isBootstrapAdmin(session?.user?.email)) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center">
