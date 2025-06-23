@@ -1,69 +1,161 @@
-# Authentication System Implementation
+# Authentication System Documentation
 
 ## Overview
 
-This document describes the implementation of the new pre-approval-based Google OAuth authentication system for Scoutly, designed to support multiple deployment environments.
+The authentication system has been refactored to use a clean, environment-based approach that separates development and production authentication logic without scattered bypass code in production files.
 
 ## Architecture
 
-### Environment-Aware Authentication
+### Factory Pattern
 
-The system detects three deployment environments:
+The main `auth.ts` file uses a factory pattern to select the appropriate authentication provider based on the `NEXT_PUBLIC_USE_DEV_AUTH` environment variable:
 
-1. **Development** (`localhost`): Relaxed auth for testing
-2. **Vercel** (Frontend production): Hosted frontend on Vercel
-3. **Raspberry Pi** (Backend production): Self-hosted backend API
+- **Development Mode** (`NEXT_PUBLIC_USE_DEV_AUTH=true`): Uses `auth.development.ts` - auto-approves any Google sign-in and auto-creates users with mock data
+- **Production Mode** (`NEXT_PUBLIC_USE_DEV_AUTH=false`): Uses `auth.production.ts` - requires pre-approved users in the database
 
-### Pre-Approval System
+### File Structure
 
-Only users present in the MongoDB `User` collection can sign in. This provides:
-
-- **Security**: Controlled access to the application
-- **User Management**: Admin-controlled user registration
-- **Profile Gating**: Job scouting requires complete profiles
-
-## Components
-
-### Core Files
-
-- `src/config/environment.ts` - Environment detection and configuration
-- `src/lib/auth.ts` - NextAuth configuration with pre-approval logic
-- `src/types/next-auth.d.ts` - Extended session types
-- `src/middleware.ts` - Route protection middleware
-- `src/utils/profileUtils.ts` - Profile completion utilities
-
-### API Endpoints
-
-- `GET /api/admin/users` - List all users
-- `POST /api/admin/users` - Create new user (admin only)
-- `PATCH /api/admin/users` - Update user admin status
-
-### UI Components
-
-- `src/components/admin/UserManagement.tsx` - Admin user management interface
-- `src/app/auth/error/page.tsx` - Authentication error handling
-- Updated `src/app/admin/page.tsx` - Admin dashboard with user management tab
+```
+src/lib/
+├── auth.ts                    # Factory that selects dev/prod provider
+├── auth.development.ts        # Development-only provider (auto-approve)
+├── auth.production.ts         # Production provider (pre-approval required)
+└── __tests__/
+    ├── auth.test.ts          # Production auth tests
+    └── auth.development.test.ts # Development auth tests
+```
 
 ## Environment Configuration
 
-### Required Environment Variables
+### Development Setup
+
+```env
+# Enable development auth (auto-approve any Google sign-in)
+NEXT_PUBLIC_USE_DEV_AUTH=true
+```
+
+### Production Setup
+
+```env
+# Require pre-approved users (default/recommended)
+NEXT_PUBLIC_USE_DEV_AUTH=false
+```
+
+## Development Authentication Features
+
+When `NEXT_PUBLIC_USE_DEV_AUTH=true`:
+
+- ✅ Auto-approves any Google OAuth sign-in
+- ✅ Auto-creates user records in the database
+- ✅ Provides mock development data for testing
+- ✅ Logs authentication actions for debugging
+- ⚠️ **NEVER enable in production**
+
+## Production Authentication Features
+
+When `NEXT_PUBLIC_USE_DEV_AUTH=false` (default):
+
+- 🔒 Only allows pre-approved users (must exist in User collection)
+- 🔒 Strict email validation
+- 🔒 No bypass logic or development shortcuts
+- 🔒 Secure session handling
+
+## Testing
+
+### Running Auth Tests
 
 ```bash
+# Test development auth provider
+docker-compose exec app npm test -- src/lib/__tests__/auth.development.test.ts
+
+# Test production auth provider
+docker-compose exec app npm test -- src/lib/__tests__/auth.test.ts
+
+# Test all auth functionality
+docker-compose exec app npm test -- src/lib/__tests__/auth
+```
+
+### Test Coverage
+
+- ✅ Development auth auto-approval
+- ✅ Development user auto-creation
+- ✅ Production pre-approval enforcement
+- ✅ Session enrichment with user data
+- ✅ Admin role detection
+
+## Migration from Legacy System
+
+### Removed Environment Variables
+
+- ❌ `NEXT_PUBLIC_SKIP_AUTH` (replaced with `NEXT_PUBLIC_USE_DEV_AUTH`)
+- ❌ `NEXT_PUBLIC_DEV_USER_EMAIL` (now auto-generated from Google OAuth)
+- ❌ `NEXT_PUBLIC_DEV_USER_NAME` (now auto-generated from Google OAuth)
+
+### Removed Bypass Logic
+
+- ❌ Skip-auth checks in `middleware.ts`
+- ❌ Development bypass in `AuthContext.tsx`
+- ❌ Scattered conditional authentication logic
+
+## Security Benefits
+
+1. **Clean Separation**: Development and production auth logic is completely separated
+2. **No Production Bypass**: Production code contains no development shortcuts
+3. **Single Toggle**: One environment variable controls auth behavior
+4. **Explicit Configuration**: Clear documentation of auth modes
+5. **Test Coverage**: Comprehensive tests for both modes
+
+## Troubleshooting
+
+### Common Issues
+
+**Docker warnings about old environment variables**
+
+- Update any remaining references to old variables in documentation
+- Clear Docker cache: `docker-compose down && docker-compose up -d`
+
+**Authentication not working in development**
+
+- Verify `NEXT_PUBLIC_USE_DEV_AUTH=true` in `.env.local`
+- Check Google OAuth configuration
+- Check Docker container logs: `docker-compose logs app`
+
+**Users can't sign in to production**
+
+- Verify `NEXT_PUBLIC_USE_DEV_AUTH=false`
+- Ensure users are pre-approved in the User collection
+- Check database connectivity
+
+## Implementation Status
+
+- ✅ Factory pattern implemented
+- ✅ Development auth provider created
+- ✅ Production auth provider created
+- ✅ Legacy bypass logic removed
+- ✅ Environment variables updated
+- ✅ Tests passing
+- ✅ Documentation updatedbash
+
 # Google OAuth
+
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # NextAuth
+
 NEXTAUTH_URL=your_app_url
 NEXTAUTH_SECRET=your_nextauth_secret
 
 # Environment Detection
+
 DEPLOYMENT_TARGET=development|vercel|raspberry-pi
 NEXT_PUBLIC_FRONTEND_URL=your_frontend_url
 NEXT_PUBLIC_BACKEND_URL=your_backend_url
 
 # Development Only
+
 NEXT_PUBLIC_SKIP_AUTH=true # Bypass auth checks in dev
+
 ```
 
 ### Deployment-Specific Settings
@@ -212,3 +304,4 @@ Users must complete their profile to access job scouting:
 - Audit logging for admin actions
 - Bulk user import/export functionality
 - Profile completion wizard for new users
+```

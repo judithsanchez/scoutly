@@ -1,131 +1,21 @@
-import {MongoDBAdapter} from '@next-auth/mongodb-adapter';
 import {NextAuthOptions} from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
-import clientPromise from '@/lib/mongodb';
-import {User} from '@/models/User';
-import {AdminUser} from '@/models/AdminUser';
-import {connectToDatabase} from '@/lib/mongodb';
-import {environmentConfig} from '@/config/environment';
+import {productionAuthOptions} from './auth.production';
+import {developmentAuthOptions} from './auth.development';
 
-export const authOptions: NextAuthOptions = {
-	adapter: MongoDBAdapter(clientPromise),
-	providers: [
-		GoogleProvider({
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-		}),
-	],
-	callbacks: {
-		async signIn({user, account, profile}) {
-			try {
-				// In development, allow all sign-ins for testing
-				if (
-					environmentConfig.isDevelopment &&
-					process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-				) {
-					return true;
-				}
+/**
+ * Factory function to select the appropriate auth configuration based on environment
+ * Uses NEXT_PUBLIC_USE_DEV_AUTH to determine which auth provider to use
+ */
+function createAuthOptions(): NextAuthOptions {
+	const useDevAuth = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
 
-				await connectToDatabase();
+	if (useDevAuth) {
+		console.log('🔧 Using development auth provider (auto-approve enabled)');
+		return developmentAuthOptions;
+	} else {
+		console.log('🔒 Using production auth provider (pre-approval required)');
+		return productionAuthOptions;
+	}
+}
 
-				if (!user.email) {
-					console.log('Sign-in rejected: No email provided');
-					return false;
-				}
-
-				// Check if user exists in our User collection (pre-approved users only)
-				const existingUser = await User.findOne({
-					email: user.email.toLowerCase(),
-				});
-
-				if (!existingUser) {
-					console.log(
-						`Sign-in rejected: User ${user.email} is not pre-approved`,
-					);
-					return false;
-				}
-
-				console.log(`Sign-in approved: User ${user.email} found in database`);
-				return true;
-			} catch (error) {
-				console.error('Error during sign-in check:', error);
-				return false;
-			}
-		},
-		async session({session, user}) {
-			if (session.user?.email) {
-				try {
-					await connectToDatabase();
-
-					// Get user data
-					const userData = await User.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					// Check if user is admin
-					const isAdmin = await AdminUser.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					// Check if profile is complete
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
-					);
-
-					session.user = {
-						...session.user,
-						email: session.user.email,
-						isAdmin: !!isAdmin,
-						hasCompleteProfile,
-						cvUrl: userData?.cvUrl,
-					};
-				} catch (error) {
-					console.error('Error enriching session:', error);
-					// Keep basic session if database error
-					session.user = {
-						email: session.user.email,
-						isAdmin: false,
-						hasCompleteProfile: false,
-					};
-				}
-			}
-			return session;
-		},
-		async jwt({token, user, account}) {
-			// Persist admin status and profile completion in JWT
-			if (user?.email) {
-				try {
-					await connectToDatabase();
-
-					const userData = await User.findOne({
-						email: user.email.toLowerCase(),
-					});
-
-					const isAdmin = await AdminUser.findOne({
-						email: user.email.toLowerCase(),
-					});
-
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
-					);
-
-					token.isAdmin = !!isAdmin;
-					token.hasCompleteProfile = hasCompleteProfile;
-					token.cvUrl = userData?.cvUrl;
-				} catch (error) {
-					console.error('Error enriching JWT:', error);
-					token.isAdmin = false;
-					token.hasCompleteProfile = false;
-				}
-			}
-			return token;
-		},
-	},
-	pages: {
-		signIn: '/auth/signin',
-		error: '/auth/error', // We'll create this for access denied
-	},
-	session: {
-		strategy: 'jwt', // Use JWT for better cross-domain support
-	},
-};
+export const authOptions: NextAuthOptions = createAuthOptions();

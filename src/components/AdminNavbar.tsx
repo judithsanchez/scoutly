@@ -14,7 +14,7 @@ interface NavItem {
 
 export default function AdminNavbar() {
 	const pathname = usePathname();
-	const {user, isAuthenticated, isDevBypass} = useAuth();
+	const {user, isAuthenticated} = useAuth();
 	const {theme, setTheme} = useTheme();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -133,7 +133,7 @@ export default function AdminNavbar() {
 									<div className="h-7 w-7 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">
 										{user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
 									</div>
-									{isDevBypass && (
+									{process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true' && (
 										<span className="absolute -top-2 -right-2 bg-amber-500 text-xs px-1 rounded-full text-white">
 											DEV
 										</span>

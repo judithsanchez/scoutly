@@ -1,19 +1,10 @@
 import {withAuth} from 'next-auth/middleware';
 import {NextResponse} from 'next/server';
-import {environmentConfig} from '@/config/environment';
 
 export default withAuth(
 	function middleware(req) {
 		const token = req.nextauth.token;
 		const pathname = req.nextUrl.pathname;
-
-		// Skip auth checks in development if SKIP_AUTH is enabled
-		if (
-			environmentConfig.isDevelopment &&
-			process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
-		) {
-			return NextResponse.next();
-		}
 
 		// Admin routes - require admin access
 		if (pathname.startsWith('/admin')) {
@@ -51,14 +42,6 @@ export default withAuth(
 					pathname.startsWith('/api/auth/') ||
 					pathname.startsWith('/_next/') ||
 					pathname.startsWith('/favicon.ico')
-				) {
-					return true;
-				}
-
-				// Skip auth checks in development if SKIP_AUTH is enabled
-				if (
-					environmentConfig.isDevelopment &&
-					process.env.NEXT_PUBLIC_SKIP_AUTH === 'true'
 				) {
 					return true;
 				}

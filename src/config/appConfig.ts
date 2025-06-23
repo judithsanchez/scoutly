@@ -7,14 +7,8 @@
 const config = {
 	// Authentication settings
 	auth: {
-		// Whether to bypass authentication in development mode
-		skipAuth: process.env.NEXT_PUBLIC_SKIP_AUTH === 'true',
-
-		// Default development user (only used when skipAuth is true)
-		devUser: {
-			email: process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@scoutly.app',
-			name: process.env.NEXT_PUBLIC_DEV_USER_NAME || 'Development User',
-		},
+		// Whether to use development auth (auto-approve) instead of production auth (pre-approval required)
+		useDevAuth: process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true',
 	},
 
 	// Application settings
