@@ -15,12 +15,11 @@ async function testConnection() {
 		console.log('Connection state:', mongoose.connection.readyState);
 
 		// Test a simple query
-		const collections = await mongoose.connection.db
-			.listCollections()
-			.toArray();
+		const collections =
+			(await mongoose.connection.db?.listCollections().toArray()) || [];
 		console.log(
 			'Available collections:',
-			collections.map(c => c.name),
+			collections.map((c: any) => c.name),
 		);
 	} catch (error) {
 		console.error('❌ Database connection failed:', error);

@@ -62,7 +62,16 @@ export async function isAdminUserAsync(
 	}
 
 	// Check database admin
-	return await isDatabaseAdmin(email);
+	try {
+		const adminUser = await AdminUser.findOne({
+			email: email.toLowerCase(),
+			isActive: true,
+		});
+		return !!adminUser;
+	} catch (error) {
+		console.error('Error checking admin status:', error);
+		return false;
+	}
 }
 
 /**
@@ -133,3 +142,8 @@ export async function promoteUserToAdmin(
 ): Promise<boolean> {
 	return await createAdminUser(email, role, createdBy);
 }
+
+/**
+ * Alias for isAdminUserAsync for backwards compatibility
+ */
+export const isAdminAsync = isAdminUserAsync;

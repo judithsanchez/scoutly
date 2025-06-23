@@ -49,5 +49,8 @@ AdminUserSchema.index({email: 1}, {unique: true});
 AdminUserSchema.index({isActive: 1});
 AdminUserSchema.index({role: 1});
 
-export default mongoose.models.AdminUser ||
+export const AdminUser =
+	mongoose.models.AdminUser ||
 	mongoose.model<IAdminUser>('AdminUser', AdminUserSchema);
+
+export default AdminUser;

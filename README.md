@@ -61,19 +61,40 @@ npm install next-auth@latest @auth/core @auth/mongodb-adapter mongodb --legacy-p
 
 ### 3. Environment Setup
 
-1. Generate NEXTAUTH_SECRET:
+1. **Copy the environment template:**
+
+   ```bash
+   cp example.env.local .env.local
+   ```
+
+2. **Generate NEXTAUTH_SECRET:**
+
    ```bash
    openssl rand -base64 32
    # or
    node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
    ```
-2. Update .env file:
-   ```
-   NEXTAUTH_URL="http://localhost:3000"
-   NEXTAUTH_SECRET="your-generated-secret"
+
+3. **Update `.env.local` with your values:**
+
+   ```bash
+   # Google OAuth (from step 2)
    GOOGLE_CLIENT_ID="your-client-id"
    GOOGLE_CLIENT_SECRET="your-client-secret"
+
+   # NextAuth (from step 2)
+   NEXTAUTH_SECRET="your-generated-secret"
+
+   # Your admin email
+   BOOTSTRAP_ADMIN_EMAIL="your.email@gmail.com"
+
+   # Get from https://aistudio.google.com/app/apikey
+   GEMINI_API_KEY="your-gemini-key"
    ```
+
+4. **Never commit `.env.local`** - it's ignored by git and contains your secrets
+
+📖 **For detailed environment setup:** See [docs/environment-setup.md](./docs/environment-setup.md)
 
 ## 🛠️ Quick Start
 
