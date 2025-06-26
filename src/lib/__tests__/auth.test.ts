@@ -18,6 +18,11 @@ vi.mock('@/lib/mongodb', () => ({
 	connectToDatabase: vi.fn().mockResolvedValue({}),
 }));
 
+// Mock database connection
+vi.mock('@/middleware/database', () => ({
+	default: vi.fn().mockResolvedValue({}),
+}));
+
 vi.mock('@/config/environment', () => ({
 	environmentConfig: {
 		isDevelopment: true,

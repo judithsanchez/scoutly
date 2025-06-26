@@ -18,6 +18,11 @@ vi.mock('@/lib/mongodb', () => ({
 	connectToDatabase: vi.fn().mockResolvedValue({}),
 }));
 
+// Mock database connection
+vi.mock('@/middleware/database', () => ({
+	default: vi.fn().mockResolvedValue({}),
+}));
+
 // Mock User model
 vi.mock('@/models/User', () => ({
 	User: {

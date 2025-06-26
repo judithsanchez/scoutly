@@ -1,10 +1,8 @@
-import {MongoDBAdapter} from '@next-auth/mongodb-adapter';
 import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import clientPromise from '@/lib/mongodb';
 import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
-import {connectToDatabase} from '@/lib/mongodb';
+import dbConnect from '@/middleware/database';
 
 /**
  * Production auth configuration
@@ -16,7 +14,6 @@ import {connectToDatabase} from '@/lib/mongodb';
  * - Strict profile completion checks
  */
 export const productionAuthOptions: NextAuthOptions = {
-	adapter: MongoDBAdapter(clientPromise),
 	providers: [
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -26,7 +23,7 @@ export const productionAuthOptions: NextAuthOptions = {
 	callbacks: {
 		async signIn({user, account, profile}) {
 			try {
-				await connectToDatabase();
+				await dbConnect();
 
 				if (!user.email) {
 					console.log('Sign-in rejected: No email provided');
@@ -53,9 +50,14 @@ export const productionAuthOptions: NextAuthOptions = {
 			}
 		},
 		async session({session, user}) {
+			console.log('🔍 Session callback started:', {
+				sessionUser: session.user?.email,
+				user: user?.email,
+			});
+			
 			if (session.user?.email) {
 				try {
-					await connectToDatabase();
+					await dbConnect();
 
 					// Get user data
 					const userData = await User.findOne({
@@ -92,10 +94,17 @@ export const productionAuthOptions: NextAuthOptions = {
 			return session;
 		},
 		async jwt({token, user, account}) {
+			console.log('🔍 JWT callback started:', {
+				tokenEmail: token.email,
+				userEmail: user?.email,
+				accountProvider: account?.provider,
+				accountType: account?.type,
+			});
+			
 			// Persist admin status and profile completion in JWT
 			if (user?.email) {
 				try {
-					await connectToDatabase();
+					await dbConnect();
 
 					const userData = await User.findOne({
 						email: user.email.toLowerCase(),

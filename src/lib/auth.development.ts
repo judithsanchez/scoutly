@@ -1,10 +1,8 @@
-import {MongoDBAdapter} from '@next-auth/mongodb-adapter';
 import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import clientPromise from '@/lib/mongodb';
 import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
-import {connectToDatabase} from '@/lib/mongodb';
+import dbConnect from '@/middleware/database';
 
 /**
  * Development-only auth configuration
@@ -18,7 +16,6 @@ import {connectToDatabase} from '@/lib/mongodb';
  * WARNING: This should NEVER be used in production
  */
 export const developmentAuthOptions: NextAuthOptions = {
-	adapter: MongoDBAdapter(clientPromise),
 	providers: [
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -28,7 +25,7 @@ export const developmentAuthOptions: NextAuthOptions = {
 	callbacks: {
 		async signIn({user, account, profile}) {
 			try {
-				await connectToDatabase();
+				await dbConnect();
 
 				if (!user.email) {
 					console.log('Dev Auth: No email provided, rejecting');
@@ -69,7 +66,7 @@ export const developmentAuthOptions: NextAuthOptions = {
 		async session({session, user}) {
 			if (session.user?.email) {
 				try {
-					await connectToDatabase();
+					await dbConnect();
 
 					// Get user data
 					const userData = await User.findOne({
@@ -109,7 +106,7 @@ export const developmentAuthOptions: NextAuthOptions = {
 			// Persist admin status and profile completion in JWT
 			if (user?.email) {
 				try {
-					await connectToDatabase();
+					await dbConnect();
 
 					const userData = await User.findOne({
 						email: user.email.toLowerCase(),
