@@ -2,6 +2,7 @@
 
 import React, {useState} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
+import {useAuth} from '@/contexts/AuthContext';
 import {
 	PAGE_CONTENT_CONTAINER,
 	PAGE_BACKGROUND_CONTAINER,
@@ -21,13 +22,11 @@ import {
 } from '@/components/profile/ProfileComponents';
 
 import {Language} from '@/components/form/types';
-import {DEFAULT_USER_EMAIL} from '@/constants';
 
 export default function ProfilePage() {
-	const authInfo = {
-		gmail: DEFAULT_USER_EMAIL,
-	};
+	const {user, isLoading, isAuthenticated} = useAuth();
 
+	// All hooks must be called first (Rules of Hooks)
 	const [cvUrl, setCvUrl] = useState('');
 	const [logistics, setLogistics] = useState({
 		currentResidence: {
@@ -65,6 +64,32 @@ export default function ProfilePage() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+	// Show loading state while auth is being determined
+	if (isLoading) {
+		return (
+			<div className={PAGE_BACKGROUND_CONTAINER}>
+				<div className={PAGE_BACKGROUND_GLOW} />
+				<main className={PAGE_CONTENT_CONTAINER}>
+					<div className="text-slate-400">Loading...</div>
+				</main>
+			</div>
+		);
+	}
+
+	// Redirect to signin if not authenticated
+	if (!isAuthenticated || !user?.email) {
+		return (
+			<div className={PAGE_BACKGROUND_CONTAINER}>
+				<div className={PAGE_BACKGROUND_GLOW} />
+				<main className={PAGE_CONTENT_CONTAINER}>
+					<div className="text-red-400">
+						Please sign in to access your profile.
+					</div>
+				</main>
+			</div>
+		);
+	}
+
 	const handleSaveProfile = async () => {
 		setIsSaving(true);
 		setSaveMessage(null);
@@ -92,7 +117,7 @@ export default function ProfilePage() {
 				/>
 
 				<AuthInfoSection
-					email={authInfo.gmail}
+					email={user.email}
 					onSave={handleSaveProfile}
 					isSaving={isSaving}
 					saveMessage={saveMessage}

@@ -6,6 +6,7 @@ import SavedJobCard from '@/components/SavedJobCard';
 import ApplicationPipeline from '@/components/ApplicationPipeline';
 import StartScoutButton from '@/components/StartScoutButton';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
+import {useAuth} from '@/contexts/AuthContext';
 import config from '@/config/appConfig';
 import {createLogger} from '@/utils/frontendLogger';
 import {
@@ -27,16 +28,9 @@ import {
 } from '@/constants/styles';
 
 export default function DashboardPage() {
-	const authInfo = {
-		gmail: 'judithv.sanchezc@gmail.com',
-	};
+	const {user, isLoading, isAuthenticated} = useAuth();
 
-	// Initialize logger with user context (memoized to prevent recreations)
-	const logger = useMemo(
-		() => createLogger('Dashboard', authInfo.gmail),
-		[authInfo.gmail],
-	);
-
+	// All hooks must be called first (Rules of Hooks)
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -46,25 +40,127 @@ export default function DashboardPage() {
 		totalJobs: number;
 	} | null>(null);
 
+	// Initialize logger with user context (memoized to prevent recreations)
+	const logger = useMemo(
+		() => (user?.email ? createLogger('Dashboard', user.email) : null),
+		[user?.email],
+	);
+
+	const fetchSavedJobs = async () => {
+		if (!user?.email) return;
+
+		try {
+			logger?.info('Starting to fetch saved jobs', {userEmail: user.email});
+			setIsLoadingJobs(true);
+
+			const url = `/api/jobs/saved?gmail=${encodeURIComponent(user.email)}`;
+			logger?.logApiRequest(url, 'GET');
+
+			const response = await fetch(url);
+			const data = await response.json();
+
+			logger?.logApiResponse(url, response.status, data);
+
+			if (!response.ok) {
+				const errorMessage = data.error || 'Failed to fetch saved jobs';
+				logger?.logApiError(url, new Error(errorMessage));
+				throw new Error(errorMessage);
+			}
+
+			// Sort jobs by status priority and suitability score
+			const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
+				// First compare by status priority
+				const statusDiff =
+					statusPriority[a.status as ApplicationStatus] -
+					statusPriority[b.status as ApplicationStatus];
+				if (statusDiff !== 0) return -statusDiff;
+
+				// If status is the same, sort by suitability score (highest first)
+				return b.suitabilityScore - a.suitabilityScore;
+			});
+
+			setSavedJobs(sortedJobs);
+			logger?.info('Successfully fetched and sorted saved jobs', {
+				jobCount: sortedJobs.length,
+				userEmail: user.email,
+			});
+		} catch (err: any) {
+			const errorMessage =
+				err.message || 'Unknown error occurred while fetching saved jobs';
+			logger?.error('Error fetching saved jobs', {
+				error: errorMessage,
+				stack: err.stack,
+				userEmail: user.email,
+			});
+			logger?.error('Failed to fetch saved jobs', {error: err});
+		} finally {
+			setIsLoadingJobs(false);
+			logger?.debug(
+				'Finished fetching saved jobs (loading state set to false)',
+			);
+		}
+	};
+
+	// All effects must be called before any early returns
+	useEffect(() => {
+		if (user?.email && logger) {
+			logger.logComponentMount('DashboardPage', {userEmail: user.email});
+			fetchSavedJobs();
+		}
+
+		return () => {
+			if (logger) {
+				logger.logComponentUnmount('DashboardPage');
+			}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [user?.email]);
+
+	// Show loading state while auth is being determined
+	if (isLoading) {
+		return (
+			<div className={PAGE_BACKGROUND_CONTAINER}>
+				<div className={PAGE_BACKGROUND_GLOW}></div>
+				<main className={PAGE_CONTENT_CONTAINER}>
+					<div className="text-slate-400">Loading...</div>
+				</main>
+			</div>
+		);
+	}
+
+	// Redirect to signin if not authenticated
+	if (!isAuthenticated || !user?.email) {
+		return (
+			<div className={PAGE_BACKGROUND_CONTAINER}>
+				<div className={PAGE_BACKGROUND_GLOW}></div>
+				<main className={PAGE_CONTENT_CONTAINER}>
+					<div className="text-red-400">
+						Please sign in to access the dashboard.
+					</div>
+				</main>
+			</div>
+		);
+	}
+
 	const handleStatusChange = async (
 		jobId: string,
 		status: ApplicationStatus,
 	) => {
 		try {
-			logger.logUserAction('Changed job status', {
+			logger?.logUserAction('Changed job status', {
 				jobId,
 				newStatus: status,
-				userEmail: authInfo.gmail,
+				userEmail: user.email,
 			});
 
 			const url = '/api/jobs/saved/status';
 			const requestBody = {
 				jobId,
 				status,
-				gmail: authInfo.gmail,
+				gmail: user.email,
 			};
 
-			logger.logApiRequest(url, 'PATCH', requestBody);
+			logger?.logApiRequest(url, 'PATCH', requestBody);
 
 			const response = await fetch(url, {
 				method: 'PATCH',
@@ -74,22 +170,22 @@ export default function DashboardPage() {
 				body: JSON.stringify(requestBody),
 			});
 
-			logger.logApiResponse(url, response.status);
+			logger?.logApiResponse(url, response.status);
 
 			if (!response.ok) {
 				const data = await response.json();
 				const errorMessage = data.error || 'Failed to update job status';
-				logger.logApiError(url, new Error(errorMessage));
+				logger?.logApiError(url, new Error(errorMessage));
 				throw new Error(errorMessage);
 			}
 
 			const updatedJob = await response.json();
 
-			logger.info('Job status updated successfully', {
+			logger?.info('Job status updated successfully', {
 				jobId,
 				newStatus: status,
 				updatedJob,
-				userEmail: authInfo.gmail,
+				userEmail: user.email,
 			});
 
 			// Update jobs list with new status and resort
@@ -113,68 +209,16 @@ export default function DashboardPage() {
 		} catch (err: any) {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Failed to update job status';
-
-			logger.error('Error updating job status', {
+			logger?.error('Error updating job status', {
 				error: errorMessage,
 				stack: err?.stack,
 				jobId,
 				status,
-				userEmail: authInfo.gmail,
+				userEmail: user.email,
 			});
 
 			setError(errorMessage);
-			logger.error('Failed to update job status', {error: err, jobId, status});
-		}
-	};
-
-	const fetchSavedJobs = async () => {
-		try {
-			logger.info('Starting to fetch saved jobs', {userEmail: authInfo.gmail});
-			setIsLoadingJobs(true);
-
-			const url = `/api/jobs/saved?gmail=${encodeURIComponent(authInfo.gmail)}`;
-			logger.logApiRequest(url, 'GET');
-
-			const response = await fetch(url);
-			const data = await response.json();
-
-			logger.logApiResponse(url, response.status, data);
-
-			if (!response.ok) {
-				const errorMessage = data.error || 'Failed to fetch saved jobs';
-				logger.logApiError(url, new Error(errorMessage));
-				throw new Error(errorMessage);
-			}
-
-			// Sort jobs by status priority and suitability score
-			const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
-				// First compare by status priority
-				const statusDiff =
-					statusPriority[a.status as ApplicationStatus] -
-					statusPriority[b.status as ApplicationStatus];
-				if (statusDiff !== 0) return -statusDiff;
-
-				// If status is the same, sort by suitability score (highest first)
-				return b.suitabilityScore - a.suitabilityScore;
-			});
-
-			setSavedJobs(sortedJobs);
-			logger.info('Successfully fetched and sorted saved jobs', {
-				jobCount: sortedJobs.length,
-				userEmail: authInfo.gmail,
-			});
-		} catch (err: any) {
-			const errorMessage =
-				err.message || 'Unknown error occurred while fetching saved jobs';
-			logger.error('Error fetching saved jobs', {
-				error: errorMessage,
-				stack: err.stack,
-				userEmail: authInfo.gmail,
-			});
-			logger.error('Failed to fetch saved jobs', {error: err});
-		} finally {
-			setIsLoadingJobs(false);
-			logger.debug('Finished fetching saved jobs (loading state set to false)');
+			logger?.error('Failed to update job status', {error: err, jobId, status});
 		}
 	};
 
@@ -184,16 +228,6 @@ export default function DashboardPage() {
 			fetchSavedJobs();
 		}
 	};
-
-	useEffect(() => {
-		logger.logComponentMount('DashboardPage', {userEmail: authInfo.gmail});
-		fetchSavedJobs();
-
-		return () => {
-			logger.logComponentUnmount('DashboardPage');
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [authInfo.gmail]);
 
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>
@@ -253,9 +287,7 @@ export default function DashboardPage() {
 							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
 							</h2>
-							<p className="text-purple-400 font-medium mt-1">
-								{authInfo.gmail}
-							</p>
+							<p className="text-purple-400 font-medium mt-1">{user.email}</p>
 						</div>
 						<div className="flex gap-3">
 							<a href="/profile" className={BUTTON_SECONDARY}>
@@ -263,27 +295,27 @@ export default function DashboardPage() {
 							</a>
 							<StartScoutButton
 								onScoutStart={async selectedCompanyIds => {
-									logger.logUserAction('Started job search', {
+									logger?.logUserAction('Started job search', {
 										selectedCompanies: selectedCompanyIds,
-										userEmail: authInfo.gmail,
+										userEmail: user.email,
 									});
 
 									setSearchComplete(null);
 									try {
 										// Step 1: Fetch user profile
-										logger.info('Fetching user profile for job search');
+										logger?.info('Fetching user profile for job search');
 										const userProfileUrl = '/api/users/profile';
-										logger.logApiRequest(userProfileUrl, 'GET');
+										logger?.logApiRequest(userProfileUrl, 'GET');
 
 										const userResponse = await fetch(userProfileUrl);
-										logger.logApiResponse(userProfileUrl, userResponse.status);
+										logger?.logApiResponse(userProfileUrl, userResponse.status);
 
 										if (!userResponse.ok) {
 											const errorText = await userResponse.text();
-											logger.error('Failed to fetch user profile', {
+											logger?.error('Failed to fetch user profile', {
 												status: userResponse.status,
 												response: errorText,
-												userEmail: authInfo.gmail,
+												userEmail: user.email,
 											});
 											throw new Error(
 												`Failed to fetch user profile. Status: ${userResponse.status}`,
@@ -291,10 +323,10 @@ export default function DashboardPage() {
 										}
 										const userData = await userResponse.json();
 
-										logger.info('User profile fetched successfully', {
+										logger?.info('User profile fetched successfully', {
 											hasCvUrl: !!userData.cvUrl,
 											hasCandidateInfo: !!userData.candidateInfo,
-											userEmail: authInfo.gmail,
+											userEmail: user.email,
 										});
 
 										// Step 2: Validate user profile completeness
@@ -307,9 +339,9 @@ export default function DashboardPage() {
 										}
 
 										if (missingFields.length > 0) {
-											logger.warn('User profile incomplete', {
+											logger?.warn('User profile incomplete', {
 												missingFields,
-												userEmail: authInfo.gmail,
+												userEmail: user.email,
 											});
 											throw new Error(
 												`Please complete your profile first. Missing: ${missingFields.join(
@@ -321,21 +353,21 @@ export default function DashboardPage() {
 										// Step 3: Prepare and send job search request
 										const requestBody = {
 											credentials: {
-												gmail: authInfo.gmail,
+												gmail: user.email,
 											},
 											companyIds: selectedCompanyIds,
 											cvUrl: userData.cvUrl,
 											candidateInfo: userData.candidateInfo,
 										};
 
-										logger.info('Sending job search request', {
+										logger?.info('Sending job search request', {
 											companyCount: selectedCompanyIds.length,
 											companies: selectedCompanyIds,
-											userEmail: authInfo.gmail,
+											userEmail: user.email,
 										});
 
 										const jobSearchUrl = '/api/jobs';
-										logger.logApiRequest(jobSearchUrl, 'POST', requestBody);
+										logger?.logApiRequest(jobSearchUrl, 'POST', requestBody);
 
 										const searchResponse = await fetch(jobSearchUrl, {
 											method: 'POST',
@@ -345,12 +377,12 @@ export default function DashboardPage() {
 											body: JSON.stringify(requestBody),
 										});
 
-										logger.logApiResponse(jobSearchUrl, searchResponse.status);
+										logger?.logApiResponse(jobSearchUrl, searchResponse.status);
 
 										if (!searchResponse.ok) {
 											const errorData = await searchResponse.json();
 
-											logger.error('Job search request failed', {
+											logger?.error('Job search request failed', {
 												status: searchResponse.status,
 												errorData,
 												requestBody: {
@@ -360,7 +392,7 @@ export default function DashboardPage() {
 														? '[PRESENT]'
 														: '[MISSING]',
 												},
-												userEmail: authInfo.gmail,
+												userEmail: user.email,
 											});
 
 											// Enhanced error message handling for better UX
@@ -385,9 +417,9 @@ export default function DashboardPage() {
 
 										const searchData = await searchResponse.json();
 
-										logger.info('Job search completed successfully', {
+										logger?.info('Job search completed successfully', {
 											searchData,
-											userEmail: authInfo.gmail,
+											userEmail: user.email,
 										});
 
 										const totalJobs = searchData.results.reduce(
@@ -399,13 +431,13 @@ export default function DashboardPage() {
 											0,
 										);
 
-										logger.info('Job search results processed', {
+										logger?.info('Job search results processed', {
 											totalJobs,
 											processedCompanies: searchData.results.filter(
 												(r: any) => r.processed,
 											).length,
 											totalCompanies: searchData.results.length,
-											userEmail: authInfo.gmail,
+											userEmail: user.email,
 										});
 
 										handleSearchComplete(true, totalJobs);
@@ -414,14 +446,14 @@ export default function DashboardPage() {
 											err?.message ||
 											'An unexpected error occurred while searching for jobs';
 
-										logger.error('Job search failed', {
+										logger?.error('Job search failed', {
 											error: catchErrorMessage,
 											stack: err?.stack,
-											userEmail: authInfo.gmail,
+											userEmail: user.email,
 											selectedCompanies: selectedCompanyIds,
 										});
 
-										logger.error('Failed to start scout', {error: err});
+										logger?.error('Failed to start scout', {error: err});
 
 										// Store the error message for user feedback
 										const errorMessage =
@@ -430,7 +462,7 @@ export default function DashboardPage() {
 
 										// You can enhance this by setting error state if you want to show specific error messages to users
 										// For now, we'll log the detailed error and show the search as incomplete
-										logger.error('Detailed scout error info', {
+										logger?.error('Detailed scout error info', {
 											message: errorMessage,
 											stack: err?.stack,
 											timestamp: new Date().toISOString(),

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import {signOut} from 'next-auth/react';
 import {FLEX_BETWEEN, TEXT_PRIMARY, TEXT_SECONDARY} from '@/constants/styles';
 
 /**
@@ -67,6 +68,18 @@ export function AuthInfoSection({
 		'px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 	const primaryButtonClasses = `${buttonClasses} bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] shadow-md`;
 	const secondaryButtonClasses = `${buttonClasses} bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover-bg)] text-[var(--btn-secondary-text)]`;
+	const dangerButtonClasses = `${buttonClasses} bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-800 shadow-md`;
+
+	const handleLogout = async () => {
+		try {
+			await signOut({
+				callbackUrl: '/', // Redirect to homepage after logout
+				redirect: true,
+			});
+		} catch (error) {
+			console.error('Logout error:', error);
+		}
+	};
 
 	return (
 		<div className="mb-8 p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)]">
@@ -88,6 +101,13 @@ export function AuthInfoSection({
 					<a href="/dashboard" className={secondaryButtonClasses}>
 						Back to Dashboard
 					</a>
+					<button
+						onClick={handleLogout}
+						className={dangerButtonClasses}
+						title="Sign out and return to homepage"
+					>
+						Logout
+					</button>
 				</div>
 			</div>
 			{saveMessage && (
