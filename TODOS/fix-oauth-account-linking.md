@@ -11,6 +11,7 @@ The current authentication system has a **hybrid approach** causing `OAuthAccoun
 ## Root Cause Analysis ✅
 
 ### Current Flow (BROKEN):
+
 1. User clicks "Sign in with Google"
 2. Google OAuth succeeds
 3. NextAuth tries to link Google account in `accounts` collection
@@ -19,6 +20,7 @@ The current authentication system has a **hybrid approach** causing `OAuthAccoun
 6. **Mismatch causes `OAuthAccountNotLinked` error**
 
 ### Logs Evidence:
+
 ```
 Dev Auth: User judithv.sanchezc@gmail.com signed in successfully
 OAuthAccountNotLinked error at callback
@@ -31,34 +33,40 @@ OAuthAccountNotLinked error at callback
 **Keep the existing pre-approval system but fix the OAuth linking:**
 
 1. **Remove NextAuth MongoDB Adapter** (eliminate dual user systems)
-2. **Use JWT sessions** instead of database sessions  
+2. **Use JWT sessions** instead of database sessions
 3. **Custom NextAuth callbacks** handle user lookup in our `User` collection
 4. **Preserve all existing functionality**: admin dashboard, user management, profile system
 
 ### Benefits:
+
 - ✅ Fixes OAuth linking issue
 - ✅ Preserves existing pre-approval system
 - ✅ Keeps admin dashboard working
 - ✅ Maintains all current user management features
 - ✅ Simplifies authentication flow
+- ✅ All user identity is now session-based (from NextAuth), not environment-based. This ensures correct OAuth/account linking and robust authentication in all environments.
 
 ## Implementation Plan
 
 ### Phase 1: Remove NextAuth Adapter ✅
+
 - [ ] Remove `MongoDBAdapter` from auth configuration
 - [ ] Switch to JWT session strategy
 - [ ] Update auth callbacks to use custom User model
 
 ### Phase 2: Update Auth Callbacks ✅
+
 - [ ] Modify `signIn` callback to check custom User collection
 - [ ] Update `jwt` callback to include user data
 - [ ] Update `session` callback to enrich session with profile data
 
 ### Phase 3: Clean Up Collections ✅
+
 - [ ] Remove unused NextAuth collections (`accounts`, `sessions`, `verification_tokens`)
 - [ ] Keep custom collections (`users`, `adminusers`, `usercompanypreferences`)
 
 ### Phase 4: Test & Validate ✅
+
 - [ ] Test Google OAuth sign-in flow
 - [ ] Verify pre-approval system still works
 - [ ] Test admin dashboard functionality
@@ -67,6 +75,7 @@ OAuthAccountNotLinked error at callback
 ## Technical Requirements
 
 ### Environment Variables (No Changes)
+
 ```bash
 # Keep existing configuration
 NEXT_PUBLIC_USE_DEV_AUTH=true  # For development
@@ -77,10 +86,12 @@ NEXTAUTH_URL=http://localhost:3000
 ```
 
 ### Database Changes
+
 - **Keep**: `users`, `adminusers`, `usercompanypreferences` collections
 - **Remove**: `accounts`, `sessions`, `verification_tokens` collections (NextAuth managed)
 
 ### Code Changes
+
 - **Update**: `src/lib/auth.development.ts` and `src/lib/auth.production.ts`
 - **Remove**: MongoDB adapter references
 - **Add**: JWT session handling
@@ -89,6 +100,7 @@ NEXTAUTH_URL=http://localhost:3000
 ## Success Criteria
 
 ### Functional Requirements ✅
+
 1. Google OAuth sign-in works without `OAuthAccountNotLinked` error
 2. Pre-approval system continues to work (only approved emails can sign in)
 3. Admin dashboard remains functional
@@ -96,6 +108,7 @@ NEXTAUTH_URL=http://localhost:3000
 5. Job scouting features work with proper authentication
 
 ### Technical Requirements ✅
+
 1. No dual user collection conflicts
 2. Clean authentication flow
 3. Proper session management
@@ -105,11 +118,13 @@ NEXTAUTH_URL=http://localhost:3000
 ## Testing Strategy
 
 ### Development Testing
+
 - [ ] Test auto-approval with any Google account
 - [ ] Verify user auto-creation works
 - [ ] Test admin dashboard access
 
-### Production Mode Testing  
+### Production Mode Testing
+
 - [ ] Test pre-approval requirement
 - [ ] Verify rejected users get proper error
 - [ ] Test admin user management
@@ -117,11 +132,13 @@ NEXTAUTH_URL=http://localhost:3000
 ## Risk Mitigation
 
 ### Backup Plan
+
 - Keep existing auth files as backup before changes
 - Test in development first
 - Validate each phase before proceeding
 
 ### Rollback Strategy
+
 - Restore original auth configuration if needed
 - MongoDB collections remain unchanged (safe)
 - Environment variables stay the same
@@ -129,28 +146,32 @@ NEXTAUTH_URL=http://localhost:3000
 ## Dependencies
 
 ### Current Stack (Keep)
+
 - NextAuth.js
 - MongoDB/Mongoose
 - Custom User/AdminUser models
 - Google OAuth provider
 
 ### Remove
+
 - MongoDB adapter for NextAuth
 - Database session storage
 
 ## Timeline
 
 **Estimated: 1-2 hours**
+
 - Phase 1: 30 minutes
-- Phase 2: 45 minutes  
+- Phase 2: 45 minutes
 - Phase 3: 15 minutes
 - Phase 4: 30 minutes
 
 ## Implementation Notes
 
 This approach maintains **100% compatibility** with your existing:
+
 - Pre-approval system
-- Admin dashboard  
+- Admin dashboard
 - User management
 - Profile completion flow
 - Job scouting features

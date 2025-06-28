@@ -142,3 +142,5 @@ Rebuild: docker-compose build
 Start: docker-compose up -d
 
 Once started, you can use the monitoring commands from Step 2.3 to see your new automated system in action!
+
+All user identity is now session-based (from NextAuth), not environment-based.

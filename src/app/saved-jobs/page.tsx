@@ -1,9 +1,9 @@
 'use client';
 
 import {useEffect, useState, useMemo} from 'react';
+import {useAuth} from '@/contexts/AuthContext';
 import SavedJobCard from '@/components/SavedJobCard';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
-import {DEFAULT_USER_EMAIL} from '@/constants/common';
 import {API_ENDPOINTS} from '@/constants/config';
 import {API_CONFIG, API_ERRORS} from '@/constants/api';
 import {createLogger} from '@/utils/frontendLogger';
@@ -16,6 +16,8 @@ import {
 } from '@/constants/styles';
 
 export default function SavedJobsPage() {
+	const {user, isLoading: authLoading, isAuthenticated} = useAuth();
+
 	interface SavedJobResponse {
 		jobs: ISavedJob[];
 		total: number;
@@ -27,22 +29,19 @@ export default function SavedJobsPage() {
 
 	// Use useMemo to prevent logger recreation on every render
 	const logger = useMemo(
-		() => createLogger('SavedJobsPage', DEFAULT_USER_EMAIL),
-		[],
+		() => createLogger('SavedJobsPage', user?.email || 'unknown'),
+		[user?.email],
 	);
 
 	const handleStatusChange = async (
 		jobId: string,
 		status: ApplicationStatus,
 	) => {
+		if (!user?.email) {
+			setError('No authenticated user. Please sign in.');
+			return;
+		}
 		try {
-			if (!DEFAULT_USER_EMAIL) {
-				setError(
-					'No user email configured. Please set NEXT_PUBLIC_DEV_USER_EMAIL in your .env.local file',
-				);
-				return;
-			}
-
 			const response = await fetch(API_ENDPOINTS.SAVED_JOB_STATUS, {
 				method: 'PATCH',
 				headers: {
@@ -51,7 +50,7 @@ export default function SavedJobsPage() {
 				body: JSON.stringify({
 					jobId,
 					status,
-					gmail: DEFAULT_USER_EMAIL,
+					gmail: user.email,
 				}),
 			});
 
@@ -86,20 +85,17 @@ export default function SavedJobsPage() {
 
 	useEffect(() => {
 		async function fetchSavedJobs() {
+			if (!user?.email) {
+				setError('No authenticated user. Please sign in.');
+				setIsLoading(false);
+				return;
+			}
 			try {
-				if (!DEFAULT_USER_EMAIL) {
-					setError(
-						'No user email configured. Please set NEXT_PUBLIC_DEV_USER_EMAIL in your .env.local file',
-					);
-					setIsLoading(false);
-					return;
-				}
-
-				logger.info('Fetching saved jobs', {email: DEFAULT_USER_EMAIL});
+				logger.info('Fetching saved jobs', {email: user.email});
 				const response = await fetch(
 					`${API_ENDPOINTS.SAVED_JOBS}?${
 						API_CONFIG.QUERY_PARAMS.EMAIL
-					}=${encodeURIComponent(DEFAULT_USER_EMAIL)}`,
+					}=${encodeURIComponent(user.email)}`,
 				);
 
 				const data = await response.json();
@@ -127,9 +123,35 @@ export default function SavedJobsPage() {
 				setIsLoading(false);
 			}
 		}
+		if (isAuthenticated && user?.email) {
+			fetchSavedJobs();
+		}
+		// Only run when user changes
+	}, [user?.email, isAuthenticated, logger]);
 
-		fetchSavedJobs();
-	}, [logger]); // Logger is now stable due to useMemo
+	if (authLoading) {
+		return (
+			<div className={PAGE_BACKGROUND_CONTAINER}>
+				<div className={PAGE_BACKGROUND_GLOW}></div>
+				<main className={PAGE_CONTENT_CONTAINER}>
+					<div className="text-slate-400">Loading authentication...</div>
+				</main>
+			</div>
+		);
+	}
+
+	if (!isAuthenticated || !user?.email) {
+		return (
+			<div className={PAGE_BACKGROUND_CONTAINER}>
+				<div className={PAGE_BACKGROUND_GLOW}></div>
+				<main className={PAGE_CONTENT_CONTAINER}>
+					<div className="text-red-400">
+						Please sign in to view your saved jobs.
+					</div>
+				</main>
+			</div>
+		);
+	}
 
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>

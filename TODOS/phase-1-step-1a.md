@@ -230,3 +230,7 @@ The system is robust and ready for the scheduling logic of Phase 2.
 - `src/app/api/users/profile/route.ts` - Updated to use new model
 
 **Ready for Phase 1, Step 1b** ✨
+
+---
+
+All user identity is now session-based (from NextAuth), not environment-based.

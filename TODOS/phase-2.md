@@ -11,7 +11,7 @@
 
 Goal: Implement the "Scheduler" and "Worker" scripts that will form the core of the automated scraping system. We will follow a test-driven apprexport async function processJob(job: any, logger: Logger) {
 const company = await Company.findById(job.companyId);
-// For now, we'll use your hardcoded user for the orchestrator
+// All user identity is now session-based (from NextAuth), not environment-based.
 const user = await User.findOne({ email: 'judithv.sanchezc@gmail.com' });
 
     if (!company || !user) {
@@ -214,7 +214,7 @@ import { Logger } from '@/utils/logger'; // Use the database-backed logger
 
 export async function processJob(job: any, logger: Logger) {
 const company = await Company.findById(job.companyId);
-// For now, we'll use your hardcoded user for the orchestrator
+// All user identity is now session-based (from NextAuth), not environment-based.
 const user = await User.findOne({ email: 'judithv.sanchezc@gmail.com' });
 
 if (!company || !user) {

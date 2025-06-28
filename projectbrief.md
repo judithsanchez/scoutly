@@ -205,3 +205,7 @@ Request body:
 - **Simplified Debugging**: Direct execution path easier to trace
 - **Reduced Resource Usage**: No background workers needed
 - **Better Reliability**: Fewer moving parts, more predictable behavior
+
+- All user identity is now session-based (from NextAuth), not environment-based. This ensures robust, secure, and production-ready authentication.
+
+**Note**: Only real authentication is supported. Dev auth mode is not available.

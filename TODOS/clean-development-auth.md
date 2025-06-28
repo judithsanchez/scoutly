@@ -57,7 +57,7 @@ NEXT_PUBLIC_USE_DEV_AUTH=true
 ### Removed Legacy Components ✅
 
 - ❌ `NEXT_PUBLIC_SKIP_AUTH` → Replaced with `NEXT_PUBLIC_USE_DEV_AUTH`
-- ❌ `NEXT_PUBLIC_DEV_USER_EMAIL` → Auto-generated from Google OAuth
+- ❌ `NEXT_PUBLIC_DEV_USER_EMAIL` → Fully removed. All user identity is now session-based from NextAuth.
 - ❌ `NEXT_PUBLIC_DEV_USER_NAME` → Auto-generated from Google OAuth
 - ❌ Skip-auth checks in `middleware.ts` → Clean middleware
 - ❌ Development bypass in `AuthContext.tsx` → Standard auth context
@@ -78,3 +78,5 @@ Tests  3 passed (3)
 ## Final Status: COMPLETE ✅
 
 This approach successfully follows Next.js and NextAuth.js best practices for development environments with complete separation of concerns and zero production security risks.
+
+# Dev auth mode is fully removed. Only real authentication is supported.

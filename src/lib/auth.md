@@ -10,7 +10,6 @@ The authentication system has been refactored to use a clean, environment-based 
 
 The main `auth.ts` file uses a factory pattern to select the appropriate authentication provider based on the `NEXT_PUBLIC_USE_DEV_AUTH` environment variable:
 
-- **Development Mode** (`NEXT_PUBLIC_USE_DEV_AUTH=true`): Uses `auth.development.ts` - auto-approves any Google sign-in and auto-creates users with mock data
 - **Production Mode** (`NEXT_PUBLIC_USE_DEV_AUTH=false`): Uses `auth.production.ts` - requires pre-approved users in the database
 
 ### File Structure
@@ -27,29 +26,12 @@ src/lib/
 
 ## Environment Configuration
 
-### Development Setup
-
-```env
-# Enable development auth (auto-approve any Google sign-in)
-NEXT_PUBLIC_USE_DEV_AUTH=true
-```
-
 ### Production Setup
 
 ```env
 # Require pre-approved users (default/recommended)
 NEXT_PUBLIC_USE_DEV_AUTH=false
 ```
-
-## Development Authentication Features
-
-When `NEXT_PUBLIC_USE_DEV_AUTH=true`:
-
-- ✅ Auto-approves any Google OAuth sign-in
-- ✅ Auto-creates user records in the database
-- ✅ Provides mock development data for testing
-- ✅ Logs authentication actions for debugging
-- ⚠️ **NEVER enable in production**
 
 ## Production Authentication Features
 
@@ -88,7 +70,7 @@ docker-compose exec app npm test -- src/lib/__tests__/auth
 ### Removed Environment Variables
 
 - ❌ `NEXT_PUBLIC_SKIP_AUTH` (replaced with `NEXT_PUBLIC_USE_DEV_AUTH`)
-- ❌ `NEXT_PUBLIC_DEV_USER_EMAIL` (now auto-generated from Google OAuth)
+- ❌ `NEXT_PUBLIC_DEV_USER_EMAIL` (removed, user identity is always session-based)
 - ❌ `NEXT_PUBLIC_DEV_USER_NAME` (now auto-generated from Google OAuth)
 
 ### Removed Bypass Logic

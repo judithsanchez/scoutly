@@ -4,7 +4,7 @@ This directory contains shared constants used throughout the application. The go
 
 ## File Structure
 
-- **common.ts** - Common values like default user email, company rankings, etc.
+- **common.ts** - Common values like company rankings, etc.
 - **styles.ts** - Styling class names and tailwind combinations for consistent UI
 - **applicationStatus.ts** - Constants related to application status values and display
 - **config.ts** - Application configuration including API endpoints, routes, and feature flags
@@ -16,11 +16,10 @@ Import constants from the central location:
 
 ```typescript
 // Import specific constants
-import {DEFAULT_USER_EMAIL} from '@/constants/common';
 import {HEADING_LG, FLEX_COL} from '@/constants/styles';
 
 // Or import everything via the index file
-import {DEFAULT_USER_EMAIL, HEADING_LG} from '@/constants';
+import {HEADING_LG} from '@/constants';
 ```
 
 ## Environment Variables
@@ -29,7 +28,6 @@ Some constants rely on environment variables. For client-side access in Next.js,
 
 1. Use `NEXT_PUBLIC_` prefix for any variable that needs to be accessed in browser/client components
 2. Add variables to `.env.local` for local development (never commit to version control)
-3. Example: `NEXT_PUBLIC_DEV_USER_EMAIL=dev@scoutly.app`
 
 ## Adding New Constants
 
@@ -47,3 +45,5 @@ When adding new constants:
 - Use descriptive names that explain the purpose of the constant
 - Group related constants together
 - Provide fallback values for environment-dependent constants
+
+// All references to DEFAULT_USER_EMAIL have been removed. User identity is always session-based.

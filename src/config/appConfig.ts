@@ -5,12 +5,6 @@
  * These values can be overridden by setting environment variables in .env files
  */
 const config = {
-	// Authentication settings
-	auth: {
-		// Whether to use development auth (auto-approve) instead of production auth (pre-approval required)
-		useDevAuth: process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true',
-	},
-
 	// Application settings
 	app: {
 		// Days until a company can be scraped again
