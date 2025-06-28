@@ -103,8 +103,8 @@ export default function AdminDashboard() {
 		);
 	}
 
-	// Check if user is admin
-	if (!isBootstrapAdmin(session?.user?.email)) {
+	// Check if user is admin (session-based)
+	if (!session?.user?.isAdmin) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<div className="text-center">
