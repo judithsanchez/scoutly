@@ -1,32 +1,40 @@
-# Use Node.js image
-FROM node:20-alpine
+# Use a Debian-based Node.js image for better ARM compatibility
+FROM node:20-bookworm
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including Chromium
-RUN apk add --no-cache \
+# Install system dependencies including Chromium using Debian's package manager
+RUN apt-get update && apt-get install -y \
     chromium \
-    chromium-chromedriver \
     wget \
     python3 \
-    py3-pip \
+    python3-pip \
     g++ \
     make \
-    mupdf-dev \
-    ttf-freefont \
-    fontconfig \
-    xvfb \
-    dbus \
-    mesa-gl \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates
+    libmupdf-dev \
+    # Font and graphics libraries for headless Chromium
+    libnss3 \
+    libnspr4 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libexpat1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libasound2 \
+    # Clean up the cache to keep the image smaller
+    && rm -rf /var/lib/apt/lists/*
+
 
 # Install Python library
-RUN pip3 install PyMuPDF --break-system-packages
+RUN pip3 install PyMuPDF==1.24.1 --break-system-packages
 
 # Install Node.js dependencies first
 COPY package*.json ./
