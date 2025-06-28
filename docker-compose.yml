@@ -38,44 +38,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  mongodb_data:services:
-  mongodb:
-    image: mongo:latest
-    ports:
-      - '27017:27017'
-    volumes:
-      - mongodb_data:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped  # <--- This line is added
-
-  app:
-    build: .
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/app
-      - /app/node_modules
-    env_file:
-      - .env.local
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/scoutly
-      - NODE_ENV=development
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    shm_size: 2gb
-    restart: unless-stopped
-
-volumes:
   mongodb_data:
