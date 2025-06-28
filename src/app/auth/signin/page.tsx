@@ -12,7 +12,12 @@ export default function SignIn() {
 					<p className="text-gray-600">Sign in to continue</p>
 				</div>
 				<Button
-					onClick={() => signIn('google', {callbackUrl: '/dashboard', prompt: 'select_account'})}
+					onClick={() =>
+						signIn('google', {
+							callbackUrl: '/dashboard',
+							prompt: 'select_account',
+						})
+					}
 					className="w-full"
 				>
 					Sign in with Google
