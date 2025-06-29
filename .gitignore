@@ -369,4 +369,5 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,nextjs,macos,linux,windows,react,reactnative
 
-.githubdocker-compose.override.yml
+.docker-compose.override.yml
+docker-compose.override.yml
