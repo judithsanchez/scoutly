@@ -1,21 +1,24 @@
 import {NextResponse} from 'next/server';
-import {exec} from 'child_process';
-import {promisify} from 'util';
-
-const execAsync = promisify(exec);
+import {lookup} from 'dns/promises';
 
 export async function GET() {
 	const hostname = 'db.jobscoutly.tech';
 	const results: Record<string, any> = {};
 
 	try {
-		console.log(`Attempting nslookup for ${hostname}`);
-		const {stdout, stderr} = await execAsync(`nslookup ${hostname}`);
-		results[hostname] = {status: 'success', stdout, stderr};
-		console.log(`nslookup for ${hostname} successful`);
+		console.log(`Attempting dns.lookup for ${hostname}`);
+		const {address, family} = await lookup(hostname);
+		results[hostname] = {status: 'success', address, family};
+		console.log(`dns.lookup for ${hostname} successful:`, {address, family});
 	} catch (error) {
-		results[hostname] = {status: 'error', error: (error as Error).message};
-		console.error(`nslookup for ${hostname} failed`, error);
+		const err = error as NodeJS.ErrnoException;
+		results[hostname] = {
+			status: 'error',
+			code: err.code,
+			message: err.message,
+			hostname: err.hostname,
+		};
+		console.error(`dns.lookup for ${hostname} failed`, err);
 	}
 
 	return NextResponse.json(results);
