@@ -9,7 +9,7 @@ const MONGODB_URI =
 export const connectDB = async () => {
 	try {
 		const options = {
-			serverSelectionTimeoutMS: 15000,
+			serverSelectionTimeoutMS: 30000,
 			connectTimeoutMS: 15000,
 			socketTimeoutMS: 30000,
 			maxPoolSize: 10,

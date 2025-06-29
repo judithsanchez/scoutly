@@ -3,14 +3,20 @@
  * This script adds admin privileges to your existing user record without modifying it
  */
 
-import {connectToDatabase} from '@/lib/mongodb';
-import AdminUser from '@/models/AdminUser';
 import mongoose from 'mongoose';
+import AdminUser from '@/models/AdminUser';
 
 async function promoteExistingUserToAdmin() {
 	try {
 		console.log('Connecting to database...');
-		await connectToDatabase();
+		await mongoose.connect(process.env.MONGODB_URI!, {
+			serverSelectionTimeoutMS: 30000,
+			connectTimeoutMS: 15000,
+			socketTimeoutMS: 30000,
+			maxPoolSize: 10,
+			bufferCommands: true,
+			maxConnecting: 5,
+		});
 
 		// Wait a bit for connection to stabilize
 		await new Promise(resolve => setTimeout(resolve, 1000));
