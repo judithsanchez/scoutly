@@ -16,7 +16,6 @@ export async function GET() {
 			status: 'error',
 			code: err.code,
 			message: err.message,
-			hostname: err.hostname,
 		};
 		console.error(`dns.lookup for ${hostname} failed`, err);
 	}
