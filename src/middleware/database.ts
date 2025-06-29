@@ -38,6 +38,7 @@ async function dbConnect() {
 			connectTimeoutMS: 30000,
 			socketTimeoutMS: 45000,
 			maxPoolSize: 10,
+			family: 4, // Force IPv4
 		};
 
 		logger.info('Connecting to MongoDB...');
