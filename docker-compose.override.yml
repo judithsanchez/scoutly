@@ -1,0 +1,7 @@
+# docker-compose.override.yml (This file is ONLY on your Windows machine)
+
+services:
+  mongodb:
+    # This tells Docker to use a special "do nothing" command for the mongo service,
+    # effectively disabling it without removing it.
+    command: ['echo', 'mongodb service is disabled in override']
