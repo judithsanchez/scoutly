@@ -2,7 +2,7 @@ import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
-import dbConnect from '@/middleware/database';
+import connectToDB from '@/lib/db';
 
 /**
  * Production auth configuration
@@ -23,7 +23,7 @@ export const productionAuthOptions: NextAuthOptions = {
 	callbacks: {
 		async signIn({user, account, profile}) {
 			try {
-				await dbConnect();
+				await connectToDB();
 
 				if (!user.email) {
 					console.log('Sign-in rejected: No email provided');
@@ -54,10 +54,10 @@ export const productionAuthOptions: NextAuthOptions = {
 				sessionUser: session.user?.email,
 				user: user?.email,
 			});
-			
+
 			if (session.user?.email) {
 				try {
-					await dbConnect();
+					await connectToDB();
 
 					// Get user data
 					const userData = await User.findOne({
@@ -100,7 +100,7 @@ export const productionAuthOptions: NextAuthOptions = {
 				accountProvider: account?.provider,
 				accountType: account?.type,
 			});
-			
+
 			// Persist admin status and profile completion in JWT
 			if (user?.email) {
 				try {
