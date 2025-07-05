@@ -1,22 +1,39 @@
 services:
   mongodb:
     image: mongo:latest
-    ports:
-      - '27017:27017'
     volumes:
       - mongodb_data:/data/db
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: |
+        mongosh --eval "
+          try {
+            if (db.getMongo().getDBs().databases.length > 0) {
+              process.exit(0);
+            } else {
+              process.exit(1);
+            }
+          } catch (e) {
+            process.exit(1);
+          }
+        "
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
     restart: unless-stopped
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app
+      - mongodb
+
   app:
     build: .
-    ports:
-      - '3000:3000'
     volumes:
       - .:/app
       - /app/node_modules
