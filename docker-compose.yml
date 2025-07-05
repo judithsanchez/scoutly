@@ -1,6 +1,10 @@
 services:
   mongodb:
     image: mongo:latest
+    command: mongod --bind_ip_all
+    networks:
+      scoutly-net:
+        ipv4_address: 172.20.0.10
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -25,13 +29,20 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: tunnel --no-autoupdate --url http://app:3000 run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel run
     depends_on:
-      app:
-        condition: service_healthy
+      - app
+      - mongodb
+    networks:
+      - scoutly-net
 
   app:
     build: .
+    networks:
+      scoutly-net:
+        ipv4_address: 172.20.0.11
     volumes:
       - .:/app
       - /app/node_modules
@@ -54,3 +65,10 @@ services:
 
 volumes:
   mongodb_data:
+
+networks:
+  scoutly-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
