@@ -67,51 +67,15 @@ export const productionAuthOptions: NextAuthOptions = {
 				return false;
 			}
 		},
-		async session({session, user}) {
+		async session({session, token}) {
 			console.log('🔍 Session callback started:', {
 				sessionUser: session.user?.email,
 			});
 
-			if (session.user?.email) {
-				try {
-					const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
-					if (!internalApiUrl) {
-						console.error('Internal API URL is not configured.');
-						throw new Error('Internal API URL not set');
-					}
-
-					const response = await fetch(
-						`${internalApiUrl}/api/internal/auth/session?email=${encodeURIComponent(
-							session.user.email,
-						)}`,
-						{
-							headers: {
-								'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
-							},
-						},
-					);
-
-					if (!response.ok) {
-						throw new Error(
-							`Internal session API failed with status ${response.status}`,
-						);
-					}
-
-					const sessionData = await response.json();
-
-					session.user = {
-						...session.user,
-						...sessionData,
-					};
-				} catch (error) {
-					console.error('Error enriching session from internal API:', error);
-					// Keep basic session if database error
-					session.user = {
-						...session.user,
-						isAdmin: false,
-						hasCompleteProfile: false,
-					};
-				}
+			if (session.user) {
+				session.user.isAdmin = token.isAdmin as boolean;
+				session.user.hasCompleteProfile = token.hasCompleteProfile as boolean;
+				session.user.cvUrl = token.cvUrl as string | undefined;
 			}
 			return session;
 		},
@@ -124,29 +88,32 @@ export const productionAuthOptions: NextAuthOptions = {
 			});
 
 			// Persist admin status and profile completion in JWT
-			if (user?.email) {
-				try {
-					await connectToDB();
+			if (user || typeof token.hasCompleteProfile === 'undefined') {
+				const email = user?.email || token.email;
+				if (email) {
+					try {
+						await connectToDB();
 
-					const userData = await User.findOne({
-						email: user.email.toLowerCase(),
-					});
+						const userData = await User.findOne({
+							email: email.toLowerCase(),
+						});
 
-					const isAdmin = await AdminUser.findOne({
-						email: user.email.toLowerCase(),
-					});
+						const isAdmin = await AdminUser.findOne({
+							email: email.toLowerCase(),
+						});
 
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
-					);
+						const hasCompleteProfile = !!(
+							userData?.cvUrl && userData?.candidateInfo
+						);
 
-					token.isAdmin = !!isAdmin;
-					token.hasCompleteProfile = hasCompleteProfile;
-					token.cvUrl = userData?.cvUrl;
-				} catch (error) {
-					console.error('Error enriching JWT:', error);
-					token.isAdmin = false;
-					token.hasCompleteProfile = false;
+						token.isAdmin = !!isAdmin;
+						token.hasCompleteProfile = hasCompleteProfile;
+						token.cvUrl = userData?.cvUrl;
+					} catch (error) {
+						console.error('Error enriching JWT:', error);
+						token.isAdmin = false;
+						token.hasCompleteProfile = false;
+					}
 				}
 			}
 			return token;
