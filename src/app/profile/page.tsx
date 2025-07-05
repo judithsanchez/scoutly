@@ -64,6 +64,32 @@ export default function ProfilePage() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+	// Fetch profile data on mount
+	React.useEffect(() => {
+		const fetchProfile = async () => {
+			if (!isAuthenticated || !user?.email) return;
+			try {
+				const res = await fetch('/api/users/profile');
+				if (!res.ok) return;
+				const data = await res.json();
+				if (data.cvUrl) setCvUrl(data.cvUrl);
+				if (data.candidateInfo) {
+					if (data.candidateInfo.logistics)
+						setLogistics(data.candidateInfo.logistics);
+					if (data.candidateInfo.languages)
+						setLanguages(data.candidateInfo.languages);
+					if (data.candidateInfo.preferences)
+						setPreferences(data.candidateInfo.preferences);
+				}
+			} catch (err) {
+				// Optionally handle error
+			}
+		};
+		fetchProfile();
+		// Only run after authentication is confirmed
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isAuthenticated, user?.email]);
+
 	// Show loading state while auth is being determined
 	if (isLoading) {
 		return (
