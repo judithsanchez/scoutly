@@ -11,15 +11,15 @@ This endpoint serves as a vital health check for the Scoutly application, verify
 - **Success Response**: If the database connection and ping are successful, it returns a JSON object with a `200 OK` status.
   ```json
   {
-    "status": "ok",
-    "database": "connected"
+  	"status": "ok",
+  	"database": "connected"
   }
   ```
 - **Error Response**: If the application fails to connect to the database, it returns a `503 Service Unavailable` status with a JSON object indicating the failure.
   ```json
   {
-    "status": "error",
-    "database": "disconnected"
+  	"status": "error",
+  	"database": "disconnected"
   }
   ```
 
