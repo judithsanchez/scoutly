@@ -1,0 +1,6 @@
+ingress:
+  - hostname: api.jobscoutly.tech
+    service: http://app:3000
+  - hostname: db.jobscoutly.tech
+    service: tcp://172.20.0.10:27017
+  - service: http_status:404

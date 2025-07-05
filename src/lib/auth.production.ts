@@ -104,7 +104,7 @@ export const productionAuthOptions: NextAuthOptions = {
 			// Persist admin status and profile completion in JWT
 			if (user?.email) {
 				try {
-					await dbConnect();
+					await connectToDB();
 
 					const userData = await User.findOne({
 						email: user.email.toLowerCase(),
