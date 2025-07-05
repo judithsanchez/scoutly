@@ -81,6 +81,7 @@ const UserSchema = new Schema<IUser>(
 			required: true,
 			lowercase: true,
 			trim: true,
+			index: false,
 		},
 		cvUrl: {
 			type: String,
