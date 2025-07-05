@@ -4,8 +4,7 @@ import {useEffect, useState, useMemo} from 'react';
 import {useAuth} from '@/contexts/AuthContext';
 import SavedJobCard from '@/components/SavedJobCard';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
-import {API_ENDPOINTS} from '@/constants/config';
-import {API_CONFIG, API_ERRORS} from '@/constants/api';
+import apiClient from '@/lib/apiClient'; // Import the new apiClient
 import {createLogger} from '@/utils/frontendLogger';
 import {
 	HEADING_LG,
@@ -42,24 +41,14 @@ export default function SavedJobsPage() {
 			return;
 		}
 		try {
-			const response = await fetch(API_ENDPOINTS.SAVED_JOB_STATUS, {
+			const updatedJob = await apiClient<ISavedJob>('jobs/status', {
 				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-				},
 				body: JSON.stringify({
 					jobId,
 					status,
 					gmail: user.email,
 				}),
 			});
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || 'Failed to update job status');
-			}
-
-			const updatedJob = await response.json();
 
 			setJobs(currentJobs => {
 				const updatedJobs = currentJobs.map(job =>
@@ -76,9 +65,9 @@ export default function SavedJobsPage() {
 				});
 			});
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : 'Failed to update job status',
-			);
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to update job status';
+			setError(errorMessage);
 			logger.error('Failed to update job status', {error: err, jobId, status});
 		}
 	};
@@ -92,44 +81,41 @@ export default function SavedJobsPage() {
 			}
 			try {
 				logger.info('Fetching saved jobs', {email: user.email});
-				const response = await fetch(
-					`${API_ENDPOINTS.SAVED_JOBS}?${
-						API_CONFIG.QUERY_PARAMS.EMAIL
-					}=${encodeURIComponent(user.email)}`,
+				const data = await apiClient<SavedJobResponse>(
+					`jobs/saved?email=${encodeURIComponent(user.email)}`,
 				);
-
-				const data = await response.json();
-				if (!response.ok) {
-					throw new Error(data.error || API_ERRORS.NOT_FOUND);
-				}
-
-				const jobs = data as SavedJobResponse;
-				logger.debug('Fetched saved jobs', {jobCount: jobs.jobs.length, jobs});
-
-				const sortedJobs = jobs.jobs.sort((a, b) => {
+				const sortedJobs = data.jobs.sort((a, b) => {
 					const statusDiff =
 						statusPriority[a.status as ApplicationStatus] -
 						statusPriority[b.status as ApplicationStatus];
-					if (statusDiff !== 0) return -statusDiff;
+					if (statusDiff !== 0) return -statusDiff; // Higher priority first
 
+					// Then sort by suitability score
 					return b.suitabilityScore - a.suitabilityScore;
 				});
 
 				setJobs(sortedJobs);
 			} catch (err) {
-				setError(err instanceof Error ? err.message : 'An error occurred');
+				const errorMessage =
+					err instanceof Error ? err.message : 'An unknown error occurred';
+				setError(errorMessage);
 				logger.error('Failed to fetch saved jobs', {error: err});
 			} finally {
 				setIsLoading(false);
 			}
 		}
-		if (isAuthenticated && user?.email) {
+
+		if (isAuthenticated) {
 			fetchSavedJobs();
 		}
-		// Only run when user changes
-	}, [user?.email, isAuthenticated, logger]);
 
-	if (authLoading) {
+		if (!authLoading && !isAuthenticated) {
+			setError('Please sign in to view your saved jobs.');
+			setIsLoading(false);
+		}
+	}, [user, isAuthenticated, authLoading, logger]);
+
+	if (isLoading || authLoading) {
 		return (
 			<div className={PAGE_BACKGROUND_CONTAINER}>
 				<div className={PAGE_BACKGROUND_GLOW}></div>

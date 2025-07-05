@@ -4,6 +4,9 @@ import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
 import connectToDB from '@/lib/db';
 
+// The apiClient is not used here because this is server-side code.
+// We use fetch directly to communicate with the internal API on the Raspberry Pi.
+
 /**
  * Production auth configuration
  *
@@ -23,69 +26,88 @@ export const productionAuthOptions: NextAuthOptions = {
 	callbacks: {
 		async signIn({user, account, profile}) {
 			try {
-				await connectToDB();
-
 				if (!user.email) {
-					console.log('Sign-in rejected: No email provided');
+					console.log('Sign-in rejected: No email provided by provider');
 					return false;
 				}
 
-				// Check if user exists in our User collection (pre-approved users only)
-				const existingUser = await User.findOne({
-					email: user.email.toLowerCase(),
-				});
-
-				if (!existingUser) {
-					console.log(
-						`Sign-in rejected: User ${user.email} is not pre-approved`,
-					);
+				const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+				if (!internalApiUrl) {
+					console.error('Internal API URL is not configured.');
 					return false;
 				}
 
-				console.log(`Sign-in approved: User ${user.email} found in database`);
-				return true;
+				const response = await fetch(
+					`${internalApiUrl}/api/internal/auth/signin`,
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
+						},
+						body: JSON.stringify({email: user.email}),
+					},
+				);
+
+				if (response.ok) {
+					const data = await response.json();
+					if (data.approved) {
+						console.log(`Sign-in approved for ${user.email} via internal API`);
+						return true;
+					}
+				}
+
+				// If response is not ok or not approved
+				console.log(
+					`Sign-in rejected for ${user.email} by internal API. Status: ${response.status}`,
+				);
+				return false;
 			} catch (error) {
-				console.error('Error during sign-in check:', error);
+				console.error('Error during sign-in API call:', error);
 				return false;
 			}
 		},
 		async session({session, user}) {
 			console.log('🔍 Session callback started:', {
 				sessionUser: session.user?.email,
-				user: user?.email,
 			});
 
 			if (session.user?.email) {
 				try {
-					await connectToDB();
+					const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+					if (!internalApiUrl) {
+						console.error('Internal API URL is not configured.');
+						throw new Error('Internal API URL not set');
+					}
 
-					// Get user data
-					const userData = await User.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					// Check if user is admin
-					const isAdmin = await AdminUser.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					// Check if profile is complete
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
+					const response = await fetch(
+						`${internalApiUrl}/api/internal/auth/session?email=${encodeURIComponent(
+							session.user.email,
+						)}`,
+						{
+							headers: {
+								'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
+							},
+						},
 					);
+
+					if (!response.ok) {
+						throw new Error(
+							`Internal session API failed with status ${response.status}`,
+						);
+					}
+
+					const sessionData = await response.json();
 
 					session.user = {
 						...session.user,
-						email: session.user.email,
-						isAdmin: !!isAdmin,
-						hasCompleteProfile,
-						cvUrl: userData?.cvUrl,
+						...sessionData,
 					};
 				} catch (error) {
-					console.error('Error enriching session:', error);
+					console.error('Error enriching session from internal API:', error);
 					// Keep basic session if database error
 					session.user = {
-						email: session.user.email,
+						...session.user,
 						isAdmin: false,
 						hasCompleteProfile: false,
 					};
