@@ -49,6 +49,8 @@ services:
     networks:
       scoutly-net:
         ipv4_address: 172.20.0.11
+    ports:
+      - '3000:3000'
     volumes:
       - .:/app
       - /app/node_modules
