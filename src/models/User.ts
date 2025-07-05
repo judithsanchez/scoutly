@@ -79,9 +79,9 @@ const UserSchema = new Schema<IUser>(
 		email: {
 			type: String,
 			required: true,
+			unique: true, // Ensure email is unique
 			lowercase: true,
 			trim: true,
-			index: false,
 		},
 		cvUrl: {
 			type: String,
@@ -91,9 +91,12 @@ const UserSchema = new Schema<IUser>(
 	},
 	{
 		timestamps: true,
-		autoIndex: false,
+		autoIndex: true, // Allow Mongoose to build indexes
 	},
 );
+
+// Explicitly create the index to ensure it exists and avoid warnings
+UserSchema.index({email: 1});
 
 // Check if the model exists before compiling it
 export const User =
