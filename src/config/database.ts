@@ -4,7 +4,7 @@ import {Logger} from '@/utils/logger';
 const logger = new Logger('Database');
 
 const MONGODB_URI =
-	process.env.MONGODB_URI || 'mongodb://mongodb:27017/scoutly';
+	process.env.MONGODB_URI || 'mongodb://scoutly_admin:ScoutlySecure2024!@mongodb:27017/scoutly?authSource=admin';
 
 export const connectDB = async () => {
 	try {

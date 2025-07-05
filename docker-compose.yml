@@ -1,7 +1,11 @@
 services:
   mongodb:
     image: mongo:latest
-    command: mongod --bind_ip_all
+    command: mongod --bind_ip_all --auth
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
     networks:
       scoutly-net:
         ipv4_address: 172.20.0.10
@@ -11,7 +15,9 @@ services:
       test: |
         mongosh --eval "
           try {
-            if (db.getMongo().getDBs().databases.length > 0) {
+            db = db.getSiblingDB('admin');
+            db.auth('${MONGODB_ROOT_USERNAME}', '${MONGODB_ROOT_PASSWORD}');
+            if (db.runCommand('ping').ok) {
               process.exit(0);
             } else {
               process.exit(1);
@@ -49,7 +55,7 @@ services:
     env_file:
       - .env
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/scoutly
+      - MONGODB_URI=mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin
       - NODE_ENV=development
     depends_on:
       mongodb:
