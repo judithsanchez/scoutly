@@ -22,6 +22,7 @@ import {
 } from '@/components/profile/ProfileComponents';
 
 import {Language} from '@/components/form/types';
+import apiClient from '@/lib/apiClient';
 
 export default function ProfilePage() {
 	const {user, isLoading, isAuthenticated} = useAuth();
@@ -63,6 +64,82 @@ export default function ProfilePage() {
 	});
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+	// Type for profile response
+	type ProfileResponse = {
+		cvUrl?: string;
+		candidateInfo?: {
+			logistics?: {
+				currentResidence?: {
+					city?: string;
+					country?: string;
+					countryCode?: string;
+					timezone?: string;
+				};
+				willingToRelocate?: boolean;
+				workAuthorization?: {
+					region: string;
+					regionCode: string;
+					status: string;
+				}[];
+			};
+			languages?: {language: string; level: string}[];
+			preferences?: {
+				careerGoals: string[];
+				jobTypes: string[];
+				workEnvironments: string[];
+				companySizes: string[];
+				exclusions: {
+					industries: string[];
+					technologies: string[];
+					roleTypes: string[];
+				};
+			};
+		};
+	};
+
+	React.useEffect(() => {
+		if (!isAuthenticated || !user?.email) return;
+
+		apiClient<ProfileResponse>('/api/users/profile')
+			.then(profile => {
+				if (!profile) return;
+				setCvUrl(profile.cvUrl || '');
+				if (profile.candidateInfo) {
+					// Populate logistics, languages, preferences from candidateInfo if present
+					const logistics = profile.candidateInfo.logistics || {};
+					setLogistics({
+						currentResidence: {
+							city: logistics.currentResidence?.city ?? '',
+							country: logistics.currentResidence?.country ?? '',
+							countryCode: logistics.currentResidence?.countryCode ?? '',
+							timezone: logistics.currentResidence?.timezone ?? '',
+						},
+						willingToRelocate: logistics.willingToRelocate || false,
+						workAuthorization: logistics.workAuthorization || [
+							{region: '', regionCode: '', status: ''},
+						],
+					});
+					setLanguages(
+						profile.candidateInfo.languages || [{language: '', level: ''}],
+					);
+					setPreferences(
+						profile.candidateInfo.preferences || {
+							careerGoals: [''],
+							jobTypes: [''],
+							workEnvironments: [''],
+							companySizes: [''],
+							exclusions: {
+								industries: [''],
+								technologies: [''],
+								roleTypes: [''],
+							},
+						},
+					);
+				}
+			})
+			.catch(() => {});
+	}, [isAuthenticated, user?.email]);
 
 	// Show loading state while auth is being determined
 	if (isLoading) {

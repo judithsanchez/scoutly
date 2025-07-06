@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 		const sessionData = {
 			isAdmin: !!isAdmin,
 			hasCompleteProfile,
-			cvUrl: userData.cvUrl,
+			email: userData.email,
 		};
 
 		logger.info(`Session data retrieved for ${email}`);

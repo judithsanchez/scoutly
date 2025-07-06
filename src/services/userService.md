@@ -13,6 +13,14 @@ This service handles core user management functionality, including creating, ret
 - **Better Performance**: Fewer database queries for user preferences
 - **Cleaner API**: Unified user and preference management
 
+## API Endpoints
+
+### GET /api/users/profile
+
+Returns only profile-relevant fields for the authenticated user (email, name, cvUrl, candidateInfo, hasCompleteProfile).  
+Does **not** include trackedCompanies or saved jobs.  
+Requires a valid session.
+
 ## Methods
 
 ### Core User Management

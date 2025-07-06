@@ -176,6 +176,21 @@ NEXT_PUBLIC_SKIP_AUTH=true # Bypass auth checks in dev
 - **Complete Profile Routes**: Job scouting features (requires CV + profile data)
 - **Admin Routes**: Admin dashboard, user management (requires admin flag)
 
+## Session Enrichment & Profile Fetching
+
+### Internal Session Endpoint
+
+- `/api/internal/auth/session` is used by the authentication system (e.g., NextAuth JWT callback) to enrich the session token.
+- Returns only: `isAdmin`, `hasCompleteProfile`, and `email`.
+- Protected by the `X-Internal-API-Secret` header.
+
+### Profile Page Endpoint
+
+- `/api/users/profile` is used by the profile page to fetch profile-relevant information for the authenticated user.
+- Returns: `email`, `name`, `cvUrl`, `candidateInfo`, `hasCompleteProfile`.
+- Does **not** include tracked companies or saved jobs.
+- Requires a valid session (no internal secret).
+
 ## Profile Completion
 
 Users must complete their profile to access job scouting:

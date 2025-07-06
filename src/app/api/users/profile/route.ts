@@ -1,133 +1,35 @@
+// GET /api/users/profile
 import {NextResponse} from 'next/server';
 import {getServerSession} from 'next-auth';
-import dbConnect from '@/middleware/database';
+import {authOptions} from '@/lib/auth';
 import {User} from '@/models/User';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
-import {Logger} from '@/utils/logger';
+import connectToDB from '@/lib/db';
 
-const logger = new Logger('UserProfileAPI');
-
-// PUT /api/users/profile
-// Update user's profile information
-export async function PUT(request: Request) {
-	try {
-		await dbConnect();
-
-		const userEmail =
-			process.env.NODE_ENV === 'development'
-				? 'judithv.sanchezc@gmail.com'
-				: (await getServerSession())?.user?.email;
-
-		if (!userEmail) {
-			logger.warn('Authentication required attempt');
-			return NextResponse.json(
-				{error: 'Authentication required'},
-				{status: 401},
-			);
-		}
-
-		const updateData = await request.json();
-		const {cvUrl, candidateInfo} = updateData;
-
-		// Only allow updating cvUrl and candidateInfo
-		const user = await User.findOneAndUpdate(
-			{email: userEmail},
-			{$set: {cvUrl, candidateInfo}},
-			{new: true}, // Return updated document
-		);
-
-		if (!user) {
-			logger.warn(`User ${userEmail} not found.`);
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		logger.success(`Updated profile for user ${userEmail}`);
-		return NextResponse.json(user);
-	} catch (error: any) {
-		logger.error('Error updating user profile', error);
-		return NextResponse.json(
-			{error: 'Internal server error', details: error.message},
-			{status: 500},
-		);
+export async function GET(req: Request) {
+	// Get session
+	const session = await getServerSession(authOptions);
+	if (!session || !session.user?.email) {
+		return NextResponse.json({error: 'Unauthorized'}, {status: 401});
 	}
-}
 
-// GET /api/users/profile
-// Get user's profile information
-export async function GET() {
 	try {
-		await dbConnect();
-		logger.info('Database connection established');
-
-		const userEmail =
-			process.env.NODE_ENV === 'development'
-				? 'judithv.sanchezc@gmail.com'
-				: (await getServerSession())?.user?.email;
-
-		if (!userEmail) {
-			logger.warn('Authentication required - no user email found', {
-				nodeEnv: process.env.NODE_ENV,
-				hasSession: !!(await getServerSession()),
-			});
-			return NextResponse.json(
-				{error: 'Authentication required'},
-				{status: 401},
-			);
-		}
-
-		logger.info('Looking up user profile', {userEmail});
-
-		let user = await User.findOne({email: userEmail});
-
-		if (!user && process.env.NODE_ENV === 'development') {
-			logger.info(`User ${userEmail} not found in dev, creating...`);
-			user = await User.create({
-				email: userEmail,
-			});
-			logger.success(`User ${userEmail} created in dev mode.`);
-		} else if (!user) {
-			logger.warn(`User ${userEmail} not found in database.`, {
-				userEmail,
-				nodeEnv: process.env.NODE_ENV,
-			});
+		await connectToDB();
+		const user = await User.findOne({email: session.user.email.toLowerCase()});
+		if (!user) {
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
 
-		// Get tracked companies using the new UserCompanyPreferenceService
-		const trackedCompanies = await UserCompanyPreferenceService.findByUserId(
-			(user._id as any).toString(),
-		);
-
-		// Log profile completeness for debugging
-		logger.info('User profile retrieved', {
-			userEmail,
-			hasCvUrl: !!user.cvUrl,
-			hasCandidateInfo: !!user.candidateInfo,
-			trackedCompaniesCount: trackedCompanies?.length || 0,
-			cvUrl: user.cvUrl || 'NOT SET',
-			candidateInfoKeys: user.candidateInfo
-				? Object.keys(user.candidateInfo).join(', ')
-				: 'NOT SET',
-		});
-
-		logger.success(`Retrieved profile for user ${userEmail}`);
-
-		// Create the response object with the user data and tracked companies
-		const userProfile = {
-			...user.toObject(),
-			trackedCompanies: trackedCompanies || [],
+		// Only return profile-relevant fields
+		const profile = {
+			email: user.email,
+			name: user.candidateInfo?.name || '',
+			cvUrl: user.cvUrl || '',
+			candidateInfo: user.candidateInfo || null,
+			hasCompleteProfile: !!(user.cvUrl && user.candidateInfo),
 		};
 
-		return NextResponse.json(userProfile);
-	} catch (error: any) {
-		logger.error('Error fetching user profile', {
-			message: error.message,
-			stack: error.stack,
-			name: error.name,
-		});
-		return NextResponse.json(
-			{error: 'Internal server error', details: error.message},
-			{status: 500},
-		);
+		return NextResponse.json(profile);
+	} catch (error) {
+		return NextResponse.json({error: 'Internal server error'}, {status: 500});
 	}
 }

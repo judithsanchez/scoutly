@@ -1,4 +1,9 @@
-import {LogService} from '../services/logService';
+let LogService: any = null;
+let isServer = typeof window === 'undefined';
+if (isServer) {
+	// Only require server-side
+	LogService = require('../services/logService').LogService;
+}
 import type {LogLevel, ILog} from '../models/Log';
 
 interface BufferedLog {
@@ -88,11 +93,13 @@ export class Logger {
 	public async saveBufferedLogs(): Promise<void> {
 		if (this.logBuffer.length === 0) return;
 
-		try {
-			await LogService.saveBatchedLogs(this.logBuffer);
-			this.clearBuffer();
-		} catch (error) {
-			console.error('[Logger DB] Failed to save buffered logs:', error);
+		if (isServer && LogService) {
+			try {
+				await LogService.saveBatchedLogs(this.logBuffer);
+				this.clearBuffer();
+			} catch (error) {
+				console.error('[Logger DB] Failed to save buffered logs:', error);
+			}
 		}
 	}
 
