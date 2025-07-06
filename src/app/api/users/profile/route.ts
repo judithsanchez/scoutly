@@ -15,7 +15,7 @@ function setCORSHeaders(res: NextResponse) {
 
 export async function OPTIONS() {
 	// Preflight CORS support
-	const res = NextResponse.json({}, {status: 204});
+	const res = new NextResponse(null, {status: 204});
 	return setCORSHeaders(res);
 }
 
