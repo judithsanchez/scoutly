@@ -3,6 +3,7 @@ import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
 import connectToDB from '@/lib/db';
 import {Logger} from '@/utils/logger';
+import {getProfileCompleteness} from '@/lib/validateProfile';
 
 const logger = new Logger('InternalSessionAPI');
 
@@ -34,7 +35,10 @@ export async function GET(req: Request) {
 
 		const isAdmin = await AdminUser.findOne({email: email.toLowerCase()});
 
-		const hasCompleteProfile = !!(userData.cvUrl && userData.candidateInfo);
+		const plainUser = userData.toObject
+			? userData.toObject()
+			: JSON.parse(JSON.stringify(userData));
+		const {isComplete: hasCompleteProfile} = getProfileCompleteness(plainUser);
 
 		const sessionData = {
 			isAdmin: !!isAdmin,

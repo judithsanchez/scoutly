@@ -26,6 +26,27 @@ src/lib/
 
 ## Environment Configuration
 
+### API Routing Pattern (Frontend → Production Backend)
+
+**IMPORTANT:**  
+The frontend (even in local development) must always call the production backend for all API/database operations.
+
+- The frontend never talks directly to the database.
+- The frontend never talks to a local backend (unless explicitly testing local API).
+- All API calls go to the production backend, which is responsible for all DB access and business logic.
+
+**How to configure:**
+
+- Set `NEXT_PUBLIC_API_URL` (or `NEXT_PUBLIC_BACKEND_URL`) in your `.env.local` to the production backend URL (e.g., `https://api.jobscoutly.tech`).
+- The API client in the frontend will prepend this base URL to all API requests.
+- CORS must be enabled on the backend to allow requests from your local frontend.
+
+Example `.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=https://api.jobscoutly.tech
+```
+
 ### Production Setup
 
 ```env
@@ -145,20 +166,21 @@ NEXT_PUBLIC_SKIP_AUTH=true # Bypass auth checks in dev
 #### Development
 
 - `DEPLOYMENT_TARGET=development`
-- `NEXT_PUBLIC_SKIP_AUTH=true` for testing
-- Both frontend and backend on `localhost:3000`
+- `NEXT_PUBLIC_API_URL=https://api.jobscoutly.tech` (always use production backend for API calls)
+- CORS must be enabled on the backend for `localhost:3000` (or your dev frontend origin)
+- No local backend/database is required for frontend development
 
 #### Vercel (Frontend)
 
 - Auto-detected via `VERCEL` environment variable
-- Frontend URL from Vercel, backend URL points to Raspberry Pi
+- Frontend URL from Vercel, backend URL points to production backend (e.g., Raspberry Pi or cloud)
 - CORS handling for cross-origin requests
 
 #### Raspberry Pi (Backend)
 
 - `DEPLOYMENT_TARGET=raspberry-pi`
-- Backend URL is local, frontend URL points to Vercel
-- Serves API endpoints to Vercel frontend
+- Backend URL is local, frontend URL points to Vercel or local dev
+- Serves API endpoints to Vercel frontend and local dev frontend
 
 ## User Access Levels
 

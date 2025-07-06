@@ -1,5 +1,9 @@
 # User Service
 
+**Frontend/Backend API Pattern:**  
+All user-related data access must go through the backend API endpoints (e.g., `/api/users/profile`).  
+The frontend (even in development) never accesses the database or user data directly—always use the production backend API.
+
 This service handles core user management functionality, including creating, retrieving, and updating user accounts and their tracked company preferences.
 
 **UPDATED (June 2025)**: Simplified to use tracked companies array directly on User model instead of separate UserCompanyPreferences collection.

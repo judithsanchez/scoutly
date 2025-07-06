@@ -23,6 +23,7 @@ import {
 
 import {Language} from '@/components/form/types';
 import apiClient from '@/lib/apiClient';
+import {getProfileCompleteness} from '@/utils/validateProfile';
 
 export default function ProfilePage() {
 	const {user, isLoading, isAuthenticated} = useAuth();
@@ -64,6 +65,8 @@ export default function ProfilePage() {
 	});
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveMessage, setSaveMessage] = useState<string | null>(null);
+	const [missingFields, setMissingFields] = useState<string[]>([]);
+	const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
 
 	// Type for profile response
 	type ProfileResponse = {
@@ -137,6 +140,13 @@ export default function ProfilePage() {
 						},
 					);
 				}
+				// Check completeness on load
+				const completeness = getProfileCompleteness({
+					cvUrl: profile.cvUrl,
+					candidateInfo: profile.candidateInfo,
+				});
+				setMissingFields(completeness.missing);
+				setIsProfileComplete(completeness.isComplete);
 			})
 			.catch(() => {});
 	}, [isAuthenticated, user?.email]);
@@ -171,11 +181,37 @@ export default function ProfilePage() {
 		setIsSaving(true);
 		setSaveMessage(null);
 
+		// Check completeness before saving
+		const completeness = getProfileCompleteness({
+			cvUrl,
+			candidateInfo: {
+				logistics,
+				languages,
+				preferences,
+			},
+		});
+		setMissingFields(completeness.missing);
+		setIsProfileComplete(completeness.isComplete);
+
+		if (!completeness.isComplete) {
+			setSaveMessage(
+				'Profile incomplete. Please fill all required fields: ' +
+					completeness.missing.join(', '),
+			);
+			setIsSaving(false);
+			return;
+		}
+
 		try {
 			await new Promise(resolve => setTimeout(resolve, 1000));
 
 			setSaveMessage('Profile saved successfully!');
 			setTimeout(() => setSaveMessage(null), 3000);
+
+			// Trigger session refresh so hasCompleteProfile updates
+			if (typeof window !== 'undefined') {
+				await fetch('/api/auth/session?update', {method: 'POST'});
+			}
 		} catch (error) {
 			setSaveMessage('Failed to save profile. Please try again.');
 			setTimeout(() => setSaveMessage(null), 3000);
@@ -192,6 +228,20 @@ export default function ProfilePage() {
 					title="Profile Settings"
 					description="Manage your profile information and job preferences"
 				/>
+
+				{!isProfileComplete && (
+					<div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded">
+						<strong>Profile incomplete!</strong>
+						<div>
+							Please fill all required fields:
+							<ul className="list-disc ml-6">
+								{missingFields.map(field => (
+									<li key={field}>{field}</li>
+								))}
+							</ul>
+						</div>
+					</div>
+				)}
 
 				<AuthInfoSection
 					email={user.email}
@@ -482,7 +532,7 @@ export default function ProfilePage() {
 					<div className="flex justify-center pt-6">
 						<SaveButton
 							onClick={handleSaveProfile}
-							disabled={isSaving}
+							disabled={isSaving || !isProfileComplete}
 							large={true}
 						/>
 					</div>
