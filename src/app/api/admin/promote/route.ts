@@ -26,7 +26,10 @@ export async function POST(req: Request) {
 		return NextResponse.json({message: 'User is already an admin'});
 	}
 
-	await AdminUser.create({email: email.toLowerCase()});
+	await AdminUser.create({
+		email: email.toLowerCase(),
+		createdBy: 'judithv.sanchezc@gmail.com',
+	});
 
 	return NextResponse.json({message: `User ${email} promoted to admin.`});
 }

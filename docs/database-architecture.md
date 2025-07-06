@@ -2,23 +2,28 @@
 
 ## Overview
 
-Scoutly uses a distributed architecture with MongoDB running on a Raspberry Pi and the Next.js application deployed on Vercel, connected via Cloudflare Tunnel for security.
+Scoutly uses a secure, API-driven architecture. **The client (frontend) never connects directly to MongoDB.** All database access is handled by server-side API endpoints.
 
 ## Architecture Components
 
 ### Production Setup
-- **Vercel**: Hosts the Next.js application
-- **Raspberry Pi**: Runs MongoDB in Docker container
-- **Cloudflare Tunnel**: Provides secure connection between Vercel and Pi
+
+- **Vercel**: Hosts the Next.js application (frontend and API routes)
+- **Raspberry Pi**: Runs MongoDB in a Docker container
+- **Cloudflare Tunnel**: Secures the connection between Vercel and the Pi
 
 ### Connection Flow
+
 ```
-Vercel App → db.jobscoutly.tech:443 → Cloudflare Tunnel → Raspberry Pi:27017 → MongoDB Docker
+Client (browser) → Vercel API endpoint → Cloudflare Tunnel → Raspberry Pi:27017 → MongoDB Docker
 ```
+
+- **No direct client-to-DB access.** All requests go through API endpoints.
 
 ## Authentication
 
 MongoDB is configured with authentication enabled:
+
 - **Username**: `scoutly_admin`
 - **Password**: Defined in environment variables
 - **Database**: `scoutly`
@@ -27,16 +32,19 @@ MongoDB is configured with authentication enabled:
 ## Environment Configuration
 
 ### Production (Vercel)
+
 ```env
 MONGODB_URI=mongodb://scoutly_admin:password@db.jobscoutly.tech:443/scoutly?authSource=admin
 ```
 
 ### Local Development (Docker)
+
 ```env
 MONGODB_URI_LOCAL=mongodb://scoutly_admin:password@localhost:27017/scoutly?authSource=admin
 ```
 
 ### External Tools (VS Code MongoDB Extension)
+
 ```env
 MONGODB_URI_EXTERNAL=mongodb://scoutly_admin:password@db.jobscoutly.tech:443/scoutly?authSource=admin
 ```
@@ -47,10 +55,12 @@ MONGODB_URI_EXTERNAL=mongodb://scoutly_admin:password@db.jobscoutly.tech:443/sco
 2. **Encrypted Tunnel**: Cloudflare tunnel provides TLS encryption
 3. **No Direct Exposure**: Database port not directly exposed to internet
 4. **Access Control**: Only authenticated applications can connect
+5. **API-Only Access**: The client never connects directly to the database
 
 ## Raspberry Pi Setup
 
 The Pi runs MongoDB in Docker with:
+
 - Authentication enabled (`--auth` flag)
 - Bound to all interfaces (`--bind_ip_all`)
 - Data persistence via Docker volumes
@@ -59,12 +69,14 @@ The Pi runs MongoDB in Docker with:
 ## Cloudflare Tunnel Configuration
 
 The tunnel routes:
+
 - `api.jobscoutly.tech` → Next.js app (when running on Pi)
 - `db.jobscoutly.tech` → MongoDB TCP port
 
 ## Connection Testing
 
-To test the database connection:
+To test the database connection (server-side only):
+
 ```bash
 # Using mongosh
 mongosh "mongodb://scoutly_admin:password@db.jobscoutly.tech:443/scoutly?authSource=admin"
@@ -73,14 +85,18 @@ mongosh "mongodb://scoutly_admin:password@db.jobscoutly.tech:443/scoutly?authSou
 mongodb://scoutly_admin:password@db.jobscoutly.tech:443/scoutly?authSource=admin
 ```
 
+**Never expose these URIs to the client or browser.**
+
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Authentication Failed**: Check username/password in environment variables
 2. **Connection Timeout**: Verify Cloudflare tunnel is running
 3. **Database Unavailable**: Check MongoDB Docker container on Pi
 
 ### Health Checks
+
 - MongoDB health check in Docker Compose
 - Cloudflare tunnel status via dashboard
 - Vercel deployment logs for connection errors
