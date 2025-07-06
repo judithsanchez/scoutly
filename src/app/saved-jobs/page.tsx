@@ -41,14 +41,19 @@ export default function SavedJobsPage() {
 			return;
 		}
 		try {
-			const updatedJob = await apiClient<ISavedJob>('jobs/status', {
+			const url = `/api/jobs/saved?id=${encodeURIComponent(jobId)}`;
+			const response = await fetch(url, {
 				method: 'PATCH',
-				body: JSON.stringify({
-					jobId,
-					status,
-					gmail: user.email,
-				}),
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({status}),
 			});
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || 'Failed to update job status');
+			}
+			const {job: updatedJob} = await response.json();
 
 			setJobs(currentJobs => {
 				const updatedJobs = currentJobs.map(job =>

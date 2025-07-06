@@ -53,7 +53,7 @@ export default function DashboardPage() {
 			logger?.info('Starting to fetch saved jobs', {userEmail: user.email});
 			setIsLoadingJobs(true);
 
-			const url = `/api/jobs/saved?gmail=${encodeURIComponent(user.email)}`;
+			const url = `/api/jobs/saved?email=${encodeURIComponent(user.email)}`;
 			logger?.logApiRequest(url, 'GET');
 
 			const response = await fetch(url);
@@ -153,11 +153,9 @@ export default function DashboardPage() {
 				userEmail: user.email,
 			});
 
-			const url = '/api/jobs/saved/status';
+			const url = `/api/jobs/saved?id=${encodeURIComponent(jobId)}`;
 			const requestBody = {
-				jobId,
 				status,
-				gmail: user.email,
 			};
 
 			logger?.logApiRequest(url, 'PATCH', requestBody);
@@ -179,7 +177,7 @@ export default function DashboardPage() {
 				throw new Error(errorMessage);
 			}
 
-			const updatedJob = await response.json();
+			const {job: updatedJob} = await response.json();
 
 			logger?.info('Job status updated successfully', {
 				jobId,
