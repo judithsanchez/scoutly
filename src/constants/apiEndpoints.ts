@@ -88,6 +88,9 @@ export const API_ENDPOINTS = {
 		AUTH: '/api/debug/auth',
 	},
 
+	// Documentation endpoint
+	DOCS: '/api/docs',
+
 	// Health check
 	HEALTH: '/api/health',
 
@@ -141,6 +144,9 @@ export const ALL_ENDPOINTS = [
 	'/api/debug',
 	'/api/debug/auth',
 
+	// Documentation
+	'/api/docs',
+
 	// Health
 	'/api/health',
 
@@ -180,6 +186,7 @@ export const ENDPOINT_METHODS = {
 	'/api/companies/update-rankings': ['POST'],
 	'/api/debug': ['GET'],
 	'/api/debug/auth': ['GET'],
+	'/api/docs': ['GET'],
 	'/api/health': ['GET'],
 	'/api/jobs': ['POST'],
 	'/api/jobs/check-stale': ['POST'],

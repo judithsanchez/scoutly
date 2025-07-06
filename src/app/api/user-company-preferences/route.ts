@@ -1,199 +1,253 @@
 import {NextRequest, NextResponse} from 'next/server';
 import dbConnect from '@/middleware/database';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {UserService} from '@/services/userService';
-import {EnhancedLogger} from '@/utils/enhancedLogger';
+import {CompanyService} from '@/services/companyService';
+import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
+import {z} from 'zod';
+import {ErrorResponseSchema} from '@/schemas/userSchemas';
 
-const logger = EnhancedLogger.getLogger('UserCompanyPreferencesAPI', {
-	logToFile: true,
-	logToConsole: true,
-	logDir: '/tmp/scoutly-logs',
-	logFileName: 'user-company-preferences-api.log',
+const VALID_FREQUENCIES = [
+	'Daily',
+	'Every 2 days',
+	'Weekly',
+	'Bi-weekly',
+	'Monthly',
+];
+
+const UserCompanyPreferenceSchema = z.object({
+	email: z.string().email(),
+	companyId: z.string(),
+	isTracking: z.boolean().optional(),
+	rank: z.number().optional(),
+	frequency: z.string().optional(),
 });
 
-/**
- * GET /api/user-company-preferences?email=user@example.com
- *
- * Returns all tracked companies for the specified user with their preferences
- * Query Parameters:
- * - email: The user's email address
- */
-export async function GET(req: NextRequest) {
+export async function POST(request: NextRequest) {
 	try {
 		await dbConnect();
+		const body = await request.json();
+		const parseResult = UserCompanyPreferenceSchema.safeParse(body);
 
-		// Get email from query parameters
-		const {searchParams} = new URL(req.url);
-		const userEmail = searchParams.get('email');
-
-		if (!userEmail) {
+		if (!parseResult.success) {
 			return NextResponse.json(
-				{error: 'Email query parameter is required'},
+				ErrorResponseSchema.parse({
+					error: 'Invalid request body',
+					details: parseResult.error.errors,
+				}),
 				{status: 400},
 			);
 		}
 
-		logger.info(`Getting tracked companies for email: ${userEmail}`);
+		let {email, companyId, isTracking, rank, frequency} = parseResult.data;
 
-		// Get user by email to get the userId
-		const user = await UserService.getUserByEmail(userEmail);
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
+		// Normalize frequency (case-insensitive)
+		if (typeof frequency === 'string' && frequency) {
+			const match = VALID_FREQUENCIES.find(
+				f => f.toLowerCase() === frequency!.toLowerCase(),
+			);
+			if (!match) {
+				return NextResponse.json(
+					ErrorResponseSchema.parse({
+						error: `Invalid frequency. Valid options: ${VALID_FREQUENCIES.join(
+							', ',
+						)}`,
+						details: [
+							{
+								code: 'invalid_enum_value',
+								options: VALID_FREQUENCIES,
+								path: ['frequency'],
+								message: `Invalid enum value. Expected one of: ${VALID_FREQUENCIES.join(
+									' | ',
+								)}, received '${frequency}'`,
+							},
+						],
+					}),
+					{status: 400},
+				);
+			}
+			frequency = match;
 		}
 
-		// Get user's tracked company preferences using the new service
-		const preferences = await UserCompanyPreferenceService.findByUserId(
-			(user._id as any).toString(),
-		);
-
-		// Transform the data to match the expected API response format
-		const trackedCompanies = preferences.map(preference => {
-			const company = preference.companyId as any; // Populated company data
-
-			return {
-				_id: company._id,
-				companyID: company.companyID,
-				company: company.company,
-				careers_url: company.careers_url,
-				logo_url: company.logo_url,
-				work_model: company.work_model,
-				headquarters: company.headquarters,
-				office_locations: company.office_locations,
-				fields: company.fields,
-				userPreference: {
-					rank: preference.rank,
-					isTracking: preference.isTracking,
-					frequency: getRankingFrequency(preference.rank),
-					lastUpdated: preference.updatedAt,
-				},
-			};
-		});
-
-		logger.info(
-			`Retrieved ${trackedCompanies.length} tracked companies for user ${userEmail}`,
-		);
-
-		return NextResponse.json({companies: trackedCompanies});
-	} catch (error: any) {
-		logger.error('Error getting tracked companies:', error);
-		return NextResponse.json(
-			{error: error.message || 'Internal server error'},
-			{status: 500},
-		);
-	}
-}
-
-/**
- * POST /api/user-company-preferences
- *
- * Two modes:
- * 1. Get tracked companies: Send only { email: "user@example.com" }
- * 2. Add/update company preference: Send { email: "user@example.com", companyId: "...", rank: 75, isTracking: true }
- *
- * Request body for getting tracked companies:
- * {
- *   email: string
- * }
- *
- * Request body for adding/updating company preference:
- * {
- *   email: string,
- *   companyId: string,
- *   rank: number,
- *   isTracking: boolean
- * }
- */
-export async function POST(req: NextRequest) {
-	try {
-		await dbConnect();
-
-		// Parse request body
-		const {email, companyId, rank = 75, isTracking = true} = await req.json();
-
-		if (!email) {
-			return NextResponse.json({error: 'email is required'}, {status: 400});
-		}
-
-		// Get user by email to get the userId
 		const user = await UserService.getUserByEmail(email);
 		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'User not found'}),
+				{status: 404},
+			);
 		}
 
-		// If no companyId provided, return all tracked companies (same as GET)
-		if (!companyId) {
-			logger.info(`Getting tracked companies for email: ${email}`);
-
-			// Get user's tracked company preferences using the new service
-			const preferences = await UserCompanyPreferenceService.findByUserId(
-				(user._id as any).toString(),
+		const company = await CompanyService.getCompanyById(companyId);
+		if (!company) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'Company not found'}),
+				{status: 404},
 			);
-
-			// Transform the data to match the expected API response format
-			const trackedCompanies = preferences.map(preference => {
-				const company = preference.companyId as any; // Populated company data
-
-				return {
-					_id: company._id,
-					companyID: company.companyID,
-					company: company.company,
-					careers_url: company.careers_url,
-					logo_url: company.logo_url,
-					work_model: company.work_model,
-					headquarters: company.headquarters,
-					office_locations: company.office_locations,
-					fields: company.fields,
-					userPreference: {
-						rank: preference.rank,
-						isTracking: preference.isTracking,
-						frequency: getRankingFrequency(preference.rank),
-						lastUpdated: preference.updatedAt,
-					},
-				};
-			});
-
-			logger.info(
-				`Retrieved ${trackedCompanies.length} tracked companies for user ${email}`,
-			);
-
-			return NextResponse.json({companies: trackedCompanies});
 		}
 
-		// If companyId provided, add/update the preference
-		logger.info(`Updating company preference for email: ${email}`);
+		const createData: any = {};
+		if (typeof isTracking === 'boolean') createData.isTracking = isTracking;
+		if (typeof rank === 'number') createData.rank = rank;
+		if (typeof frequency === 'string' && frequency)
+			createData.frequency = frequency;
 
-		// Create or update the preference using the new service
-		const preference = await UserCompanyPreferenceService.upsert(
-			(user._id as any).toString(),
-			companyId,
-			{rank, isTracking},
+		const existingPref =
+			await UserCompanyPreferenceService.findByUserAndCompany(
+				(user as any)._id.toString(),
+				company.companyID,
+			);
+		if (existingPref) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'User is already tracking this company',
+				}),
+				{status: 400},
+			);
+		}
+
+		const pref = await UserCompanyPreferenceService.create(
+			(user as any)._id.toString(),
+			company.companyID,
+			createData,
 		);
 
-		logger.info(
-			`Updated company preference for ${companyId} for user ${email}`,
-		);
+		// Serialize for response
+		const obj = typeof pref.toObject === 'function' ? pref.toObject() : pref;
+		const serialized = {
+			...obj,
+			_id: obj._id?.toString?.() ?? obj._id,
+			userId: obj.userId?.toString?.() ?? obj.userId,
+			companyId: obj.companyId?.toString?.() ?? obj.companyId,
+			updatedAt: obj.updatedAt
+				? new Date(obj.updatedAt as any).toISOString()
+				: undefined,
+			createdAt: obj.createdAt
+				? new Date(obj.createdAt as any).toISOString()
+				: undefined,
+		};
 
-		return NextResponse.json(
-			{
-				success: true,
-				preference,
-			},
-			{status: 201},
-		);
+		return NextResponse.json(serialized, {status: 201});
 	} catch (error: any) {
-		logger.error('Error in POST user-company-preferences:', error);
 		return NextResponse.json(
-			{error: error.message || 'Internal server error'},
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
 			{status: 500},
 		);
 	}
 }
 
-// Helper function to convert ranking to frequency description
-function getRankingFrequency(ranking: number): string {
-	if (ranking >= 90) return 'Daily';
-	if (ranking >= 80) return 'Every 2 days';
-	if (ranking >= 70) return 'Weekly';
-	if (ranking >= 60) return 'Bi-weekly';
-	return 'Monthly';
+export async function PATCH(request: NextRequest) {
+	try {
+		await dbConnect();
+		const body = await request.json();
+		const parseResult = UserCompanyPreferenceSchema.safeParse(body);
+
+		if (!parseResult.success) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Invalid request body',
+					details: parseResult.error.errors,
+				}),
+				{status: 400},
+			);
+		}
+
+		let {email, companyId, isTracking, rank, frequency} = parseResult.data;
+
+		// Normalize frequency (case-insensitive)
+		if (typeof frequency === 'string' && frequency) {
+			const match = VALID_FREQUENCIES.find(
+				f => f.toLowerCase() === frequency!.toLowerCase(),
+			);
+			if (!match) {
+				return NextResponse.json(
+					ErrorResponseSchema.parse({
+						error: `Invalid frequency. Valid options: ${VALID_FREQUENCIES.join(
+							', ',
+						)}`,
+						details: [
+							{
+								code: 'invalid_enum_value',
+								options: VALID_FREQUENCIES,
+								path: ['frequency'],
+								message: `Invalid enum value. Expected one of: ${VALID_FREQUENCIES.join(
+									' | ',
+								)}, received '${frequency}'`,
+							},
+						],
+					}),
+					{status: 400},
+				);
+			}
+			frequency = match;
+		}
+
+		const user = await UserService.getUserByEmail(email);
+		if (!user) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'User not found'}),
+				{status: 404},
+			);
+		}
+
+		const company = await CompanyService.getCompanyById(companyId);
+		if (!company) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'Company not found'}),
+				{status: 404},
+			);
+		}
+
+		const updateData: any = {};
+		if (typeof rank === 'number') updateData.rank = rank;
+		if (typeof frequency === 'string' && frequency)
+			updateData.frequency = frequency;
+
+		// Find the existing preference
+		const existingPref =
+			await UserCompanyPreferenceService.findByUserAndCompany(
+				(user as any)._id.toString(),
+				company.companyID,
+			);
+		if (!existingPref) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'User is not tracking this company',
+				}),
+				{status: 404},
+			);
+		}
+
+		console.log('DEBUG PATCH updateData:', updateData, 'frequency:', frequency);
+		// Update the preference
+		const pref = await UserCompanyPreferenceService.upsert(
+			(user as any)._id.toString(),
+			company.companyID,
+			updateData,
+		);
+
+		// Serialize for response
+		const obj = typeof pref.toObject === 'function' ? pref.toObject() : pref;
+		const serialized = {
+			...obj,
+			_id: obj._id?.toString?.() ?? obj._id,
+			userId: obj.userId?.toString?.() ?? obj.userId,
+			companyId: obj.companyId?.toString?.() ?? obj.companyId,
+			updatedAt: obj.updatedAt
+				? new Date(obj.updatedAt as any).toISOString()
+				: undefined,
+			createdAt: obj.createdAt
+				? new Date(obj.createdAt as any).toISOString()
+				: undefined,
+		};
+
+		return NextResponse.json(serialized);
+	} catch (error: any) {
+		return NextResponse.json(
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
+			{status: 500},
+		);
+	}
 }

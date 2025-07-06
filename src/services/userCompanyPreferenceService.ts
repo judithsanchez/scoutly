@@ -15,6 +15,47 @@ export class UserCompanyPreferenceService {
 	}
 
 	/**
+	 * Find a user-company preference by userId and company business ID
+	 */
+	static async findByUserAndCompany(userId: string, companyBusinessId: string) {
+		const user = await User.findById(userId);
+		const company = await Company.findOne({companyID: companyBusinessId});
+		if (!user || !company) return null;
+		return UserCompanyPreference.findOne({
+			userId: user._id,
+			companyId: company._id,
+		});
+	}
+
+	/**
+	 * Create a new user-company preference (throws if already exists)
+	 */
+	static async create(
+		userId: string,
+		companyBusinessId: string,
+		data: {rank?: number; isTracking?: boolean; frequency?: string},
+	) {
+		const user = await User.findById(userId);
+		const company = await Company.findOne({companyID: companyBusinessId});
+		if (!user || !company)
+			throw new Error('User or Company not found for preference creation.');
+
+		const existing = await UserCompanyPreference.findOne({
+			userId: user._id,
+			companyId: company._id,
+		});
+		if (existing) throw new Error('Preference already exists.');
+
+		const pref = new UserCompanyPreference({
+			...data,
+			userId: user._id,
+			companyId: company._id,
+		});
+		await pref.save();
+		return pref;
+	}
+
+	/**
 	 * Create or update a user company preference
 	 * @param userId - The user ID
 	 * @param companyId - The company ID (companyID field, not MongoDB _id)
@@ -24,7 +65,7 @@ export class UserCompanyPreferenceService {
 	static async upsert(
 		userId: string,
 		companyId: string,
-		data: {rank?: number; isTracking?: boolean},
+		data: {rank?: number; isTracking?: boolean; frequency?: string},
 	) {
 		const user = await User.findById(userId);
 		const company = await Company.findOne({companyID: companyId});

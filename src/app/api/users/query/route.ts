@@ -4,6 +4,13 @@ import {SavedJobService} from '@/services/savedJobService';
 import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
+import {
+	QueryUsersRequestSchema,
+	QueryUsersSingleResponseSchema,
+	QueryUsersMultipleResponseSchema,
+	QueryUsersRequest,
+} from '@/schemas/userQuerySchemas';
+import {ErrorResponseSchema} from '@/schemas/userSchemas';
 
 const logger = EnhancedLogger.getLogger('UsersQueryAPI', {
 	logToFile: true,
@@ -12,17 +19,25 @@ const logger = EnhancedLogger.getLogger('UsersQueryAPI', {
 	logFileName: 'users-query-api.log',
 });
 
-interface QueryUsersRequest {
-	emails?: string[];
-	email?: string;
-}
-
 export async function POST(request: NextRequest) {
 	try {
 		await dbConnect();
 
-		const requestBody = (await request.json()) as QueryUsersRequest;
-		const {emails, email} = requestBody;
+		const body = await request.json();
+		const parseResult = QueryUsersRequestSchema.safeParse(body);
+
+		if (!parseResult.success) {
+			logger.warn('Invalid request body:', parseResult.error.errors);
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Invalid request body',
+					details: parseResult.error.errors,
+				}),
+				{status: 400},
+			);
+		}
+
+		const {emails, email} = parseResult.data;
 
 		// Support both single email and multiple emails
 		if (email) {
@@ -40,12 +55,16 @@ export async function POST(request: NextRequest) {
 				(user._id as any).toString(),
 			);
 
+			console.log(
+				'DEBUG: preferences raw:',
+				JSON.stringify(preferences, null, 2),
+			);
 			// Transform tracked companies data
 			const trackedCompanies = preferences.map(preference => {
 				const company = preference.companyId as any; // Populated company data
 
 				return {
-					_id: company._id,
+					_id: company._id?.toString?.() ?? company._id,
 					companyID: company.companyID,
 					company: company.company,
 					careers_url: company.careers_url,
@@ -58,20 +77,36 @@ export async function POST(request: NextRequest) {
 						rank: preference.rank,
 						isTracking: preference.isTracking,
 						frequency: getRankingFrequency(preference.rank),
-						lastUpdated: preference.updatedAt,
+						lastUpdated: preference.updatedAt
+							? new Date(preference.updatedAt as any).toISOString()
+							: undefined,
 					},
 				};
 			});
 
+			const userObj =
+				typeof user.toObject === 'function' ? user.toObject() : user;
 			const enrichedUser = {
-				...user.toObject(),
+				...userObj,
+				_id: userObj._id?.toString?.() ?? userObj._id,
+				createdAt: userObj.createdAt
+					? new Date(userObj.createdAt as any).toISOString()
+					: undefined,
+				updatedAt: userObj.updatedAt
+					? new Date(userObj.updatedAt as any).toISOString()
+					: undefined,
 				savedJobs,
 				trackedCompanies,
 			};
 
 			logger.info(`Retrieved complete user data for email: ${email}`);
 
-			return NextResponse.json({user: enrichedUser});
+			// Validate response with Zod
+			const response = QueryUsersSingleResponseSchema.parse({
+				user: enrichedUser,
+			});
+
+			return NextResponse.json(response);
 		}
 
 		// Multiple users query (original functionality)
@@ -116,7 +151,8 @@ export async function POST(request: NextRequest) {
 						userPreference: {
 							rank: preference.rank,
 							isTracking: preference.isTracking,
-							frequency: getRankingFrequency(preference.rank),
+							frequency:
+								preference.frequency || getRankingFrequency(preference.rank),
 							lastUpdated: preference.updatedAt,
 						},
 					};
@@ -140,7 +176,11 @@ export async function POST(request: NextRequest) {
 			} specific users with their data for emails: ${emails.join(', ')}`,
 		);
 
-		return NextResponse.json({users: validEnrichedUsers});
+		const response = QueryUsersMultipleResponseSchema.parse({
+			users: validEnrichedUsers,
+		});
+
+		return NextResponse.json(response);
 	} catch (error: any) {
 		logger.error('Error fetching specific users:', error);
 		return NextResponse.json(

@@ -3,6 +3,8 @@ import {Logger} from '@/utils/logger';
 import {CompanyService} from '@/services/companyService';
 import dbConnect from '@/middleware/database';
 import mongoose from 'mongoose';
+import {GetCompaniesResponseSchema} from '@/schemas/companySchemas';
+import {ErrorResponseSchema} from '@/schemas/userSchemas';
 
 const logger = new Logger('CompaniesAPI');
 
@@ -16,7 +18,29 @@ export async function GET(request: NextRequest) {
 		try {
 			const companies = await CompanyService.getAllCompanies();
 			logger.success(`Retrieved ${companies.length} companies`);
-			return NextResponse.json(companies);
+
+			// Serialize companies for Zod validation
+			const serialized = companies.map((c: any) => ({
+				...c.toObject(),
+				_id: c._id?.toString?.() ?? c._id,
+				lastSuccessfulScrape: c.lastSuccessfulScrape
+					? new Date(c.lastSuccessfulScrape).toISOString()
+					: undefined,
+				createdAt: c.createdAt
+					? new Date(c.createdAt).toISOString()
+					: undefined,
+				updatedAt: c.updatedAt
+					? new Date(c.updatedAt).toISOString()
+					: undefined,
+				scrapeErrors: Array.isArray(c.scrapeErrors)
+					? c.scrapeErrors.map((e: any) => e?.toString?.() ?? e)
+					: [],
+			}));
+
+			// Validate response with Zod
+			const response = GetCompaniesResponseSchema.parse(serialized);
+
+			return NextResponse.json(response);
 		} catch (error: any) {
 			// Handle specific MongoDB errors
 			if (error instanceof mongoose.Error) {

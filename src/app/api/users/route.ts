@@ -3,6 +3,13 @@ import {UserService} from '@/services/userService';
 import {SavedJobService} from '@/services/savedJobService';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
+import {
+	CreateUserRequestSchema,
+	CreateUserResponseSchema,
+	GetUsersResponseSchema,
+	ErrorResponseSchema,
+	type CreateUserRequest,
+} from '@/schemas/userSchemas';
 
 const logger = EnhancedLogger.getLogger('UsersAPI', {
 	logToFile: true,
@@ -11,38 +18,59 @@ const logger = EnhancedLogger.getLogger('UsersAPI', {
 	logFileName: 'users-api.log',
 });
 
-import {IUser} from '@/models/User'; // Import IUser interface
-
-interface RegisterUserRequest {
-	email: string;
-	cvUrl?: string;
-	candidateInfo?: IUser['candidateInfo']; // Use the type from IUser
-}
-
 export async function POST(request: NextRequest) {
 	try {
 		await dbConnect();
 
-		const {email, cvUrl, candidateInfo} =
-			(await request.json()) as RegisterUserRequest;
+		// Parse and validate request body using Zod
+		const body = await request.json();
+		const validationResult = CreateUserRequestSchema.safeParse(body);
 
-		if (!email) {
-			return NextResponse.json({error: 'Email is required'}, {status: 400});
+		if (!validationResult.success) {
+			logger.warn('Invalid request body:', validationResult.error.errors);
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Invalid request body',
+					details: validationResult.error.errors,
+				}),
+				{status: 400},
+			);
 		}
 
-		const user = await UserService.getOrCreateUser(email, cvUrl, candidateInfo);
+		const {email, cvUrl, candidateInfo} = validationResult.data;
+
+		const user = await UserService.getOrCreateUser(
+			email,
+			cvUrl,
+			candidateInfo as any,
+		);
 
 		logger.info(`User registered or updated successfully: ${email}`);
 
-		return NextResponse.json({
+		// Create response object with proper type conversion
+		const userResponse = {
+			_id: (user._id as any).toString(),
+			email: user.email,
+			cvUrl: user.cvUrl,
+			candidateInfo: user.candidateInfo as any, // Convert Mongoose schema to plain object
+			createdAt: user.createdAt.toISOString(),
+			updatedAt: user.updatedAt.toISOString(),
+		};
+
+		// Validate response using Zod schema
+		const response = CreateUserResponseSchema.parse({
 			success: true,
-			user,
+			user: userResponse,
 			message: 'User registered successfully',
 		});
+
+		return NextResponse.json(response);
 	} catch (error: any) {
 		logger.error('Error registering user:', error);
 		return NextResponse.json(
-			{error: error.message || 'Internal server error'},
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
 			{status: 500},
 		);
 	}

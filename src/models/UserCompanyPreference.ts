@@ -5,6 +5,7 @@ export interface IUserCompanyPreference extends Document {
 	companyId: mongoose.Schema.Types.ObjectId;
 	rank: number; // 1-100, with 100 being highest priority
 	isTracking: boolean;
+	frequency?: string; // e.g. "Weekly", "Monthly", etc.
 }
 
 const UserCompanyPreferenceSchema = new Schema<IUserCompanyPreference>(
@@ -29,6 +30,11 @@ const UserCompanyPreferenceSchema = new Schema<IUserCompanyPreference>(
 			type: Boolean,
 			required: true,
 			default: true,
+		},
+		frequency: {
+			type: String,
+			required: false,
+			enum: ['Daily', 'Every 2 days', 'Weekly', 'Bi-weekly', 'Monthly'],
 		},
 	},
 	{timestamps: true},

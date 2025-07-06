@@ -3,7 +3,8 @@ import {connectDB} from '@/config/database';
 import {CompanyService} from '@/services/companyService';
 import {UserService} from '@/services/userService';
 import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
-import type {IUser} from '@/models/User';
+import {UpdateRankingsResponseSchema} from '@/schemas/companySchemas';
+import {ErrorResponseSchema} from '@/schemas/userSchemas';
 
 export async function POST() {
 	try {
@@ -51,16 +52,17 @@ export async function POST() {
 			}
 		}
 
-		return NextResponse.json({
+		const response = UpdateRankingsResponseSchema.parse({
 			success: true,
 			message: `Successfully processed ${companies.length} companies (${updatedCount} updated, ${addedCount} added) with ranking 75`,
 		});
+
+		return NextResponse.json(response);
 	} catch (error: any) {
 		return NextResponse.json(
-			{
-				success: false,
-				error: error.message,
-			},
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
 			{status: 500},
 		);
 	}
