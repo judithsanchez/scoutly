@@ -4,18 +4,11 @@ import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
 import connectToDB from '@/lib/db';
 
-// The apiClient is not used here because this is server-side code.
-// We use fetch directly to communicate with the internal API on the Raspberry Pi.
+const isProd = process.env.NODE_ENV === 'production';
 
-/**
- * Production auth configuration
- *
- * This configuration enforces strict security:
- * - Only pre-approved users can sign in
- * - Users must exist in the database before authentication
- * - No automatic user creation
- * - Strict profile completion checks
- */
+// --- CRITICAL: Explicit cookie config for cross-domain session sharing ---
+const cookieDomain = process.env.NEXTAUTH_COOKIE_DOMAIN || '.jobscoutly.tech';
+
 export const productionAuthOptions: NextAuthOptions = {
 	providers: [
 		GoogleProvider({
@@ -126,4 +119,38 @@ export const productionAuthOptions: NextAuthOptions = {
 	session: {
 		strategy: 'jwt',
 	},
+	cookies: isProd
+		? {
+				sessionToken: {
+					name: `__Secure-next-auth.session-token`,
+					options: {
+						domain: cookieDomain,
+						path: '/',
+						httpOnly: true,
+						sameSite: 'lax',
+						secure: true,
+					},
+				},
+				callbackUrl: {
+					name: `__Secure-next-auth.callback-url`,
+					options: {
+						domain: cookieDomain,
+						path: '/',
+						sameSite: 'lax',
+						secure: true,
+					},
+				},
+				csrfToken: {
+					name: `__Host-next-auth.csrf-token`,
+					options: {
+						domain: cookieDomain,
+						path: '/',
+						httpOnly: true,
+						sameSite: 'lax',
+						secure: true,
+					},
+				},
+		  }
+		: undefined,
+	useSecureCookies: isProd,
 };
