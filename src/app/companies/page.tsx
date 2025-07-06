@@ -364,21 +364,22 @@ export default function CompaniesPage() {
 		search: '',
 		workModel: 'all',
 		sort: 'name-asc',
-		showTrackedOnly: true,
+		showTrackedOnly: false,
 		ranking: 0,
 	});
 
 	useEffect(() => {
-		if (!isLoading && trackedCompanies && trackedCompanies.length > 0) {
-			setFilters(prev => ({...prev, showTrackedOnly: true}));
-		} else if (
+		// Only auto-disable the filter when user has no tracked companies
+		// Don't auto-enable it when they track companies
+		if (
 			!isLoading &&
 			trackedCompanies &&
-			trackedCompanies.length === 0
+			trackedCompanies.length === 0 &&
+			filters.showTrackedOnly
 		) {
 			setFilters(prev => ({...prev, showTrackedOnly: false}));
 		}
-	}, [isLoading, trackedCompanies]);
+	}, [isLoading, trackedCompanies, filters.showTrackedOnly]);
 
 	const getCompanyRanking = (companyId: string): number => {
 		const tracked = trackedCompanies.find(t => t.companyID === companyId);
@@ -418,12 +419,6 @@ export default function CompaniesPage() {
 					return 0;
 			}
 		});
-
-	useEffect(() => {
-		if (trackedCompanies && trackedCompanies.length === 0) {
-			setFilters(prev => ({...prev, showTrackedOnly: false}));
-		}
-	}, [trackedCompanies]);
 
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>

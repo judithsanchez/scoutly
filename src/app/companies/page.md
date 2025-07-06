@@ -37,7 +37,7 @@ This page displays a list of companies that users can track. Users can search, f
 - Added "Add Company" button and modal that allows users to create new companies and optionally track them with a custom ranking.
 - Modified the default filter state to show tracked companies by default, with a fallback to showing all companies if the user has no tracked companies yet.
 - Enhanced the "Show Tracked Only" toggle with visual highlighting to make it more prominent.
-- Added automatic filter behavior that shows tracked companies by default when available, and falls back to showing all companies when no tracked companies exist.
+- Fixed automatic filter behavior: removed the automatic enabling of "Show Tracked Only" filter when users track companies. Now the filter defaults to "All Companies" and only auto-disables when users have no tracked companies (to prevent showing an empty view).
 
 ## Status
 

@@ -12,17 +12,28 @@ const logger = EnhancedLogger.getLogger('UserCompanyPreferencesAPI', {
 });
 
 /**
- * GET /api/user-company-preferences
+ * GET /api/user-company-preferences?email=user@example.com
  *
- * Returns all tracked companies for the current user with their preferences
+ * Returns all tracked companies for the specified user with their preferences
+ * Query Parameters:
+ * - email: The user's email address
  */
 export async function GET(req: NextRequest) {
 	try {
 		await dbConnect();
 
-		// Development bypass for auth - use hardcoded email
-		const userEmail = 'judithv.sanchezc@gmail.com';
-		logger.info(`Using dev bypass auth with email: ${userEmail}`);
+		// Get email from query parameters
+		const {searchParams} = new URL(req.url);
+		const userEmail = searchParams.get('email');
+
+		if (!userEmail) {
+			return NextResponse.json(
+				{error: 'Email query parameter is required'},
+				{status: 400},
+			);
+		}
+
+		logger.info(`Getting tracked companies for email: ${userEmail}`);
 
 		// Get user by email to get the userId
 		const user = await UserService.getUserByEmail(userEmail);
@@ -75,10 +86,18 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/user-company-preferences
  *
- * Add or update a company preference for the current user
+ * Two modes:
+ * 1. Get tracked companies: Send only { email: "user@example.com" }
+ * 2. Add/update company preference: Send { email: "user@example.com", companyId: "...", rank: 75, isTracking: true }
  *
- * Request body:
+ * Request body for getting tracked companies:
  * {
+ *   email: string
+ * }
+ *
+ * Request body for adding/updating company preference:
+ * {
+ *   email: string,
  *   companyId: string,
  *   rank: number,
  *   isTracking: boolean
@@ -88,22 +107,60 @@ export async function POST(req: NextRequest) {
 	try {
 		await dbConnect();
 
-		// Development bypass for auth - use hardcoded email
-		const userEmail = 'judithv.sanchezc@gmail.com';
-		logger.info(`Using dev bypass auth with email: ${userEmail}`);
+		// Parse request body
+		const {email, companyId, rank = 75, isTracking = true} = await req.json();
+
+		if (!email) {
+			return NextResponse.json({error: 'email is required'}, {status: 400});
+		}
 
 		// Get user by email to get the userId
-		const user = await UserService.getUserByEmail(userEmail);
+		const user = await UserService.getUserByEmail(email);
 		if (!user) {
 			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
 
-		// Parse request body
-		const {companyId, rank = 75, isTracking = true} = await req.json();
-
+		// If no companyId provided, return all tracked companies (same as GET)
 		if (!companyId) {
-			return NextResponse.json({error: 'companyId is required'}, {status: 400});
+			logger.info(`Getting tracked companies for email: ${email}`);
+
+			// Get user's tracked company preferences using the new service
+			const preferences = await UserCompanyPreferenceService.findByUserId(
+				(user._id as any).toString(),
+			);
+
+			// Transform the data to match the expected API response format
+			const trackedCompanies = preferences.map(preference => {
+				const company = preference.companyId as any; // Populated company data
+
+				return {
+					_id: company._id,
+					companyID: company.companyID,
+					company: company.company,
+					careers_url: company.careers_url,
+					logo_url: company.logo_url,
+					work_model: company.work_model,
+					headquarters: company.headquarters,
+					office_locations: company.office_locations,
+					fields: company.fields,
+					userPreference: {
+						rank: preference.rank,
+						isTracking: preference.isTracking,
+						frequency: getRankingFrequency(preference.rank),
+						lastUpdated: preference.updatedAt,
+					},
+				};
+			});
+
+			logger.info(
+				`Retrieved ${trackedCompanies.length} tracked companies for user ${email}`,
+			);
+
+			return NextResponse.json({companies: trackedCompanies});
 		}
+
+		// If companyId provided, add/update the preference
+		logger.info(`Updating company preference for email: ${email}`);
 
 		// Create or update the preference using the new service
 		const preference = await UserCompanyPreferenceService.upsert(
@@ -113,7 +170,7 @@ export async function POST(req: NextRequest) {
 		);
 
 		logger.info(
-			`Updated company preference for ${companyId} for user ${userEmail}`,
+			`Updated company preference for ${companyId} for user ${email}`,
 		);
 
 		return NextResponse.json(
@@ -124,7 +181,7 @@ export async function POST(req: NextRequest) {
 			{status: 201},
 		);
 	} catch (error: any) {
-		logger.error('Error updating company preference:', error);
+		logger.error('Error in POST user-company-preferences:', error);
 		return NextResponse.json(
 			{error: error.message || 'Internal server error'},
 			{status: 500},

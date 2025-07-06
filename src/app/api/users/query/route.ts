@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {UserService} from '@/services/userService';
 import {SavedJobService} from '@/services/savedJobService';
+import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {EnhancedLogger} from '@/utils/enhancedLogger';
 import dbConnect from '@/middleware/database';
 
@@ -12,18 +13,71 @@ const logger = EnhancedLogger.getLogger('UsersQueryAPI', {
 });
 
 interface QueryUsersRequest {
-	emails: string[];
+	emails?: string[];
+	email?: string;
 }
 
 export async function POST(request: NextRequest) {
 	try {
 		await dbConnect();
 
-		const {emails} = (await request.json()) as QueryUsersRequest;
+		const requestBody = (await request.json()) as QueryUsersRequest;
+		const {emails, email} = requestBody;
 
+		// Support both single email and multiple emails
+		if (email) {
+			// Single user query - return complete user data
+			const user = await UserService.getUserByEmail(email);
+			if (!user) {
+				return NextResponse.json({error: 'User not found'}, {status: 404});
+			}
+
+			// Get saved jobs
+			const savedJobs = await SavedJobService.getSavedJobsByUserId(user.id);
+
+			// Get tracked companies with preferences
+			const preferences = await UserCompanyPreferenceService.findByUserId(
+				(user._id as any).toString(),
+			);
+
+			// Transform tracked companies data
+			const trackedCompanies = preferences.map(preference => {
+				const company = preference.companyId as any; // Populated company data
+
+				return {
+					_id: company._id,
+					companyID: company.companyID,
+					company: company.company,
+					careers_url: company.careers_url,
+					logo_url: company.logo_url,
+					work_model: company.work_model,
+					headquarters: company.headquarters,
+					office_locations: company.office_locations,
+					fields: company.fields,
+					userPreference: {
+						rank: preference.rank,
+						isTracking: preference.isTracking,
+						frequency: getRankingFrequency(preference.rank),
+						lastUpdated: preference.updatedAt,
+					},
+				};
+			});
+
+			const enrichedUser = {
+				...user.toObject(),
+				savedJobs,
+				trackedCompanies,
+			};
+
+			logger.info(`Retrieved complete user data for email: ${email}`);
+
+			return NextResponse.json({user: enrichedUser});
+		}
+
+		// Multiple users query (original functionality)
 		if (!emails || !Array.isArray(emails) || emails.length === 0) {
 			return NextResponse.json(
-				{error: 'emails array is required and cannot be empty'},
+				{error: 'Either "email" (string) or "emails" (array) is required'},
 				{status: 400},
 			);
 		}
@@ -40,10 +94,39 @@ export async function POST(request: NextRequest) {
 				// Get saved jobs
 				const savedJobs = await SavedJobService.getSavedJobsByUserId(user.id);
 
-				// Return enriched user data (no tracked companies since background jobs removed)
+				// Get tracked companies with preferences
+				const preferences = await UserCompanyPreferenceService.findByUserId(
+					(user._id as any).toString(),
+				);
+
+				// Transform tracked companies data
+				const trackedCompanies = preferences.map(preference => {
+					const company = preference.companyId as any; // Populated company data
+
+					return {
+						_id: company._id,
+						companyID: company.companyID,
+						company: company.company,
+						careers_url: company.careers_url,
+						logo_url: company.logo_url,
+						work_model: company.work_model,
+						headquarters: company.headquarters,
+						office_locations: company.office_locations,
+						fields: company.fields,
+						userPreference: {
+							rank: preference.rank,
+							isTracking: preference.isTracking,
+							frequency: getRankingFrequency(preference.rank),
+							lastUpdated: preference.updatedAt,
+						},
+					};
+				});
+
+				// Return enriched user data with tracked companies and saved jobs
 				return {
 					...user.toObject(),
 					savedJobs,
+					trackedCompanies,
 				};
 			}),
 		);
@@ -65,4 +148,13 @@ export async function POST(request: NextRequest) {
 			{status: 500},
 		);
 	}
+}
+
+// Helper function to convert ranking to frequency description
+function getRankingFrequency(ranking: number): string {
+	if (ranking >= 90) return 'Daily';
+	if (ranking >= 80) return 'Every 2 days';
+	if (ranking >= 70) return 'Weekly';
+	if (ranking >= 60) return 'Bi-weekly';
+	return 'Monthly';
 }

@@ -4,9 +4,13 @@ This API manages user preferences regarding companies, including tracking status
 
 ## Endpoints
 
-### GET `/api/user-company-preferences`
+### GET `/api/user-company-preferences?email=user@example.com`
 
-Returns only the companies that the current authenticated user is actively tracking (where `isTracking: true`).
+Returns only the companies that the specified user is actively tracking (where `isTracking: true`).
+
+**Query Parameters:**
+
+- `email` (required): The user's email address
 
 **Response:**
 
@@ -33,12 +37,31 @@ Returns only the companies that the current authenticated user is actively track
 
 ### POST `/api/user-company-preferences`
 
-Add or update a company preference for the current authenticated user.
+This endpoint has two modes:
+
+#### Mode 1: Get tracked companies (alternative to GET)
+
+Send only the email to retrieve all tracked companies for that user.
 
 **Request Body:**
 
 ```json
 {
+	"email": "user@example.com"
+}
+```
+
+**Response:** Same as GET endpoint - returns array of tracked companies.
+
+#### Mode 2: Add or update a company preference
+
+Send email + companyId to add/update a specific company preference.
+
+**Request Body:**
+
+```json
+{
+	"email": "user@example.com",
 	"companyId": "companyId1",
 	"rank": 90,
 	"isTracking": true

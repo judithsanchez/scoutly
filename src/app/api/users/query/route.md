@@ -17,7 +17,7 @@ This endpoint is designed for scenarios where you need to fetch information for 
 **Method:** POST
 **Content-Type:** application/json
 
-**Request Body:**
+**Request Body for Multiple Users:**
 
 ```json
 {
@@ -25,13 +25,24 @@ This endpoint is designed for scenarios where you need to fetch information for 
 }
 ```
 
+**Request Body for Single User (Complete Data):**
+
+```json
+{
+	"email": "user@example.com"
+}
+```
+
 **Fields:**
 
-- `emails` (required): Array of email addresses for the users you want to retrieve
+- `emails` (optional): Array of email addresses for multiple users you want to retrieve
+- `email` (optional): Single email address to get complete user data (user info + tracked companies + saved jobs)
+
+**Note:** You must provide either `emails` OR `email`, not both.
 
 ## Response
 
-**Success Response:**
+**Success Response for Multiple Users:**
 
 ```json
 {
@@ -79,6 +90,52 @@ This endpoint is designed for scenarios where you need to fetch information for 
 }
 ```
 
+**Success Response for Single User:**
+
+```json
+{
+	"user": {
+		"_id": "userId",
+		"email": "user@example.com",
+		"cvUrl": "https://example.com/cv.pdf",
+		"candidateInfo": {
+			// User's candidate information
+		},
+		"createdAt": "2025-06-20T12:00:00.000Z",
+		"updatedAt": "2025-06-20T12:00:00.000Z",
+		"trackedCompanies": [
+			{
+				"_id": "companyId",
+				"company": "Example Corp",
+				"careers_url": "https://example.com/careers",
+				"logo_url": "https://example.com/logo.png",
+				"userPreference": {
+					"rank": 90,
+					"isTracking": true,
+					"frequency": "Weekly"
+				}
+			}
+		],
+		"savedJobs": [
+			{
+				"_id": "savedJobId",
+				"userId": "userId",
+				"jobId": "jobId",
+				"companyId": {
+					"_id": "companyId",
+					"company": "Example Corp"
+					// Other company fields
+				},
+				"status": "applied",
+				"notes": "Had a great first interview",
+				"createdAt": "2025-06-20T12:00:00.000Z",
+				"updatedAt": "2025-06-20T12:00:00.000Z"
+			}
+		]
+	}
+}
+```
+
 **Error Responses:**
 
 - `400 Bad Request`: Invalid input data (missing or empty emails array)
@@ -86,7 +143,15 @@ This endpoint is designed for scenarios where you need to fetch information for 
 
 ## Usage Examples
 
-**Fetch single user:**
+**Fetch single user with complete data (NEW - recommended):**
+
+```json
+{
+	"email": "judithv.sanchezc@gmail.com"
+}
+```
+
+**Fetch single user (legacy method):**
 
 ```json
 {
