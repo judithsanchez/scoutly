@@ -61,29 +61,34 @@ export async function POST(request: NextRequest) {
 				JSON.stringify(preferences, null, 2),
 			);
 			// Transform tracked companies data
-			const trackedCompanies = preferences.map(preference => {
-				const company = preference.companyId as any; // Populated company data
+			const trackedCompanies = preferences
+				.filter(
+					preference =>
+						preference.companyId && typeof preference.companyId === 'object',
+				)
+				.map(preference => {
+					const company = preference.companyId as any; // Populated company data
 
-				return {
-					_id: company._id?.toString?.() ?? company._id,
-					companyID: company.companyID,
-					company: company.company,
-					careers_url: company.careers_url,
-					logo_url: company.logo_url,
-					work_model: company.work_model,
-					headquarters: company.headquarters,
-					office_locations: company.office_locations,
-					fields: company.fields,
-					userPreference: {
-						rank: preference.rank,
-						isTracking: preference.isTracking,
-						frequency: calculateFrequency(preference.rank),
-						lastUpdated: preference.updatedAt
-							? new Date(preference.updatedAt as any).toISOString()
-							: undefined,
-					},
-				};
-			});
+					return {
+						_id: company._id?.toString?.() ?? company._id,
+						companyID: company.companyID,
+						company: company.company,
+						careers_url: company.careers_url,
+						logo_url: company.logo_url,
+						work_model: company.work_model,
+						headquarters: company.headquarters,
+						office_locations: company.office_locations,
+						fields: company.fields,
+						userPreference: {
+							rank: preference.rank,
+							isTracking: preference.isTracking,
+							frequency: calculateFrequency(preference.rank),
+							lastUpdated: preference.updatedAt
+								? new Date(preference.updatedAt as any).toISOString()
+								: undefined,
+						},
+					};
+				});
 
 			const userObj =
 				typeof user.toObject === 'function' ? user.toObject() : user;
@@ -136,27 +141,32 @@ export async function POST(request: NextRequest) {
 				);
 
 				// Transform tracked companies data
-				const trackedCompanies = preferences.map(preference => {
-					const company = preference.companyId as any; // Populated company data
+				const trackedCompanies = preferences
+					.filter(
+						preference =>
+							preference.companyId && typeof preference.companyId === 'object',
+					)
+					.map(preference => {
+						const company = preference.companyId as any; // Populated company data
 
-					return {
-						_id: company._id,
-						companyID: company.companyID,
-						company: company.company,
-						careers_url: company.careers_url,
-						logo_url: company.logo_url,
-						work_model: company.work_model,
-						headquarters: company.headquarters,
-						office_locations: company.office_locations,
-						fields: company.fields,
-						userPreference: {
-							rank: preference.rank,
-							isTracking: preference.isTracking,
-							frequency: calculateFrequency(preference.rank),
-							lastUpdated: preference.updatedAt,
-						},
-					};
-				});
+						return {
+							_id: company._id,
+							companyID: company.companyID,
+							company: company.company,
+							careers_url: company.careers_url,
+							logo_url: company.logo_url,
+							work_model: company.work_model,
+							headquarters: company.headquarters,
+							office_locations: company.office_locations,
+							fields: company.fields,
+							userPreference: {
+								rank: preference.rank,
+								isTracking: preference.isTracking,
+								frequency: calculateFrequency(preference.rank),
+								lastUpdated: preference.updatedAt,
+							},
+						};
+					});
 
 				// Return enriched user data with tracked companies and saved jobs
 				return {

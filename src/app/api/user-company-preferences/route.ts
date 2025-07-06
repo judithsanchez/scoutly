@@ -39,23 +39,28 @@ export async function GET(request: NextRequest) {
 			(user._id as any).toString(),
 		);
 		// Populate company data if not already populated
-		const companies = preferences.map(preference => {
-			const company = preference.companyId as any;
-			const rank = preference.rank;
-			return {
-				_id: company._id?.toString?.() ?? company._id,
-				companyID: company.companyID,
-				company: company.company,
-				careers_url: company.careers_url,
-				logo_url: company.logo_url,
-				userPreference: {
-					rank: rank,
-					isTracking: preference.isTracking,
-					frequency: calculateFrequency(rank),
-					lastUpdated: preference.updatedAt,
-				},
-			};
-		});
+		const companies = preferences
+			.filter(
+				preference =>
+					preference.companyId && typeof preference.companyId === 'object',
+			)
+			.map(preference => {
+				const company = preference.companyId as any;
+				const rank = preference.rank;
+				return {
+					_id: company._id?.toString?.() ?? company._id,
+					companyID: company.companyID,
+					company: company.company,
+					careers_url: company.careers_url,
+					logo_url: company.logo_url,
+					userPreference: {
+						rank: rank,
+						isTracking: preference.isTracking,
+						frequency: calculateFrequency(rank),
+						lastUpdated: preference.updatedAt,
+					},
+				};
+			});
 		return NextResponse.json({companies});
 	} catch (error: any) {
 		return NextResponse.json(

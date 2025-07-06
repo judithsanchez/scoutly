@@ -2,6 +2,15 @@
 
 import React, {useState} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {
+	Card,
+	CardHeader,
+	CardTitle,
+	CardDescription,
+	CardContent,
+} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
+import {Trash2} from 'lucide-react';
 
 interface Company {
 	_id: string;
@@ -52,51 +61,73 @@ export default function CompanyAdminPanel() {
 	});
 
 	return (
-		<div className="p-4 border rounded bg-white shadow">
-			<h2 className="text-xl font-bold mb-4">Company Admin Panel</h2>
-			{error && (
-				<div className="mb-2 p-2 bg-red-100 text-red-700 rounded">{error}</div>
-			)}
-			{isLoading ? (
-				<div>Loading companies...</div>
-			) : (
-				<table className="min-w-full border">
-					<thead>
-						<tr>
-							<th className="border px-2 py-1">Company</th>
-							<th className="border px-2 py-1">ID</th>
-							<th className="border px-2 py-1">Work Model</th>
-							<th className="border px-2 py-1">Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{companies?.map(c => (
-							<tr key={c._id}>
-								<td className="border px-2 py-1">{c.company}</td>
-								<td className="border px-2 py-1">{c.companyID}</td>
-								<td className="border px-2 py-1">{c.work_model}</td>
-								<td className="border px-2 py-1">
-									<button
-										className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-										onClick={() => {
-											if (
-												window.confirm(
-													`Are you sure you want to delete "${c.company}"?`,
-												)
-											) {
-												deleteMutation.mutate(c.companyID);
-											}
-										}}
-									>
-										Delete
-									</button>
-									{/* You can add an Edit button here */}
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			)}
-		</div>
+		<Card>
+			<CardHeader>
+				<CardTitle className="flex items-center gap-2">
+					<Trash2 className="h-5 w-5 text-red-500" />
+					Company Management
+				</CardTitle>
+				<CardDescription>
+					View and remove companies from the database. Deletion is permanent.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				{error && (
+					<div className="mb-2 p-2 bg-red-100 text-red-700 rounded">
+						{error}
+					</div>
+				)}
+				{isLoading ? (
+					<div>Loading companies...</div>
+				) : (
+					<div className="overflow-x-auto">
+						<table className="min-w-full border rounded-lg bg-white">
+							<thead>
+								<tr>
+									<th className="border px-3 py-2 text-left">Company</th>
+									<th className="border px-3 py-2 text-left">ID</th>
+									<th className="border px-3 py-2 text-left">Work Model</th>
+									<th className="border px-3 py-2 text-left">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{companies?.map(c => (
+									<tr key={c._id} className="hover:bg-gray-50">
+										<td className="border px-3 py-2">{c.company}</td>
+										<td className="border px-3 py-2">{c.companyID}</td>
+										<td className="border px-3 py-2">{c.work_model}</td>
+										<td className="border px-3 py-2">
+											<Button
+												variant="outline"
+												size="sm"
+												className="text-red-600 border-red-300 hover:bg-red-50"
+												onClick={() => {
+													if (
+														window.confirm(
+															`Are you sure you want to delete "${c.company}"? This cannot be undone.`,
+														)
+													) {
+														deleteMutation.mutate(c.companyID);
+													}
+												}}
+											>
+												<Trash2 className="h-4 w-4 mr-1" />
+												Delete
+											</Button>
+											{/* You can add an Edit button here */}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+						{companies?.length === 0 && (
+							<div className="text-center py-8 text-gray-500">
+								No companies found.
+							</div>
+						)}
+					</div>
+				)}
+			</CardContent>
+		</Card>
 	);
 }

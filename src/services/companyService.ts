@@ -1,4 +1,5 @@
 import {Company} from '@/models/Company';
+import {UserCompanyPreference} from '@/models/UserCompanyPreference';
 import {ICompany, WorkModel} from '@/types/company';
 
 export class CompanyService {
@@ -46,7 +47,11 @@ export class CompanyService {
 	}
 
 	static async deleteCompany(companyID: string) {
-		const deleted = await Company.findOneAndDelete({companyID});
-		return deleted;
+		const company = await Company.findOneAndDelete({companyID});
+		if (company) {
+			// Remove all user-company-preference records for this company
+			await UserCompanyPreference.deleteMany({companyId: company._id});
+		}
+		return company;
 	}
 }
