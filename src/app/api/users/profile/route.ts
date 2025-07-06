@@ -5,18 +5,36 @@ import {authOptions} from '@/lib/auth';
 import {User} from '@/models/User';
 import connectToDB from '@/lib/db';
 
+function setCORSHeaders(res: NextResponse) {
+	res.headers.set('Access-Control-Allow-Origin', 'https://www.jobscoutly.tech');
+	res.headers.set('Access-Control-Allow-Credentials', 'true');
+	res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+	res.headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
+	return res;
+}
+
+export async function OPTIONS() {
+	// Preflight CORS support
+	const res = NextResponse.json({}, {status: 204});
+	return setCORSHeaders(res);
+}
+
 export async function GET(req: Request) {
 	// Get session
 	const session = await getServerSession(authOptions);
 	if (!session || !session.user?.email) {
-		return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+		return setCORSHeaders(
+			NextResponse.json({error: 'Unauthorized'}, {status: 401}),
+		);
 	}
 
 	try {
 		await connectToDB();
 		const user = await User.findOne({email: session.user.email.toLowerCase()});
 		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
+			return setCORSHeaders(
+				NextResponse.json({error: 'User not found'}, {status: 404}),
+			);
 		}
 
 		// Only return profile-relevant fields
@@ -28,8 +46,10 @@ export async function GET(req: Request) {
 			hasCompleteProfile: !!(user.cvUrl && user.candidateInfo),
 		};
 
-		return NextResponse.json(profile);
+		return setCORSHeaders(NextResponse.json(profile));
 	} catch (error) {
-		return NextResponse.json({error: 'Internal server error'}, {status: 500});
+		return setCORSHeaders(
+			NextResponse.json({error: 'Internal server error'}, {status: 500}),
+		);
 	}
 }

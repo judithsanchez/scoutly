@@ -7,9 +7,6 @@ const logger = new Logger('ApiClient');
 const getApiUrl = () => {
 	const url = process.env.NEXT_PUBLIC_API_URL;
 	if (!url) {
-		// In a server-side context on the Pi, or if something is misconfigured,
-		// we might fall back to a local URL.
-		// For the Vercel frontend, this should always be set.
 		logger.warn(
 			'NEXT_PUBLIC_API_URL is not set. Falling back to relative path.',
 		);
@@ -33,6 +30,8 @@ async function apiClient<T>(
 			'Content-Type': 'application/json',
 			...options.headers,
 		},
+		// --- CRITICAL: Always include credentials for cross-domain auth ---
+		credentials: 'include',
 		...options,
 	};
 
