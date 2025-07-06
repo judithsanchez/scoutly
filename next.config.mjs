@@ -29,6 +29,19 @@ const nextConfig = {
 		esmExternals: 'loose',
 	},
 	async headers() {
+		// Determine CORS origin based on environment
+		const isProd = process.env.NODE_ENV === 'production';
+		const isDev = process.env.NODE_ENV === 'development';
+
+		let allowedOrigin;
+		if (isDev) {
+			// In development, allow localhost
+			allowedOrigin = 'http://localhost:3000';
+		} else {
+			// In production, allow the specific production domain
+			allowedOrigin = 'https://www.jobscoutly.tech';
+		}
+
 		return [
 			{
 				// Apply these headers to all routes
@@ -37,7 +50,7 @@ const nextConfig = {
 					{key: 'Access-Control-Allow-Credentials', value: 'true'},
 					{
 						key: 'Access-Control-Allow-Origin',
-						value: 'https://www.jobscoutly.tech',
+						value: allowedOrigin,
 					},
 					{
 						key: 'Access-Control-Allow-Methods',
