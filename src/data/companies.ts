@@ -1,8 +1,18 @@
-import {connectDB} from '../config/database';
-import {CompanyService} from '../services/companyService';
-import {WorkModel} from '../models/Company';
+import {WorkModel} from '@/models/Company';
 
-const companies = [
+export interface CompanySeed {
+	companyID: string;
+	company: string;
+	careers_url: string;
+	selector: string;
+	work_model: WorkModel;
+	headquarters: string;
+	office_locations: string[];
+	fields: string[];
+	openToApplication?: boolean;
+}
+
+export const companies: CompanySeed[] = [
 	{
 		companyID: '37signals',
 		company: '37signals',
@@ -1286,38 +1296,3 @@ const companies = [
 		openToApplication: true,
 	},
 ];
-
-async function seedCompanies() {
-	try {
-		await connectDB();
-		console.log('Connected to database');
-
-		// Clear existing companies
-		await CompanyService.deleteMany();
-		console.log('Cleared existing companies');
-
-		// Insert new companies
-		const companiesToCreate = companies.map(company => ({
-			companyID: company.companyID!,
-			company: company.company!,
-			careers_url: company.careers_url!,
-			selector: company.selector,
-			work_model: company.work_model,
-			headquarters: company.headquarters,
-			office_locations: company.office_locations,
-			fields: company.fields,
-		}));
-
-		const createdCompanies = await CompanyService.bulkCreateCompanies(
-			companiesToCreate,
-		);
-		console.log(`Successfully seeded ${createdCompanies.length} companies`);
-
-		// Give time for any pending operations to complete
-		setTimeout(() => process.exit(0), 1000);
-	} catch (error) {
-		console.error('Error seeding companies:', error);
-		setTimeout(() => process.exit(1), 1000);
-	}
-} // Run the seed function
-seedCompanies();
