@@ -302,62 +302,43 @@ export default function DashboardPage() {
 
 									setSearchComplete(null);
 									try {
-										// Step 1: Fetch user profile
-										logger?.info('Fetching user profile for job search');
-										const userProfileUrl = '/api/users/profile';
-										logger?.logApiRequest(userProfileUrl, 'GET');
-
-										const userResponse = await fetch(userProfileUrl);
-										logger?.logApiResponse(userProfileUrl, userResponse.status);
-
-										if (!userResponse.ok) {
-											const errorText = await userResponse.text();
-											logger?.error('Failed to fetch user profile', {
-												status: userResponse.status,
+										// Step 1: Fetch user info (candidate info) from new endpoint
+										logger?.info('Fetching user info for job search');
+										const userQueryRes = await fetch('/api/users/query', {
+											method: 'POST',
+											headers: {'Content-Type': 'application/json'},
+											body: JSON.stringify({email: user.email}),
+										});
+										if (!userQueryRes.ok) {
+											const errorText = await userQueryRes.text();
+											logger?.error('Failed to fetch user info', {
+												status: userQueryRes.status,
 												response: errorText,
 												userEmail: user.email,
 											});
 											throw new Error(
-												`Failed to fetch user profile. Status: ${userResponse.status}`,
+												`Failed to fetch user info. Status: ${userQueryRes.status}`,
 											);
 										}
-										const userData = await userResponse.json();
+										const userData = await userQueryRes.json();
+										const candidateInfo = userData?.user || {};
+										const cvUrl =
+											candidateInfo.cvUrl || candidateInfo.cv_url || null;
 
-										logger?.info('User profile fetched successfully', {
-											hasCvUrl: !!userData.cvUrl,
-											hasCandidateInfo: !!userData.candidateInfo,
-											userEmail: user.email,
-										});
-
-										// Step 2: Validate user profile completeness
-										const missingFields = [];
-										if (!userData.cvUrl) {
-											missingFields.push('CV/Resume URL');
-										}
-										if (!userData.candidateInfo) {
-											missingFields.push('candidate information');
-										}
-
-										if (missingFields.length > 0) {
-											logger?.warn('User profile incomplete', {
-												missingFields,
-												userEmail: user.email,
-											});
+										if (!cvUrl) {
 											throw new Error(
-												`Please complete your profile first. Missing: ${missingFields.join(
-													', ',
-												)}. Visit your profile page to add this information.`,
+												'Please complete your profile first. Missing: CV/Resume URL. Visit your profile page to add this information.',
 											);
 										}
 
-										// Step 3: Prepare and send job search request
+										// Step 2: Prepare and send job search request
 										const requestBody = {
 											credentials: {
 												gmail: user.email,
 											},
 											companyIds: selectedCompanyIds,
-											cvUrl: userData.cvUrl,
-											candidateInfo: userData.candidateInfo,
+											cvUrl,
+											candidateInfo,
 										};
 
 										logger?.info('Sending job search request', {
@@ -387,8 +368,8 @@ export default function DashboardPage() {
 												errorData,
 												requestBody: {
 													...requestBody,
-													cvUrl: userData.cvUrl ? '[PRESENT]' : '[MISSING]',
-													candidateInfo: userData.candidateInfo
+													cvUrl: cvUrl ? '[PRESENT]' : '[MISSING]',
+													candidateInfo: candidateInfo
 														? '[PRESENT]'
 														: '[MISSING]',
 												},

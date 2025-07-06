@@ -4,6 +4,7 @@ import {JobMatchingOrchestrator} from '@/services/jobMatchingOrchestrator';
 import dbConnect from '@/middleware/database';
 import {NextRequest, NextResponse} from 'next/server';
 import {UserService} from '@/services/userService';
+import {JobMatchingResponseSchema} from '@/schemas/jobMatchingSchemas';
 
 const logger = new Logger('JobsAPI');
 
@@ -14,6 +15,38 @@ export interface JobAnalysisRequest {
 	companyIds: string[];
 	cvUrl: string;
 	candidateInfo: Record<string, any>;
+}
+
+// Helper to fill missing fields with defaults for Zod validation
+function normalizeJobMatchResult(result: any) {
+	return {
+		considerationPoints: result.considerationPoints ?? [],
+		goodFitReasons: result.goodFitReasons ?? [],
+		stretchGoals: result.stretchGoals ?? [],
+		suitabilityScore: result.suitabilityScore ?? 0,
+		title: result.title ?? '',
+		url: result.url ?? '',
+		experienceLevel: result.experienceLevel ?? '',
+		languageRequirements: result.languageRequirements ?? [],
+		location: result.location ?? '',
+		relocationAssistanceOffered: result.relocationAssistanceOffered ?? false,
+		salary: result.salary ?? {},
+		techStack: result.techStack ?? [],
+		timezone: result.timezone ?? '',
+		visaSponsorshipOffered: result.visaSponsorshipOffered ?? false,
+	};
+}
+
+function normalizeCompanyResult(companyResult: any) {
+	return {
+		company: companyResult.company ?? '',
+		processed: companyResult.processed ?? false,
+		results: Array.isArray(companyResult.results)
+			? companyResult.results.map(normalizeJobMatchResult)
+			: [],
+		error: companyResult.error,
+		companyId: companyResult.companyId,
+	};
 }
 
 export async function POST(request: NextRequest) {
@@ -138,15 +171,99 @@ export async function POST(request: NextRequest) {
 			}
 		}
 
-		return NextResponse.json({results});
+		// Normalize results for Zod validation
+		const normalizedResults = results.map(normalizeCompanyResult);
+
+		// Validate and document the response with Zod
+		const response = JobMatchingResponseSchema.parse({
+			results: normalizedResults,
+		});
+
+		return NextResponse.json(response);
 	} catch (error: any) {
 		logger.error('Error in /api/jobs route:', {
 			message: error.message,
 			stack: error.stack,
 		});
 		return NextResponse.json(
-			{error: error.message || 'An internal server error occurred.'},
+			{
+				error: error.errors
+					? JSON.stringify(error.errors, null, 2)
+					: error.message || 'An internal server error occurred.',
+			},
 			{status: 500},
 		);
 	}
 }
+
+/**
+ * @openapi
+ * /api/jobs:
+ *   post:
+ *     summary: Run AI-powered job matching for a candidate across selected companies.
+ *     description: |
+ *       Given a user's credentials, a list of company IDs, a CV URL, and candidate info, this endpoint orchestrates an AI-powered job matching workflow for each company.
+ *       Returns a list of results per company, each containing an array of matched jobs and analysis details.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               credentials:
+ *                 type: object
+ *                 properties:
+ *                   gmail:
+ *                     type: string
+ *                     description: User's email address.
+ *                 required:
+ *                   - gmail
+ *               companyIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of company IDs to match against.
+ *               cvUrl:
+ *                 type: string
+ *                 description: Publicly accessible URL to the candidate's CV.
+ *               candidateInfo:
+ *                 type: object
+ *                 description: Candidate profile information.
+ *             required:
+ *               - credentials
+ *               - companyIds
+ *               - cvUrl
+ *               - candidateInfo
+ *     responses:
+ *       200:
+ *         description: Job matching results per company.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/JobMatchingResponse'
+ *       400:
+ *         description: Validation error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */

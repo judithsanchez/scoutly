@@ -32,6 +32,8 @@ RUN apt-get update && apt-get install -y \
     # Clean up the cache to keep the image smaller
     && rm -rf /var/lib/apt/lists/*
 
+# Symlink chromium-browser to chromium for compatibility with scraping libraries
+RUN ln -s /usr/bin/chromium /usr/bin/chromium-browser || true
 
 # Install Python library
 RUN pip3 install PyMuPDF==1.24.1 --break-system-packages
