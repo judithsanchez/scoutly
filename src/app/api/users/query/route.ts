@@ -11,6 +11,7 @@ import {
 	QueryUsersRequest,
 } from '@/schemas/userQuerySchemas';
 import {ErrorResponseSchema} from '@/schemas/userSchemas';
+import {calculateFrequency} from '@/utils/frequency';
 
 const logger = EnhancedLogger.getLogger('UsersQueryAPI', {
 	logToFile: true,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 					userPreference: {
 						rank: preference.rank,
 						isTracking: preference.isTracking,
-						frequency: getRankingFrequency(preference.rank),
+						frequency: calculateFrequency(preference.rank),
 						lastUpdated: preference.updatedAt
 							? new Date(preference.updatedAt as any).toISOString()
 							: undefined,
@@ -151,8 +152,7 @@ export async function POST(request: NextRequest) {
 						userPreference: {
 							rank: preference.rank,
 							isTracking: preference.isTracking,
-							frequency:
-								preference.frequency || getRankingFrequency(preference.rank),
+							frequency: calculateFrequency(preference.rank),
 							lastUpdated: preference.updatedAt,
 						},
 					};
@@ -188,13 +188,4 @@ export async function POST(request: NextRequest) {
 			{status: 500},
 		);
 	}
-}
-
-// Helper function to convert ranking to frequency description
-function getRankingFrequency(ranking: number): string {
-	if (ranking >= 90) return 'Daily';
-	if (ranking >= 80) return 'Every 2 days';
-	if (ranking >= 70) return 'Weekly';
-	if (ranking >= 60) return 'Bi-weekly';
-	return 'Monthly';
 }

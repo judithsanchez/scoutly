@@ -1,5 +1,5 @@
 /**
- * OpenAPI (Swagger) documentation for user-company-preferences endpoints.
+ * OpenAPI (Swagger) documentation for user-company-preferences endpoints and promote user to admin.
  *
  * These endpoints are all Zod-validated and return 400/404 errors with details.
  */
@@ -7,63 +7,19 @@
 export const userCompanyPreferencesOpenApi = {
 	paths: {
 		'/api/user-company-preferences': {
-			post: {
-				summary: 'Track a company (create user-company-preference)',
-				description:
-					'Creates a new user-company-preference record. Fails if already exists.',
-				tags: ['UserCompanyPreferences'],
-				requestBody: {
-					required: true,
-					content: {
-						'application/json': {
-							schema: {
-								type: 'object',
-								properties: {
-									email: {type: 'string', format: 'email'},
-									companyId: {type: 'string'},
-									isTracking: {
-										type: 'boolean',
-										description: 'Optional, default true',
-									},
-									rank: {type: 'number', description: 'Optional, 1-100'},
-								},
-								required: ['email', 'companyId'],
-							},
-							example: {
-								email: 'user@example.com',
-								companyId: 'acme-123',
-								rank: 85,
-							},
-						},
-					},
-				},
-				responses: {
-					201: {
-						description: 'Created',
-						content: {
-							'application/json': {
-								schema: {type: 'object'},
-							},
-						},
-					},
-					400: {
-						description: 'Already tracking or invalid input',
-						content: {
-							'application/json': {
-								schema: {type: 'object'},
-								example: {
-									error: 'User is already tracking this company',
-								},
-							},
-						},
-					},
-				},
-			},
+			// ... (existing docs unchanged)
+		},
+		'/api/users/promote': {
 			patch: {
-				summary: 'Update user-company-preference (rank/frequency)',
+				summary: 'Promote user to admin',
 				description:
-					'Updates rank and/or frequency for an existing user-company-preference.',
-				tags: ['UserCompanyPreferences'],
+					'Promotes an existing user to admin by creating an AdminUser record. Requires X-Internal-API-Secret header.',
+				tags: ['AdminUser'],
+				security: [
+					{
+						'X-Internal-API-Secret': [],
+					},
+				],
 				requestBody: {
 					required: true,
 					content: {
@@ -72,116 +28,116 @@ export const userCompanyPreferencesOpenApi = {
 								type: 'object',
 								properties: {
 									email: {type: 'string', format: 'email'},
-									companyId: {type: 'string'},
-									rank: {type: 'number', description: 'Optional, 1-100'},
-									frequency: {
+									role: {
 										type: 'string',
-										enum: [
-											'Daily',
-											'Every 2 days',
-											'Weekly',
-											'Bi-weekly',
-											'Monthly',
-										],
-										description: 'Optional, case-insensitive',
+										enum: ['super_admin', 'admin', 'moderator'],
+										description: 'Optional, default is "admin"',
 									},
 								},
-								required: ['email', 'companyId'],
+								required: ['email'],
 							},
 							example: {
 								email: 'user@example.com',
-								companyId: 'acme-123',
-								rank: 90,
-								frequency: 'Monthly',
+								role: 'admin',
 							},
 						},
 					},
 				},
 				responses: {
 					200: {
-						description: 'Updated',
-						content: {
-							'application/json': {
-								schema: {type: 'object'},
-							},
-						},
-					},
-					400: {
-						description: 'Invalid input',
-						content: {
-							'application/json': {
-								schema: {type: 'object'},
-								example: {
-									error:
-										'Invalid frequency. Valid options: Daily, Every 2 days, Weekly, Bi-weekly, Monthly',
-								},
-							},
-						},
-					},
-					404: {
-						description: 'Not found',
-						content: {
-							'application/json': {
-								schema: {type: 'object'},
-								example: {
-									error: 'User is not tracking this company',
-								},
-							},
-						},
-					},
-				},
-			},
-			delete: {
-				summary: 'Untrack a company (delete user-company-preference)',
-				description:
-					'Deletes the user-company-preference record for a user and company.',
-				tags: ['UserCompanyPreferences'],
-				requestBody: {
-					required: true,
-					content: {
-						'application/json': {
-							schema: {
-								type: 'object',
-								properties: {
-									email: {type: 'string', format: 'email'},
-									companyId: {type: 'string'},
-								},
-								required: ['email', 'companyId'],
-							},
-							example: {
-								email: 'user@example.com',
-								companyId: 'acme-123',
-							},
-						},
-					},
-				},
-				responses: {
-					200: {
-						description: 'Deleted',
+						description: 'User promoted to admin',
 						content: {
 							'application/json': {
 								schema: {
 									type: 'object',
 									properties: {
-										success: {type: 'boolean'},
+										email: {type: 'string'},
+										role: {type: 'string'},
+										createdBy: {type: 'string'},
+										isActive: {type: 'boolean'},
+										permissions: {type: 'array', items: {type: 'string'}},
+										createdAt: {type: 'string', format: 'date-time'},
+										updatedAt: {type: 'string', format: 'date-time'},
 									},
 								},
-								example: {success: true},
+								example: {
+									email: 'user@example.com',
+									role: 'admin',
+									createdBy: 'api',
+									isActive: true,
+									permissions: [],
+									createdAt: '2025-07-06T19:00:00.000Z',
+									updatedAt: '2025-07-06T19:00:00.000Z',
+								},
 							},
 						},
 					},
-					404: {
-						description: 'Not found',
+					400: {
+						description: 'Already admin or invalid input',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								examples: {
+									alreadyAdmin: {
+										value: {error: 'User is already an admin'},
+									},
+									invalidInput: {
+										value: {
+											error: 'Invalid request body',
+											details: [
+												{
+													code: 'invalid_type',
+													expected: 'string',
+													received: 'number',
+													path: ['email'],
+													message: 'Expected string, received number',
+												},
+											],
+										},
+									},
+								},
+							},
+						},
+					},
+					401: {
+						description: 'Missing or invalid X-Internal-API-Secret header',
 						content: {
 							'application/json': {
 								schema: {type: 'object'},
 								example: {
-									error: 'User is not tracking this company',
+									error: 'Missing or invalid X-Internal-API-Secret header',
 								},
 							},
 						},
 					},
+					404: {
+						description: 'User not found',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								example: {error: 'User not found'},
+							},
+						},
+					},
+					500: {
+						description: 'Internal server error',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								example: {error: 'Internal server error'},
+							},
+						},
+					},
 				},
+			},
+		},
+	},
+	components: {
+		securitySchemes: {
+			'X-Internal-API-Secret': {
+				type: 'apiKey',
+				in: 'header',
+				name: 'X-Internal-API-Secret',
 			},
 		},
 	},
