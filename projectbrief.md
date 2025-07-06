@@ -8,6 +8,7 @@ A job listing aggregator with advanced scraping capabilities and MongoDB integra
 
 ### Current State (June 2025)
 
+- **Strict API-Only Data Access**: All client-side data access is performed exclusively via API endpoints (Next.js API routes). The client is strictly forbidden from calling the database directly. This rule is enforced throughout the codebase.
 - **Simplified Architecture**: Direct execution model without background job queues
 - **AI Integration**: Gemini API for intelligent job analysis and matching
 - **User Preferences**: Tracked companies stored as simple array on User model
