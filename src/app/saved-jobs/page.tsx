@@ -87,7 +87,7 @@ export default function SavedJobsPage() {
 			try {
 				logger.info('Fetching saved jobs', {email: user.email});
 				const data = await apiClient<SavedJobResponse>(
-					`jobs/saved?email=${encodeURIComponent(user.email)}`,
+					`/api/jobs/saved?email=${encodeURIComponent(user.email)}`,
 				);
 				const sortedJobs = data.jobs.sort((a, b) => {
 					const statusDiff =
