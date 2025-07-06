@@ -1,327 +1,188 @@
-import {
-	OpenApiGeneratorV3,
-	OpenAPIRegistry,
-} from '@asteasolutions/zod-to-openapi';
-import {
-	CreateUserRequestSchema,
-	CreateUserResponseSchema,
-	GetUsersResponseSchema,
-	ErrorResponseSchema,
-} from '@/schemas/userSchemas';
-
-import {
-	QueryUsersRequestSchema,
-	QueryUsersSingleResponseSchema,
-	QueryUsersMultipleResponseSchema,
-} from '@/schemas/userQuerySchemas';
-
-// Create OpenAPI registry
-const registry = new OpenAPIRegistry();
-
-// Register schemas
-registry.register('CreateUserRequest', CreateUserRequestSchema);
-registry.register('CreateUserResponse', CreateUserResponseSchema);
-registry.register('GetUsersResponse', GetUsersResponseSchema);
-registry.register('ErrorResponse', ErrorResponseSchema);
-
-import {
-	GetCompaniesResponseSchema,
-	CreateCompanyRequestSchema,
-	CreateCompanyResponseSchema,
-	UpdateRankingsResponseSchema,
-} from '@/schemas/companySchemas';
-import {z} from 'zod';
-
-registry.registerPath({
-	method: 'post',
-	path: '/api/users',
-	description: 'Create a new user',
-	summary: 'Register a new user account',
-	tags: ['Users'],
-	request: {
-		body: {
-			content: {
-				'application/json': {
-					schema: CreateUserRequestSchema,
-				},
-			},
-		},
-	},
-	responses: {
-		200: {
-			description: 'User created successfully',
-			content: {
-				'application/json': {
-					schema: CreateUserResponseSchema,
-				},
-			},
-		},
-		400: {
-			description: 'Invalid request body',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-	},
-});
-
-// Register /api/users/query
-registry.registerPath({
-	method: 'post',
-	path: '/api/users/query',
-	description: 'Query users by email(s) and get enriched user data',
-	summary: 'Query users (single or batch)',
-	tags: ['Users'],
-	request: {
-		body: {
-			content: {
-				'application/json': {
-					schema: QueryUsersRequestSchema,
-				},
-			},
-		},
-	},
-	responses: {
-		200: {
-			description: 'Enriched user(s) data',
-			content: {
-				'application/json': {
-					schema: QueryUsersSingleResponseSchema, // For single user
-				},
-				'application/json;multiple': {
-					schema: QueryUsersMultipleResponseSchema, // For multiple users
-				},
-			},
-		},
-		400: {
-			description: 'Invalid request body',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-		404: {
-			description: 'User not found',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-	},
-});
-
 /**
- * POST /api/admin/seed-companies
- * Seeds the companies collection with test data.
+ * OpenAPI (Swagger) documentation for user-company-preferences endpoints.
+ *
+ * These endpoints are all Zod-validated and return 400/404 errors with details.
  */
-registry.registerPath({
-	method: 'post',
-	path: '/api/admin/seed-companies',
-	description: 'Seed the companies collection with test data',
-	summary: 'Seed companies (development only)',
-	tags: ['Companies'],
-	responses: {
-		200: {
-			description: 'Companies seeded successfully',
-			content: {
-				'application/json': {
-					schema: z.object({
-						success: z.boolean(),
-					}),
+
+export const userCompanyPreferencesOpenApi = {
+	paths: {
+		'/api/user-company-preferences': {
+			post: {
+				summary: 'Track a company (create user-company-preference)',
+				description:
+					'Creates a new user-company-preference record. Fails if already exists.',
+				tags: ['UserCompanyPreferences'],
+				requestBody: {
+					required: true,
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									email: {type: 'string', format: 'email'},
+									companyId: {type: 'string'},
+									isTracking: {
+										type: 'boolean',
+										description: 'Optional, default true',
+									},
+									rank: {type: 'number', description: 'Optional, 1-100'},
+								},
+								required: ['email', 'companyId'],
+							},
+							example: {
+								email: 'user@example.com',
+								companyId: 'acme-123',
+								rank: 85,
+							},
+						},
+					},
+				},
+				responses: {
+					201: {
+						description: 'Created',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+							},
+						},
+					},
+					400: {
+						description: 'Already tracking or invalid input',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								example: {
+									error: 'User is already tracking this company',
+								},
+							},
+						},
+					},
 				},
 			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
+			patch: {
+				summary: 'Update user-company-preference (rank/frequency)',
+				description:
+					'Updates rank and/or frequency for an existing user-company-preference.',
+				tags: ['UserCompanyPreferences'],
+				requestBody: {
+					required: true,
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									email: {type: 'string', format: 'email'},
+									companyId: {type: 'string'},
+									rank: {type: 'number', description: 'Optional, 1-100'},
+									frequency: {
+										type: 'string',
+										enum: [
+											'Daily',
+											'Every 2 days',
+											'Weekly',
+											'Bi-weekly',
+											'Monthly',
+										],
+										description: 'Optional, case-insensitive',
+									},
+								},
+								required: ['email', 'companyId'],
+							},
+							example: {
+								email: 'user@example.com',
+								companyId: 'acme-123',
+								rank: 90,
+								frequency: 'Monthly',
+							},
+						},
+					},
+				},
+				responses: {
+					200: {
+						description: 'Updated',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+							},
+						},
+					},
+					400: {
+						description: 'Invalid input',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								example: {
+									error:
+										'Invalid frequency. Valid options: Daily, Every 2 days, Weekly, Bi-weekly, Monthly',
+								},
+							},
+						},
+					},
+					404: {
+						description: 'Not found',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								example: {
+									error: 'User is not tracking this company',
+								},
+							},
+						},
+					},
+				},
+			},
+			delete: {
+				summary: 'Untrack a company (delete user-company-preference)',
+				description:
+					'Deletes the user-company-preference record for a user and company.',
+				tags: ['UserCompanyPreferences'],
+				requestBody: {
+					required: true,
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									email: {type: 'string', format: 'email'},
+									companyId: {type: 'string'},
+								},
+								required: ['email', 'companyId'],
+							},
+							example: {
+								email: 'user@example.com',
+								companyId: 'acme-123',
+							},
+						},
+					},
+				},
+				responses: {
+					200: {
+						description: 'Deleted',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										success: {type: 'boolean'},
+									},
+								},
+								example: {success: true},
+							},
+						},
+					},
+					404: {
+						description: 'Not found',
+						content: {
+							'application/json': {
+								schema: {type: 'object'},
+								example: {
+									error: 'User is not tracking this company',
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 	},
-});
-
-// Register /api/companies/create (POST)
-registry.registerPath({
-	method: 'post',
-	path: '/api/companies/create',
-	description: 'Create a new company',
-	summary: 'Create company',
-	tags: ['Companies'],
-	request: {
-		body: {
-			content: {
-				'application/json': {
-					schema: CreateCompanyRequestSchema,
-				},
-			},
-		},
-	},
-	responses: {
-		201: {
-			description: 'Company created successfully',
-			content: {
-				'application/json': {
-					schema: CreateCompanyResponseSchema,
-				},
-			},
-		},
-		400: {
-			description: 'Invalid request body or duplicate company',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-	},
-});
-
-// Register /api/companies/update-rankings (POST)
-registry.registerPath({
-	method: 'post',
-	path: '/api/companies/update-rankings',
-	description: 'Update company rankings for the default user',
-	summary: 'Update company rankings',
-	tags: ['Companies'],
-	responses: {
-		200: {
-			description: 'Company rankings updated successfully',
-			content: {
-				'application/json': {
-					schema: UpdateRankingsResponseSchema,
-				},
-			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-	},
-});
-
-// Register /api/companies (GET)
-registry.registerPath({
-	method: 'get',
-	path: '/api/companies',
-	description: 'Get all companies',
-	summary: 'Retrieve all companies',
-	tags: ['Companies'],
-	responses: {
-		200: {
-			description: 'Companies retrieved successfully',
-			content: {
-				'application/json': {
-					schema: GetCompaniesResponseSchema,
-				},
-			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-	},
-});
-
-registry.registerPath({
-	method: 'get',
-	path: '/api/users',
-	description: 'Get all users',
-	summary: 'Retrieve all users with their saved jobs',
-	tags: ['Users'],
-	responses: {
-		200: {
-			description: 'Users retrieved successfully',
-			content: {
-				'application/json': {
-					schema: GetUsersResponseSchema,
-				},
-			},
-		},
-		500: {
-			description: 'Internal server error',
-			content: {
-				'application/json': {
-					schema: ErrorResponseSchema,
-				},
-			},
-		},
-	},
-});
-
-// Generate OpenAPI document
-const generator = new OpenApiGeneratorV3(registry.definitions);
-
-export const openApiDocument = generator.generateDocument({
-	openapi: '3.0.0',
-	info: {
-		version: '1.0.0',
-		title: 'Scoutly API',
-		description:
-			'Job listing aggregator API with advanced scraping capabilities',
-		contact: {
-			name: 'Scoutly Support',
-			email: 'support@scoutly.com',
-		},
-		license: {
-			name: 'MIT',
-			url: 'https://opensource.org/licenses/MIT',
-		},
-	},
-	servers: [
-		{
-			url: 'http://localhost:3000',
-			description: 'Development server',
-		},
-		{
-			url: 'https://api.scoutly.com',
-			description: 'Production server',
-		},
-	],
-	tags: [
-		{
-			name: 'Users',
-			description: 'User management operations',
-		},
-	],
-});
-
-// Export for use in API routes or documentation generation
-export {registry};
+};

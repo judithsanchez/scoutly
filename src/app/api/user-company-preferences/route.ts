@@ -19,7 +19,7 @@ const UserCompanyPreferenceSchema = z.object({
 	companyId: z.string(),
 	isTracking: z.boolean().optional(),
 	rank: z.number().optional(),
-	frequency: z.string().optional(),
+	// frequency removed from POST schema
 });
 
 export async function POST(request: NextRequest) {
@@ -38,35 +38,9 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		let {email, companyId, isTracking, rank, frequency} = parseResult.data;
+		let {email, companyId, isTracking, rank} = parseResult.data;
 
-		// Normalize frequency (case-insensitive)
-		if (typeof frequency === 'string' && frequency) {
-			const match = VALID_FREQUENCIES.find(
-				f => f.toLowerCase() === frequency!.toLowerCase(),
-			);
-			if (!match) {
-				return NextResponse.json(
-					ErrorResponseSchema.parse({
-						error: `Invalid frequency. Valid options: ${VALID_FREQUENCIES.join(
-							', ',
-						)}`,
-						details: [
-							{
-								code: 'invalid_enum_value',
-								options: VALID_FREQUENCIES,
-								path: ['frequency'],
-								message: `Invalid enum value. Expected one of: ${VALID_FREQUENCIES.join(
-									' | ',
-								)}, received '${frequency}'`,
-							},
-						],
-					}),
-					{status: 400},
-				);
-			}
-			frequency = match;
-		}
+		// No frequency allowed in POST, so nothing to normalize
 
 		const user = await UserService.getUserByEmail(email);
 		if (!user) {
@@ -87,8 +61,7 @@ export async function POST(request: NextRequest) {
 		const createData: any = {};
 		if (typeof isTracking === 'boolean') createData.isTracking = isTracking;
 		if (typeof rank === 'number') createData.rank = rank;
-		if (typeof frequency === 'string' && frequency)
-			createData.frequency = frequency;
+		// Do not allow frequency in POST
 
 		const existingPref =
 			await UserCompanyPreferenceService.findByUserAndCompany(
@@ -152,12 +125,16 @@ export async function PATCH(request: NextRequest) {
 			);
 		}
 
-		let {email, companyId, isTracking, rank, frequency} = parseResult.data;
+		// Only allow frequency in PATCH, so get it from body directly
+		let {email, companyId, isTracking, rank} = parseResult.data;
+		const frequency =
+			typeof body.frequency === 'string' ? body.frequency : undefined;
 
 		// Normalize frequency (case-insensitive)
-		if (typeof frequency === 'string' && frequency) {
+		let normalizedFrequency = frequency;
+		if (typeof normalizedFrequency === 'string' && normalizedFrequency) {
 			const match = VALID_FREQUENCIES.find(
-				f => f.toLowerCase() === frequency!.toLowerCase(),
+				f => f.toLowerCase() === normalizedFrequency!.toLowerCase(),
 			);
 			if (!match) {
 				return NextResponse.json(
@@ -172,14 +149,14 @@ export async function PATCH(request: NextRequest) {
 								path: ['frequency'],
 								message: `Invalid enum value. Expected one of: ${VALID_FREQUENCIES.join(
 									' | ',
-								)}, received '${frequency}'`,
+								)}, received '${normalizedFrequency}'`,
 							},
 						],
 					}),
 					{status: 400},
 				);
 			}
-			frequency = match;
+			normalizedFrequency = match;
 		}
 
 		const user = await UserService.getUserByEmail(email);
@@ -200,8 +177,8 @@ export async function PATCH(request: NextRequest) {
 
 		const updateData: any = {};
 		if (typeof rank === 'number') updateData.rank = rank;
-		if (typeof frequency === 'string' && frequency)
-			updateData.frequency = frequency;
+		if (typeof normalizedFrequency === 'string' && normalizedFrequency)
+			updateData.frequency = normalizedFrequency;
 
 		// Find the existing preference
 		const existingPref =
@@ -242,6 +219,62 @@ export async function PATCH(request: NextRequest) {
 		};
 
 		return NextResponse.json(serialized);
+	} catch (error: any) {
+		return NextResponse.json(
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
+			{status: 500},
+		);
+	}
+}
+
+// DELETE /api/user-company-preferences
+export async function DELETE(request: NextRequest) {
+	try {
+		await dbConnect();
+		const body = await request.json();
+		const {email, companyId} = body;
+
+		if (!email || !companyId) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Missing email or companyId',
+				}),
+				{status: 400},
+			);
+		}
+
+		const user = await UserService.getUserByEmail(email);
+		if (!user) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'User not found'}),
+				{status: 404},
+			);
+		}
+
+		const company = await CompanyService.getCompanyById(companyId);
+		if (!company) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'Company not found'}),
+				{status: 404},
+			);
+		}
+
+		const pref = await UserCompanyPreferenceService.findByUserAndCompany(
+			(user as any)._id.toString(),
+			company.companyID,
+		);
+		if (!pref) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'User is not tracking this company'}),
+				{status: 404},
+			);
+		}
+
+		await pref.deleteOne();
+
+		return NextResponse.json({success: true});
 	} catch (error: any) {
 		return NextResponse.json(
 			ErrorResponseSchema.parse({
