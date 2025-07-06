@@ -1,117 +1,104 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {CompanyService} from '@/services/companyService';
 import dbConnect from '@/middleware/database';
-import {
-	CompanySchema,
-	CreateCompanyRequestSchema,
-} from '@/schemas/companySchemas';
+import {CompanyService} from '@/services/companyService';
+import {getServerSession} from 'next-auth/next';
+import {authOptions} from '@/lib/auth';
 import {ErrorResponseSchema} from '@/schemas/userSchemas';
+import {CreateCompanyRequestSchema} from '@/schemas/companySchemas';
+import {WorkModel} from '@/types/company';
 
-// PATCH /api/companies/[companyId] - Edit company info (partial update)
+// Helper to check admin
+async function requireAdmin(request: NextRequest) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user?.isAdmin) {
+		return NextResponse.json(
+			ErrorResponseSchema.parse({error: 'Admin access required'}),
+			{status: 403},
+		);
+	}
+	return null;
+}
+
+// PATCH: Update company details (admin only)
 export async function PATCH(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
 ) {
-	try {
-		await dbConnect();
-		const {companyId} = params;
-		const body = await request.json();
+	const adminCheck = await requireAdmin(request);
+	if (adminCheck) return adminCheck;
 
-		// Validate partial update (allow any subset of company fields except _id)
-		const parseResult = CreateCompanyRequestSchema.partial().safeParse(body);
-		if (!parseResult.success) {
-			return NextResponse.json(
-				ErrorResponseSchema.parse({
-					error: 'Invalid request body',
-					details: parseResult.error.errors,
-				}),
-				{status: 400},
-			);
-		}
+	await dbConnect();
+	const {companyId} = params;
+	const body = await request.json();
 
-		// Fix work_model type for update
-		const updateData = {
-			...parseResult.data,
-			...(parseResult.data.work_model && {
-				work_model: parseResult.data.work_model as any,
-			}),
-		};
-
-		const updated = await CompanyService.updateCompany(companyId, updateData);
-		if (!updated) {
-			return NextResponse.json(
-				ErrorResponseSchema.parse({error: 'Company not found'}),
-				{status: 404},
-			);
-		}
-
-		// Serialize for Zod
-		const obj =
-			typeof updated.toObject === 'function' ? updated.toObject() : updated;
-		const serialized = {
-			...obj,
-			_id: obj._id?.toString?.() ?? obj._id,
-			lastSuccessfulScrape: obj.lastSuccessfulScrape
-				? new Date(obj.lastSuccessfulScrape).toISOString()
-				: undefined,
-			createdAt: obj.createdAt
-				? new Date(obj.createdAt as any).toISOString()
-				: undefined,
-			updatedAt: obj.updatedAt
-				? new Date(obj.updatedAt as any).toISOString()
-				: undefined,
-			scrapeErrors: Array.isArray(obj.scrapeErrors)
-				? obj.scrapeErrors.map((e: any) => e?.toString?.() ?? e)
-				: [],
-		};
-
-		return NextResponse.json(CompanySchema.parse(serialized));
-	} catch (error: any) {
+	// Validate input (allow partial update)
+	const safe = CreateCompanyRequestSchema.partial().safeParse(body);
+	if (!safe.success) {
 		return NextResponse.json(
 			ErrorResponseSchema.parse({
-				error: error.message || 'Internal server error',
+				error: 'Invalid request body',
+				details: safe.error.errors,
 			}),
-			{status: 500},
+			{status: 400},
 		);
 	}
+
+	// Fix work_model type if needed
+	const patchData: any = {...safe.data};
+	if (
+		patchData.work_model &&
+		typeof patchData.work_model === 'string' &&
+		!Object.values(WorkModel).includes(patchData.work_model as WorkModel)
+	) {
+		// Try to map string to enum value
+		if (
+			patchData.work_model === 'FULLY_REMOTE' ||
+			patchData.work_model === 'HYBRID' ||
+			patchData.work_model === 'IN_OFFICE'
+		) {
+			patchData.work_model = patchData.work_model as WorkModel;
+		} else {
+			patchData.work_model = undefined;
+		}
+	}
+
+	// Remove work_model if not a valid enum value
+	if (
+		patchData.work_model &&
+		!Object.values(WorkModel).includes(patchData.work_model as WorkModel)
+	) {
+		delete patchData.work_model;
+	}
+
+	const updated = await CompanyService.updateCompany(companyId, patchData);
+	if (!updated) {
+		return NextResponse.json(
+			ErrorResponseSchema.parse({error: 'Company not found'}),
+			{status: 404},
+		);
+	}
+
+	return NextResponse.json({success: true, company: updated});
 }
 
-// DELETE /api/companies/[companyId] - Remove company and cascade delete user-company-preferences
+// DELETE: Remove company (admin only)
 export async function DELETE(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
 ) {
-	try {
-		await dbConnect();
-		const {companyId} = params;
+	const adminCheck = await requireAdmin(request);
+	if (adminCheck) return adminCheck;
 
-		const companyDoc = await CompanyService.getCompanyById(companyId);
-		if (!companyDoc) {
-			return NextResponse.json(
-				ErrorResponseSchema.parse({error: 'Company not found'}),
-				{status: 404},
-			);
-		}
+	await dbConnect();
+	const {companyId} = params;
 
-		// Remove company
-		await CompanyService.deleteCompany(companyId);
-
-		// Cascade delete user-company-preferences
-		const {UserCompanyPreference} = await import(
-			'@/models/UserCompanyPreference'
-		);
-		await UserCompanyPreference.deleteMany({companyId: companyDoc._id});
-
-		return NextResponse.json({
-			success: true,
-			message: 'Company and related preferences deleted',
-		});
-	} catch (error: any) {
+	const deleted = await CompanyService.deleteCompany(companyId);
+	if (!deleted) {
 		return NextResponse.json(
-			ErrorResponseSchema.parse({
-				error: error.message || 'Internal server error',
-			}),
-			{status: 500},
+			ErrorResponseSchema.parse({error: 'Company not found'}),
+			{status: 404},
 		);
 	}
+
+	return NextResponse.json({success: true});
 }
