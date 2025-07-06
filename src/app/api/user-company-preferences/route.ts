@@ -5,24 +5,7 @@ import {CompanyService} from '@/services/companyService';
 import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
 import {z} from 'zod';
 import {ErrorResponseSchema} from '@/schemas/userSchemas';
-
-const VALID_FREQUENCIES = [
-	'Daily',
-	'Every 2 days',
-	'Weekly',
-	'Bi-weekly',
-	'Monthly',
-];
-
-// Helper: Calculate frequency from rank (same as user info endpoint)
-function calculateFrequency(rank: number | undefined): string {
-	if (typeof rank !== 'number') return 'Weekly';
-	if (rank >= 90) return 'Daily';
-	if (rank >= 75) return 'Every 2 days';
-	if (rank >= 50) return 'Weekly';
-	if (rank >= 25) return 'Bi-weekly';
-	return 'Monthly';
-}
+import {calculateFrequency} from '@/utils/frequency';
 
 const UserCompanyPreferenceSchema = z.object({
 	email: z.string().email(),
@@ -172,4 +155,149 @@ export async function POST(request: NextRequest) {
 	}
 }
 
-// ... (rest of the PATCH, DELETE handlers remain unchanged)
+// --- PATCH handler for updating ranking ---
+export async function PATCH(request: NextRequest) {
+	try {
+		await dbConnect();
+		const body = await request.json();
+		const parseResult = UserCompanyPreferenceSchema.safeParse(body);
+
+		if (!parseResult.success) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Invalid request body',
+					details: parseResult.error.errors,
+				}),
+				{status: 400},
+			);
+		}
+
+		const {email, companyId, rank} = parseResult.data;
+
+		const user = await UserService.getUserByEmail(email);
+		if (!user) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'User not found'}),
+				{status: 404},
+			);
+		}
+
+		const company = await CompanyService.getCompanyById(companyId);
+		if (!company) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'Company not found'}),
+				{status: 404},
+			);
+		}
+
+		const pref = await UserCompanyPreferenceService.findByUserAndCompany(
+			(user as any)._id.toString(),
+			company.companyID,
+		);
+		if (!pref) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'User is not tracking this company',
+				}),
+				{status: 404},
+			);
+		}
+
+		if (typeof rank !== 'number') {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Rank is required and must be a number',
+				}),
+				{status: 400},
+			);
+		}
+
+		pref.rank = rank;
+		await pref.save();
+
+		// Serialize for response
+		const obj = typeof pref.toObject === 'function' ? pref.toObject() : pref;
+		const serialized = {
+			...obj,
+			_id: obj._id?.toString?.() ?? obj._id,
+			userId: obj.userId?.toString?.() ?? obj.userId,
+			companyId: obj.companyId?.toString?.() ?? obj.companyId,
+			updatedAt: obj.updatedAt
+				? new Date(obj.updatedAt as any).toISOString()
+				: undefined,
+			createdAt: obj.createdAt
+				? new Date(obj.createdAt as any).toISOString()
+				: undefined,
+		};
+
+		return NextResponse.json(serialized, {status: 200});
+	} catch (error: any) {
+		return NextResponse.json(
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
+			{status: 500},
+		);
+	}
+}
+
+// --- DELETE handler for untracking a company ---
+export async function DELETE(request: NextRequest) {
+	try {
+		await dbConnect();
+		const body = await request.json();
+		const parseResult = UserCompanyPreferenceSchema.safeParse(body);
+
+		if (!parseResult.success) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'Invalid request body',
+					details: parseResult.error.errors,
+				}),
+				{status: 400},
+			);
+		}
+
+		const {email, companyId} = parseResult.data;
+
+		const user = await UserService.getUserByEmail(email);
+		if (!user) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'User not found'}),
+				{status: 404},
+			);
+		}
+
+		const company = await CompanyService.getCompanyById(companyId);
+		if (!company) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({error: 'Company not found'}),
+				{status: 404},
+			);
+		}
+
+		const pref = await UserCompanyPreferenceService.findByUserAndCompany(
+			(user as any)._id.toString(),
+			company.companyID,
+		);
+		if (!pref) {
+			return NextResponse.json(
+				ErrorResponseSchema.parse({
+					error: 'User is not tracking this company',
+				}),
+				{status: 404},
+			);
+		}
+
+		await UserCompanyPreferenceService.deleteById(pref._id.toString());
+
+		return NextResponse.json({success: true});
+	} catch (error: any) {
+		return NextResponse.json(
+			ErrorResponseSchema.parse({
+				error: error.message || 'Internal server error',
+			}),
+			{status: 500},
+		);
+	}
+}

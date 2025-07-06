@@ -5,20 +5,12 @@ import {useSession} from 'next-auth/react';
 // Use NextAuth session for user email
 function getCurrentUserEmail(): string {
 	if (typeof window === 'undefined') return '';
-	// Use NextAuth's session if available
 	try {
-		// This will only work inside a React component/hook
-		// so we will fallback to window if not in React context
-		// (for SSR, this will be empty string)
-		// The correct way is to pass the email as a prop from the component using the hook
-		// but for now, we try to get it from window.__NEXTAUTH_SESSION
-		// (You may want to refactor to pass email as a prop)
 		// @ts-ignore
 		if (window.__NEXTAUTH_SESSION && window.__NEXTAUTH_SESSION.user?.email) {
 			// @ts-ignore
 			return window.__NEXTAUTH_SESSION.user.email;
 		}
-		// fallback: try to get from localStorage/sessionStorage if you store it there
 		return '';
 	} catch {
 		return '';
@@ -51,9 +43,7 @@ async function fetchCompanies() {
 	return response.json();
 }
 
-// NOTE: Update this if tracked companies are now fetched via /api/users/query
-async function fetchTrackedCompanies(): Promise<TrackedCompany[]> {
-	const email = getCurrentUserEmail();
+async function fetchTrackedCompanies(email: string): Promise<TrackedCompany[]> {
 	if (!email) throw new Error('User not authenticated');
 	const response = await fetch(
 		'/api/user-company-preferences?email=' + encodeURIComponent(email),
@@ -65,21 +55,16 @@ async function fetchTrackedCompanies(): Promise<TrackedCompany[]> {
 	return data.companies;
 }
 
-async function trackCompany(
-	companyIdOrParams: string | {companyId: string; rank?: number},
-) {
-	const email = getCurrentUserEmail();
+async function trackCompany({
+	email,
+	companyId,
+	rank,
+}: {
+	email: string;
+	companyId: string;
+	rank?: number;
+}) {
 	if (!email) throw new Error('User not authenticated');
-	let companyId: string;
-	let rank: number = 75;
-
-	if (typeof companyIdOrParams === 'string') {
-		companyId = companyIdOrParams;
-	} else {
-		companyId = companyIdOrParams.companyId;
-		rank = companyIdOrParams.rank ?? 75;
-	}
-
 	const response = await fetch('/api/user-company-preferences', {
 		method: 'POST',
 		headers: {
@@ -94,8 +79,13 @@ async function trackCompany(
 	return response.json();
 }
 
-async function untrackCompany(companyId: string) {
-	const email = getCurrentUserEmail();
+async function untrackCompany({
+	email,
+	companyId,
+}: {
+	email: string;
+	companyId: string;
+}) {
 	if (!email) throw new Error('User not authenticated');
 	const response = await fetch('/api/user-company-preferences', {
 		method: 'DELETE',
@@ -111,10 +101,16 @@ async function untrackCompany(companyId: string) {
 	return response.json();
 }
 
-async function updateRanking(params: {companyId: string; rank: number}) {
-	const email = getCurrentUserEmail();
+async function updateRanking({
+	email,
+	companyId,
+	rank,
+}: {
+	email: string;
+	companyId: string;
+	rank: number;
+}) {
 	if (!email) throw new Error('User not authenticated');
-	const {companyId, rank} = params;
 	const response = await fetch('/api/user-company-preferences', {
 		method: 'PATCH',
 		headers: {
@@ -145,11 +141,9 @@ async function createCompany(companyData: CreateCompanyInput) {
 }
 
 export function useCompanies() {
-	// Use NextAuth session for user email
 	const {data: session} = useSession();
 	const queryClient = useQueryClient();
 
-	// Patch getCurrentUserEmail to use session if available
 	function getEmail() {
 		return session?.user?.email || getCurrentUserEmail();
 	}
@@ -172,18 +166,7 @@ export function useCompanies() {
 
 	const trackedCompaniesQuery = useQuery<TrackedCompany[], Error>({
 		queryKey: ['trackedCompanies', getEmail()],
-		queryFn: async () => {
-			const email = getEmail();
-			if (!email) throw new Error('User not authenticated');
-			const response = await fetch(
-				'/api/user-company-preferences?email=' + encodeURIComponent(email),
-			);
-			if (!response.ok) {
-				throw new Error('Failed to fetch tracked companies');
-			}
-			const data: TrackedCompaniesResponse = await response.json();
-			return data.companies;
-		},
+		queryFn: () => fetchTrackedCompanies(getEmail()),
 		enabled: !!getEmail(),
 		retry: (failureCount, error) => {
 			if (error instanceof Error) {
@@ -199,7 +182,8 @@ export function useCompanies() {
 	});
 
 	const trackMutation = useMutation({
-		mutationFn: trackCompany,
+		mutationFn: ({companyId, rank}: {companyId: string; rank?: number}) =>
+			trackCompany({email: getEmail(), companyId, rank}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: ['trackedCompanies', getEmail()],
@@ -208,7 +192,8 @@ export function useCompanies() {
 	});
 
 	const untrackMutation = useMutation({
-		mutationFn: untrackCompany,
+		mutationFn: ({companyId}: {companyId: string}) =>
+			untrackCompany({email: getEmail(), companyId}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: ['trackedCompanies', getEmail()],
@@ -217,7 +202,8 @@ export function useCompanies() {
 	});
 
 	const updateRankingMutation = useMutation({
-		mutationFn: updateRanking,
+		mutationFn: ({companyId, rank}: {companyId: string; rank: number}) =>
+			updateRanking({email: getEmail(), companyId, rank}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: ['trackedCompanies', getEmail()],
@@ -246,7 +232,7 @@ export function useCompanies() {
 		},
 		trackCompany: (companyId: string, rank?: number) =>
 			trackMutation.mutate({companyId, rank}),
-		untrackCompany: untrackMutation.mutate,
+		untrackCompany: (companyId: string) => untrackMutation.mutate({companyId}),
 		updateRanking: (companyId: string, rank: number) =>
 			updateRankingMutation.mutate({companyId, rank}),
 		createCompany: (companyData: any) =>

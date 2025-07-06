@@ -82,4 +82,11 @@ export class UserCompanyPreferenceService {
 
 		return preference;
 	}
+
+	/**
+	 * Delete a user-company preference by its MongoDB _id
+	 */
+	static async deleteById(prefId: string) {
+		return UserCompanyPreference.findByIdAndDelete(prefId);
+	}
 }
