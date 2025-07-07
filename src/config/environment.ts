@@ -115,18 +115,18 @@ export const isRaspberryPi = environmentConfig.isRaspberryPi;
 
 let MONGODB_URI: string | undefined;
 
-// Explicitly check for the Vercel environment first.
 if (environmentConfig.environment === 'vercel') {
 	MONGODB_URI = process.env.MONGODB_URI;
+} else if (environmentConfig.environment === 'raspberry-pi') {
+	MONGODB_URI = process.env.MONGODB_URI;
 } else {
-	// All other environments (development, raspberry-pi) use the local URI.
 	MONGODB_URI = process.env.MONGODB_URI_LOCAL;
 }
 
 if (!MONGODB_URI) {
-	if (environmentConfig.isVercel) {
+	if (environmentConfig.environment === 'vercel' || environmentConfig.environment === 'raspberry-pi') {
 		throw new Error(
-			'CRITICAL: MONGODB_URI is not defined in the Vercel environment.',
+			`CRITICAL: MONGODB_URI is not defined for the ${environmentConfig.environment} environment.`,
 		);
 	} else {
 		throw new Error(
