@@ -1,3 +1,12 @@
+## Next.js Dynamic Route Handling
+
+For any API route or page that must always return up-to-date, user-specific, or sensitive data (such as admin dashboards or authenticated endpoints), you must use:
+
+```typescript
+export const dynamic = 'force-dynamic';
+```
+
+This directive tells Next.js to always render the route on the server for every request, never cache or statically generate it, and ensures that the response is always fresh and secure. This is critical for admin, dashboard, or any authenticated API endpoints.
 Scoutly Application Architecture Summary
 This document outlines the complete technical architecture for the Scoutly application, a full-stack project with a self-hosted backend on a Raspberry Pi and a globally deployed frontend on Vercel.
 
@@ -9,7 +18,6 @@ Frontend & Auth (Vercel): A Next.js application hosted on Vercel for high perfor
 Backend & Database (Raspberry Pi): The same Next.js application, along with a MongoDB database, running in Docker containers. This instance's primary role is to serve the backend API.
 
 Networking (Cloudflare): Manages the project's DNS and provides a secure tunnel to expose the self-hosted backend services to the internet without opening any ports on the local router.
-
 
 ❗ **Strict Database Access Policy:**
 Under NO CIRCUMSTANCE should any part of the codebase (including authentication, serverless functions, or frontend logic) connect directly to the database except for the backend API running on the Raspberry Pi. All data access—including authentication/session enrichment—must be performed via HTTP requests to the backend API endpoints. This ensures security, maintainability, and proper separation of concerns. Direct database access from Vercel, serverless, or frontend code is strictly prohibited.
