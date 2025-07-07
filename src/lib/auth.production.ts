@@ -85,25 +85,45 @@ export const productionAuthOptions: NextAuthOptions = {
 				const email = user?.email || token.email;
 				if (email) {
 					try {
-						await connectToDB();
+						const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+						if (!internalApiUrl) throw new Error('Internal API URL is not configured.');
 
-						const userData = await User.findOne({
-							email: email.toLowerCase(),
+						// Fetch user profile from backend API
+						const profileRes = await fetch(`${internalApiUrl}/api/users/profile`, {
+							method: 'GET',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
+								'X-User-Email': email,
+							},
 						});
+						let userData = null;
+						if (profileRes.ok) {
+							userData = await profileRes.json();
+						}
 
-						const isAdmin = await AdminUser.findOne({
-							email: email.toLowerCase(),
+						// Fetch admin status from backend API
+						const adminRes = await fetch(`${internalApiUrl}/api/internal/auth/is-admin`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
+							},
+							body: JSON.stringify({ email }),
 						});
+						let isAdmin = false;
+						if (adminRes.ok) {
+							const adminData = await adminRes.json();
+							isAdmin = !!adminData.isAdmin;
+						}
 
-						const hasCompleteProfile = !!(
-							userData?.cvUrl && userData?.candidateInfo
-						);
+						const hasCompleteProfile = !!(userData?.cvUrl && userData?.candidateInfo);
 
-						token.isAdmin = !!isAdmin;
+						token.isAdmin = isAdmin;
 						token.hasCompleteProfile = hasCompleteProfile;
 						token.cvUrl = userData?.cvUrl;
 					} catch (error) {
-						console.error('Error enriching JWT:', error);
+						console.error('Error enriching JWT (via API):', error);
 						token.isAdmin = false;
 						token.hasCompleteProfile = false;
 					}
