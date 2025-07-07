@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import {Logger} from '@/utils/logger';
 import {CompanyService} from '@/services/companyService';
 import {JobMatchingOrchestrator} from '@/services/jobMatchingOrchestrator';

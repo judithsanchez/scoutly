@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
 import dbConnect from '@/middleware/database';
 import {SavedJob} from '@/models/SavedJob';

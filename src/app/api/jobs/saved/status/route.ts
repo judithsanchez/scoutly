@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import {Logger} from '@/utils/logger';
 import dbConnect from '@/middleware/database';
 import {NextRequest, NextResponse} from 'next/server';

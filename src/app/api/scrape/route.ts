@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
 import {scrapeWebsite} from '@/utils/scraper';
 import {Logger} from '@/utils/logger';
