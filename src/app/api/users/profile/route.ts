@@ -5,18 +5,28 @@ import {authOptions} from '@/lib/auth';
 import {User} from '@/models/User';
 import connectToDB from '@/lib/db';
 
-function setCORSHeaders(res: NextResponse) {
-	res.headers.set('Access-Control-Allow-Origin', 'https://www.jobscoutly.tech');
+
+import { getAllowedOrigin } from '@/utils/cors';
+
+function setCORSHeaders(res: NextResponse, req?: Request) {
+	const requestOrigin = req?.headers.get('origin') || null;
+	const allowedOrigin = getAllowedOrigin(requestOrigin);
+	if (allowedOrigin) {
+		res.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+		res.headers.set('Vary', 'Origin');
+	} else {
+		// Optionally, do not set the header if not allowed
+	}
 	res.headers.set('Access-Control-Allow-Credentials', 'true');
 	res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
 	res.headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
 	return res;
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(req: Request) {
 	// Preflight CORS support
-	const res = new NextResponse(null, {status: 204});
-	return setCORSHeaders(res);
+	const res = new NextResponse(null, { status: 204 });
+	return setCORSHeaders(res, req);
 }
 
 export async function GET(req: Request) {
@@ -24,16 +34,18 @@ export async function GET(req: Request) {
 	const session = await getServerSession(authOptions);
 	if (!session || !session.user?.email) {
 		return setCORSHeaders(
-			NextResponse.json({error: 'Unauthorized'}, {status: 401}),
+			NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+			req
 		);
 	}
 
 	try {
 		await connectToDB();
-		const user = await User.findOne({email: session.user.email.toLowerCase()});
+		const user = await User.findOne({ email: session.user.email.toLowerCase() });
 		if (!user) {
 			return setCORSHeaders(
-				NextResponse.json({error: 'User not found'}, {status: 404}),
+				NextResponse.json({ error: 'User not found' }, { status: 404 }),
+				req
 			);
 		}
 
@@ -46,10 +58,11 @@ export async function GET(req: Request) {
 			hasCompleteProfile: !!(user.cvUrl && user.candidateInfo),
 		};
 
-		return setCORSHeaders(NextResponse.json(profile));
+		return setCORSHeaders(NextResponse.json(profile), req);
 	} catch (error) {
 		return setCORSHeaders(
-			NextResponse.json({error: 'Internal server error'}, {status: 500}),
+			NextResponse.json({ error: 'Internal server error' }, { status: 500 }),
+			req
 		);
 	}
 }
