@@ -2,8 +2,6 @@
 import {NextResponse} from 'next/server';
 import {getServerSession} from 'next-auth';
 import {authOptions} from '@/lib/auth';
-import {User} from '@/models/User';
-import connectToDB from '@/lib/db';
 
 import {getAllowedOrigin} from '@/utils/cors';
 
@@ -45,32 +43,26 @@ export const GET = async (req: Request) => {
 		);
 	}
 
+	// Proxy the request to the backend API
 	try {
-		await connectToDB();
-		const user = await User.findOne({
-			email: session.user.email.toLowerCase(),
+		const backendApiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`;
+		const backendRes = await fetch(backendApiUrl, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				// Pass cookies for session authentication
+				Cookie: req.headers.get('cookie') || '',
+			},
+			credentials: 'include',
 		});
-		if (!user) {
-			console.log('[CORS DEBUG] User not found:', session.user.email);
-			return setCORSHeaders(
-				NextResponse.json({error: 'User not found'}, {status: 404}),
-				req,
-			);
-		}
 
-		// Only return profile-relevant fields
-		const profile = {
-			email: user.email,
-			name: user.candidateInfo?.name || '',
-			cvUrl: user.cvUrl || '',
-			candidateInfo: user.candidateInfo || null,
-			hasCompleteProfile: !!(user.cvUrl && user.candidateInfo),
-		};
-
-		console.log('[CORS DEBUG] Returning profile:', profile.email);
-		return setCORSHeaders(NextResponse.json(profile), req);
+		const data = await backendRes.json();
+		return setCORSHeaders(
+			NextResponse.json(data, {status: backendRes.status}),
+			req,
+		);
 	} catch (error) {
-		console.log('[CORS DEBUG] Internal server error:', error);
+		console.log('[CORS DEBUG] Proxy error:', error);
 		return setCORSHeaders(
 			NextResponse.json({error: 'Internal server error'}, {status: 500}),
 			req,
