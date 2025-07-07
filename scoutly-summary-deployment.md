@@ -10,7 +10,11 @@ Backend & Database (Raspberry Pi): The same Next.js application, along with a Mo
 
 Networking (Cloudflare): Manages the project's DNS and provides a secure tunnel to expose the self-hosted backend services to the internet without opening any ports on the local router.
 
-Note on the Database Strategy: For the current development phase, all environments (production on Vercel, local development on Windows/WSL, and the backend on the Pi) are configured to connect to the single, centralized database instance running in Docker on the Raspberry Pi. This ensures data consistency across all platforms.
+
+❗ **Strict Database Access Policy:**
+Under NO CIRCUMSTANCE should any part of the codebase (including authentication, serverless functions, or frontend logic) connect directly to the database except for the backend API running on the Raspberry Pi. All data access—including authentication/session enrichment—must be performed via HTTP requests to the backend API endpoints. This ensures security, maintainability, and proper separation of concerns. Direct database access from Vercel, serverless, or frontend code is strictly prohibited.
+
+For the current development phase, all environments (production on Vercel, local development on Windows/WSL, and the backend on the Pi) are configured to connect to the single, centralized database instance running in Docker on the Raspberry Pi. This ensures data consistency across all platforms.
 
 Component Breakdown
 
