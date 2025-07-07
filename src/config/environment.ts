@@ -20,21 +20,24 @@ export interface EnvironmentConfig {
  * Detect current environment based on various indicators
  */
 export function detectEnvironment(): Environment {
-	// Check for Vercel deployment
-	if (process.env.VERCEL || process.env.VERCEL_URL) {
+	// Explicit and specific environment detection
+	if (
+		process.env.DEPLOYMENT_TARGET === 'vercel' ||
+		process.env.VERCEL ||
+		process.env.VERCEL_URL
+	) {
 		return 'vercel';
 	}
-
-	// Check for Raspberry Pi deployment indicators
-	if (
-		process.env.DEPLOYMENT_TARGET === 'raspberry-pi' ||
-		process.env.IS_RASPBERRY_PI === 'true' ||
-		(process.env.NODE_ENV === 'production' && !process.env.VERCEL)
-	) {
+	if (process.env.DEPLOYMENT_TARGET === 'raspberry-pi') {
 		return 'raspberry-pi';
 	}
-
-	// Default to development
+	if (process.env.DEPLOYMENT_TARGET === 'development') {
+		return 'development';
+	}
+	// Fallback: NODE_ENV
+	if (process.env.NODE_ENV === 'production') {
+		return 'raspberry-pi';
+	}
 	return 'development';
 }
 
@@ -124,7 +127,10 @@ if (environmentConfig.environment === 'vercel') {
 }
 
 if (!MONGODB_URI) {
-	if (environmentConfig.environment === 'vercel' || environmentConfig.environment === 'raspberry-pi') {
+	if (
+		environmentConfig.environment === 'vercel' ||
+		environmentConfig.environment === 'raspberry-pi'
+	) {
 		throw new Error(
 			`CRITICAL: MONGODB_URI is not defined for the ${environmentConfig.environment} environment.`,
 		);
