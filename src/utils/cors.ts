@@ -123,7 +123,7 @@ if (environmentConfig.environment === 'vercel') {
 } else if (environmentConfig.environment === 'raspberry-pi') {
 	MONGODB_URI = process.env.MONGODB_URI;
 } else {
-	MONGODB_URI = process.env.MONGODB_URI_LOCAL;
+	MONGODB_URI = process.env.MONGODB_URI;
 }
 
 if (!MONGODB_URI) {
@@ -136,7 +136,7 @@ if (!MONGODB_URI) {
 		);
 	} else {
 		throw new Error(
-			`CRITICAL: MONGODB_URI_LOCAL is not defined for the ${environmentConfig.environment} environment.`,
+			`CRITICAL: MONGODB_URI_LOCAL (deprecated) is not defined for the ${environmentConfig.environment} environment.`,
 		);
 	}
 }
