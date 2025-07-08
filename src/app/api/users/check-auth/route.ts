@@ -1,24 +1,36 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {Logger} from '@/utils/logger';
-import {env, deployment} from '@/config/environment';
+import {env, deployment, apiBaseUrl} from '@/config/environment';
+import {endpoint} from '@/constants';
+import {logger} from '@/utils/logger';
 
-const logger = new Logger('AuthCheckAPI');
+let AuthService: any;
+try {
+	AuthService = require('@/services/authService').AuthService;
+} catch {}
 
 export async function POST(req: NextRequest) {
-	logger.debug('POST /api/users/check-auth called');
+	await logger.debug(`POST ${endpoint.users.check_auth} called`, {
+		env: {...env},
+		deployment: {...deployment},
+	});
 	try {
 		const {email} = await req.json();
-		logger.info('Checking auth for email', {email});
+		await logger.info('Checking auth for email', {email});
 
-		if (env.isDev) {
-			logger.debug('Environment: dev, checking user in DB');
-			const {AuthService} = await import('@/services/authService');
+		if (env.isDev || (env.isProd && deployment.isPi)) {
+			if (!AuthService) {
+				await logger.error('AuthService not implemented');
+				return NextResponse.json(
+					{error: 'AuthService not implemented'},
+					{status: 501},
+				);
+			}
 			const user = await AuthService.findUserByEmail(email);
 			if (user) {
-				logger.info('User authorized (dev)', {email});
+				await logger.info('User authorized', {email});
 				return NextResponse.json({isAuthorized: true}, {status: 200});
 			}
-			logger.warn('User not found (dev)', {email});
+			await logger.warn('User not found', {email});
 			return NextResponse.json(
 				{isAuthorized: false, message: 'User not found'},
 				{status: 401},
@@ -26,18 +38,18 @@ export async function POST(req: NextRequest) {
 		}
 
 		if (env.isProd && deployment.isVercel) {
-			const apiUrl = require('@/config/environment').apiBaseUrl.prod;
-			logger.debug('Environment: prod-vercel, proxying to backend API', {
-				apiUrl,
-			});
+			await logger.info(
+				'Environment: Production on Vercel - proxying to backend API',
+			);
+			const apiUrl = apiBaseUrl.prod;
 			if (!apiUrl) {
-				logger.error('Backend API URL not configured');
+				await logger.error('Backend API URL not configured');
 				return NextResponse.json(
 					{error: 'Backend API URL not configured'},
 					{status: 500},
 				);
 			}
-			const backendUrl = `${apiUrl}/api/users/check-auth`;
+			const backendUrl = `${apiUrl}${endpoint.users.check_auth}`;
 			const backendRes = await fetch(backendUrl, {
 				method: 'POST',
 				headers: {
@@ -46,11 +58,11 @@ export async function POST(req: NextRequest) {
 				body: JSON.stringify({email}),
 			});
 			const data = await backendRes.json();
-			logger.info('Received response from backend API', {
+			await logger.info('Received response from backend API', {
 				status: backendRes.status,
 			});
 			if (!backendRes.ok) {
-				logger.error('Backend error', {status: backendRes.status, data});
+				await logger.error('Backend error', {status: backendRes.status, data});
 				return NextResponse.json(
 					{error: data.error || 'Backend error'},
 					{status: backendRes.status},
@@ -59,22 +71,7 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json(data);
 		}
 
-		if (env.isProd && deployment.isPi) {
-			logger.debug('Environment: prod-pi, checking user in DB');
-			const {AuthService} = await import('@/services/authService');
-			const user = await AuthService.findUserByEmail(email);
-			if (user) {
-				logger.info('User authorized (prod-pi)', {email});
-				return NextResponse.json({isAuthorized: true}, {status: 200});
-			}
-			logger.warn('User not found (prod-pi)', {email});
-			return NextResponse.json(
-				{isAuthorized: false, message: 'User not found'},
-				{status: 401},
-			);
-		}
-
-		logger.warn('Unknown environment branch hit');
+		await logger.warn('Unknown environment branch hit');
 		return NextResponse.json(
 			{isAuthorized: false, message: 'Invalid environment'},
 			{status: 500},
@@ -89,41 +86,49 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-	logger.debug('GET /api/users/check-auth called');
+	await logger.debug(`GET ${endpoint.users.check_auth} called`, {
+		env: {...env},
+		deployment: {...deployment},
+	});
 	try {
 		const authCookie = req.cookies.get('auth');
-		logger.info('Checking auth for cookie', {cookie: authCookie?.value});
+		await logger.info('Checking auth for cookie', {cookie: authCookie?.value});
 
-		if (env.isDev) {
-			logger.debug('Environment: dev, checking user in DB');
-			const {AuthService} = await import('@/services/authService');
+		if (env.isDev || (env.isProd && deployment.isPi)) {
+			if (!AuthService) {
+				await logger.error('AuthService not implemented');
+				return NextResponse.json(
+					{error: 'AuthService not implemented'},
+					{status: 501},
+				);
+			}
 			const email = authCookie?.value;
 			if (email) {
 				const user = await AuthService.findUserByEmail(email);
 				if (user) {
-					logger.info('User authorized (dev)', {email});
+					await logger.info('User authorized', {email});
 					return NextResponse.json({isAuthorized: true});
 				}
 			}
-			logger.warn('User not found or no cookie (dev)', {
+			await logger.warn('User not found or no cookie', {
 				cookie: authCookie?.value,
 			});
 			return NextResponse.json({isAuthorized: false}, {status: 401});
 		}
 
 		if (env.isProd && deployment.isVercel) {
-			const apiUrl = require('@/config/environment').apiBaseUrl.prod;
-			logger.debug('Environment: prod-vercel, proxying to backend API', {
-				apiUrl,
-			});
+			await logger.info(
+				'Environment: Production on Vercel - proxying to backend API',
+			);
+			const apiUrl = apiBaseUrl.prod;
 			if (!apiUrl) {
-				logger.error('Backend API URL not configured');
+				await logger.error('Backend API URL not configured');
 				return NextResponse.json(
 					{error: 'Backend API URL not configured'},
 					{status: 500},
 				);
 			}
-			const backendUrl = `${apiUrl}/api/users/check-auth`;
+			const backendUrl = `${apiUrl}${endpoint.users.check_auth}`;
 			const backendRes = await fetch(backendUrl, {
 				method: 'GET',
 				headers: {
@@ -131,11 +136,11 @@ export async function GET(req: NextRequest) {
 				},
 			});
 			const data = await backendRes.json();
-			logger.info('Received response from backend API', {
+			await logger.info('Received response from backend API', {
 				status: backendRes.status,
 			});
 			if (!backendRes.ok) {
-				logger.error('Backend error', {status: backendRes.status, data});
+				await logger.error('Backend error', {status: backendRes.status, data});
 				return NextResponse.json(
 					{error: data.error || 'Backend error'},
 					{status: backendRes.status},
@@ -144,24 +149,7 @@ export async function GET(req: NextRequest) {
 			return NextResponse.json(data);
 		}
 
-		if (env.isProd && deployment.isPi) {
-			logger.debug('Environment: prod-pi, checking user in DB');
-			const {AuthService} = await import('@/services/authService');
-			const email = authCookie?.value;
-			if (email) {
-				const user = await AuthService.findUserByEmail(email);
-				if (user) {
-					logger.info('User authorized (prod-pi)', {email});
-					return NextResponse.json({isAuthorized: true});
-				}
-			}
-			logger.warn('User not found or no cookie (prod-pi)', {
-				cookie: authCookie?.value,
-			});
-			return NextResponse.json({isAuthorized: false}, {status: 401});
-		}
-
-		logger.warn('Unknown environment branch hit');
+		await logger.warn('Unknown environment branch hit');
 		return NextResponse.json({isAuthorized: false}, {status: 500});
 	} catch (error) {
 		await logger.error('GET auth check failed', {error});
