@@ -81,6 +81,11 @@ export const productionAuthOptions: NextAuthOptions = {
 				accountType: account?.type,
 			});
 
+			// DEBUG: Log the incoming token, user, and account
+			await logger.info('[JWT DEBUG] Incoming token:', token);
+			await logger.info('[JWT DEBUG] Incoming user:', user);
+			await logger.info('[JWT DEBUG] Incoming account:', account);
+
 			// Use AuthService for all user/admin/profile checks via backend API
 			if (user || typeof token.hasCompleteProfile === 'undefined') {
 				const email = user?.email || token.email;
@@ -106,6 +111,12 @@ export const productionAuthOptions: NextAuthOptions = {
 						if (sessionRes.ok) {
 							sessionData = await sessionRes.json();
 						}
+
+						// DEBUG: Log the session data received from the backend
+						await logger.info(
+							'[JWT DEBUG] Session data from backend:',
+							sessionData,
+						);
 
 						token.isAdmin = !!sessionData?.isAdmin;
 						token.hasCompleteProfile = !!sessionData?.hasCompleteProfile;
