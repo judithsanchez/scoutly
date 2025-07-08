@@ -1,65 +1,37 @@
 export const dynamic = 'force-dynamic';
+
 import {NextRequest, NextResponse} from 'next/server';
-import dbConnect from '@/middleware/database';
-import {UserCompanyPreferenceService} from '@/services/userCompanyPreferenceService';
-import {UserService} from '@/services/userService';
-import {EnhancedLogger} from '@/utils/enhancedLogger';
 
-const logger = EnhancedLogger.getLogger('UserCompanyPreferencesByIdAPI', {
-	logToFile: true,
-	logToConsole: true,
-	logDir: '/tmp/scoutly-logs',
-	logFileName: 'user-company-preferences-by-id-api.log',
-});
-
-/**
- * DELETE /api/user-company-preferences/[companyId]
- *
- * Remove a company from the user's tracked companies by setting isTracking to false
- */
+// DELETE /api/user-company-preferences/[companyId]
 export async function DELETE(
-	req: NextRequest,
+	request: NextRequest,
 	{params}: {params: {companyId: string}},
 ) {
 	try {
-		await dbConnect();
+		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+		const backendUrl = `${apiUrl.replace(/\/$/, '')}/user-company-preferences/${
+			params.companyId
+		}`;
 
-		// Development bypass for auth - use hardcoded email
-		const userEmail = 'judithv.sanchezc@gmail.com';
-		logger.info(`Using dev bypass auth with email: ${userEmail}`);
+		const backendRes = await fetch(backendUrl, {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(await request.json()),
+		});
 
-		// Get user by email to get the userId
-		const user = await UserService.getUserByEmail(userEmail);
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
+		const data = await backendRes.json();
 
-		const {companyId} = params;
-
-		if (!companyId) {
+		if (!backendRes.ok) {
 			return NextResponse.json(
-				{error: 'Company ID is required'},
-				{status: 400},
+				{error: data.error || 'Backend error'},
+				{status: backendRes.status},
 			);
 		}
 
-		// Set isTracking to false using the new service
-		const preference = await UserCompanyPreferenceService.upsert(
-			(user._id as any).toString(),
-			companyId,
-			{isTracking: false},
-		);
-
-		logger.info(
-			`Set isTracking to false for company ${companyId} for user ${userEmail}`,
-		);
-
-		return NextResponse.json({
-			success: true,
-			preference,
-		});
+		return NextResponse.json(data);
 	} catch (error: any) {
-		logger.error('Error removing company preference:', error);
 		return NextResponse.json(
 			{error: error.message || 'Internal server error'},
 			{status: 500},
@@ -67,70 +39,36 @@ export async function DELETE(
 	}
 }
 
-/**
- * PUT /api/user-company-preferences/[companyId]
- *
- * Update a company's preferences (rank, isTracking) for the user
- */
+// PUT /api/user-company-preferences/[companyId]
 export async function PUT(
-	req: NextRequest,
+	request: NextRequest,
 	{params}: {params: {companyId: string}},
 ) {
 	try {
-		await dbConnect();
+		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+		const backendUrl = `${apiUrl.replace(/\/$/, '')}/user-company-preferences/${
+			params.companyId
+		}`;
 
-		// Development bypass for auth - use hardcoded email
-		const userEmail = 'judithv.sanchezc@gmail.com';
-		logger.info(`Using dev bypass auth with email: ${userEmail}`);
-
-		// Get user by email to get the userId
-		const user = await UserService.getUserByEmail(userEmail);
-		if (!user) {
-			return NextResponse.json({error: 'User not found'}, {status: 404});
-		}
-
-		const {companyId} = params;
-		const body = await req.json();
-		const {rank, isTracking} = body;
-
-		if (!companyId) {
-			return NextResponse.json(
-				{error: 'Company ID is required'},
-				{status: 400},
-			);
-		}
-
-		// Validate rank if provided
-		if (rank !== undefined && (rank < 1 || rank > 100)) {
-			return NextResponse.json(
-				{error: 'Rank must be between 1 and 100'},
-				{status: 400},
-			);
-		}
-
-		// Prepare update data
-		const updateData: {rank?: number; isTracking?: boolean} = {};
-		if (rank !== undefined) updateData.rank = rank;
-		if (isTracking !== undefined) updateData.isTracking = isTracking;
-
-		// Update the preference using the new service
-		const preference = await UserCompanyPreferenceService.upsert(
-			(user._id as any).toString(),
-			companyId,
-			updateData,
-		);
-
-		logger.info(
-			`Updated preference for company ${companyId} for user ${userEmail}`,
-			{updateData},
-		);
-
-		return NextResponse.json({
-			success: true,
-			preference,
+		const backendRes = await fetch(backendUrl, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(await request.json()),
 		});
+
+		const data = await backendRes.json();
+
+		if (!backendRes.ok) {
+			return NextResponse.json(
+				{error: data.error || 'Backend error'},
+				{status: backendRes.status},
+			);
+		}
+
+		return NextResponse.json(data);
 	} catch (error: any) {
-		logger.error('Error updating company preference:', error);
 		return NextResponse.json(
 			{error: error.message || 'Internal server error'},
 			{status: 500},
