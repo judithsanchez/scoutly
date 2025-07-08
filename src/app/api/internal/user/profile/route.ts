@@ -1,7 +1,4 @@
-// Internal API endpoint for fetching user profile by email (no session required)
 import {NextResponse} from 'next/server';
-// import {User} from '@/models/User';
-// import connectToDB from '@/lib/db';
 
 export const POST = async (req: Request) => {
 	const secret = req.headers.get('x-internal-api-secret');
@@ -10,7 +7,6 @@ export const POST = async (req: Request) => {
 	}
 
 	try {
-		// Proxy the request to the backend API
 		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 		const backendUrl = `${apiUrl.replace(/\/$/, '')}/internal/user/profile`;
 
