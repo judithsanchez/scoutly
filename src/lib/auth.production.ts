@@ -2,6 +2,9 @@ import {apiBaseUrl, auth, header, secret} from '@/config';
 import {endpoint} from '@/constants';
 import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import {Logger} from '@/utils/logger';
+
+const logger = new Logger('NextAuthProduction');
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -18,13 +21,13 @@ export const productionAuthOptions: NextAuthOptions = {
 		async signIn({user, account, profile}) {
 			try {
 				if (!user.email) {
-					console.log('Sign-in rejected: No email provided by provider');
+					await logger.warn('Sign-in rejected: No email provided by provider');
 					return false;
 				}
 
 				const internalApiUrl = apiBaseUrl.prod;
 				if (!internalApiUrl) {
-					console.error('Internal API URL is not configured.');
+					await logger.error('Internal API URL is not configured.');
 					return false;
 				}
 
@@ -42,22 +45,24 @@ export const productionAuthOptions: NextAuthOptions = {
 				if (response.ok) {
 					const data = await response.json();
 					if (data.approved) {
-						console.log(`Sign-in approved for ${user.email} via internal API`);
+						await logger.info(
+							`Sign-in approved for ${user.email} via internal API`,
+						);
 						return true;
 					}
 				}
 
-				console.log(
+				await logger.warn(
 					`Sign-in rejected for ${user.email} by internal API. Status: ${response.status}`,
 				);
 				return false;
 			} catch (error) {
-				console.error('Error during sign-in API call:', error);
+				await logger.error('Error during sign-in API call:', error);
 				return false;
 			}
 		},
 		async session({session, token}) {
-			console.log('🔍 Session callback started:', {
+			await logger.debug('Session callback started', {
 				sessionUser: session.user?.email,
 			});
 
@@ -69,7 +74,7 @@ export const productionAuthOptions: NextAuthOptions = {
 			return session;
 		},
 		async jwt({token, user, account}) {
-			console.log('🔍 JWT callback started:', {
+			await logger.debug('JWT callback started', {
 				tokenEmail: token.email,
 				userEmail: user?.email,
 				accountProvider: account?.provider,
@@ -105,8 +110,17 @@ export const productionAuthOptions: NextAuthOptions = {
 						token.isAdmin = !!sessionData?.isAdmin;
 						token.hasCompleteProfile = !!sessionData?.hasCompleteProfile;
 						token.cvUrl = sessionData?.cvUrl;
+						await logger.info('JWT enriched from session API', {
+							email,
+							isAdmin: token.isAdmin,
+							hasCompleteProfile: token.hasCompleteProfile,
+							cvUrl: token.cvUrl,
+						});
 					} catch (error) {
-						console.error('Error enriching JWT (via AuthService API):', error);
+						await logger.error(
+							'Error enriching JWT (via AuthService API):',
+							error,
+						);
 						token.isAdmin = false;
 						token.hasCompleteProfile = false;
 					}
