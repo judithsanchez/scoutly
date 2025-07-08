@@ -86,38 +86,49 @@ export const productionAuthOptions: NextAuthOptions = {
 				if (email) {
 					try {
 						const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
-						if (!internalApiUrl) throw new Error('Internal API URL is not configured.');
+						if (!internalApiUrl)
+							throw new Error('Internal API URL is not configured.');
 
 						// Fetch user profile from backend API
-						const profileRes = await fetch(`${internalApiUrl}/api/users/profile`, {
-							method: 'GET',
-							headers: {
-								'Content-Type': 'application/json',
-								'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
-								'X-User-Email': email,
+						const profileRes = await fetch(
+							`${internalApiUrl}/api/users/profile`,
+							{
+								method: 'GET',
+								headers: {
+									'Content-Type': 'application/json',
+									'X-Internal-API-Secret':
+										process.env.INTERNAL_API_SECRET || '',
+									'X-User-Email': email,
+								},
 							},
-						});
+						);
 						let userData = null;
 						if (profileRes.ok) {
 							userData = await profileRes.json();
 						}
 
 						// Fetch admin status from backend API
-						const adminRes = await fetch(`${internalApiUrl}/api/internal/auth/is-admin`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
+						const adminRes = await fetch(
+							`${internalApiUrl}/api/internal/auth/is-admin`,
+							{
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+									'X-Internal-API-Secret':
+										process.env.INTERNAL_API_SECRET || '',
+								},
+								body: JSON.stringify({email}),
 							},
-							body: JSON.stringify({ email }),
-						});
+						);
 						let isAdmin = false;
 						if (adminRes.ok) {
 							const adminData = await adminRes.json();
 							isAdmin = !!adminData.isAdmin;
 						}
 
-						const hasCompleteProfile = !!(userData?.cvUrl && userData?.candidateInfo);
+						const hasCompleteProfile = !!(
+							userData?.cvUrl && userData?.candidateInfo
+						);
 
 						token.isAdmin = isAdmin;
 						token.hasCompleteProfile = hasCompleteProfile;
