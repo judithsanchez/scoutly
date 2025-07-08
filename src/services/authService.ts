@@ -1,3 +1,4 @@
+import connectToDB from '@/lib/db';
 import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
 import {Logger} from '@/utils/logger';
@@ -6,6 +7,7 @@ const logger = new Logger('AuthService');
 
 export class AuthService {
 	static async findUserByEmail(email: string) {
+		await connectToDB();
 		await logger.debug('findUserByEmail called', {email});
 		try {
 			const user = await User.findOne({email: email.toLowerCase()});
@@ -18,6 +20,7 @@ export class AuthService {
 	}
 
 	static async createUserIfNotExists(email: string, profile: any) {
+		await connectToDB();
 		await logger.debug('createUserIfNotExists called', {email, profile});
 		try {
 			let user = await User.findOne({email: email.toLowerCase()});
@@ -38,6 +41,7 @@ export class AuthService {
 	}
 
 	static async isAdmin(email: string) {
+		await connectToDB();
 		await logger.debug('isAdmin called', {email});
 		try {
 			const admin = await AdminUser.findOne({email: email.toLowerCase()});
@@ -50,6 +54,7 @@ export class AuthService {
 	}
 
 	static async hasCompleteProfile(user: any) {
+		// No DB query here, so no need to connect
 		await logger.debug('hasCompleteProfile called', {
 			userId: user?._id,
 			email: user?.email,
@@ -68,6 +73,7 @@ export class AuthService {
 	}
 
 	static async getUserSessionInfo(email: string) {
+		await connectToDB();
 		await logger.debug('getUserSessionInfo called', {email});
 		try {
 			const user = await this.findUserByEmail(email);

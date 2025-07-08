@@ -48,6 +48,7 @@ export const auth = {
 export const apiBaseUrl = {
 	prod: process.env.NEXT_PUBLIC_API_URL,
 	dev: 'http://localhost:3000',
+	devMongoUri: `mongodb://${process.env.MONGODB_ROOT_USERNAME}:${process.env.MONGODB_ROOT_PASSWORD}@mongodb:27017/${process.env.MONGODB_ROOT_PASSWORD}?authSource=admin`,
 };
 
 export const secret = {
