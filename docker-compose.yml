@@ -58,7 +58,6 @@ services:
       - .env
     environment:
       - MONGODB_URI=mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin
-      - NODE_ENV=development
     depends_on:
       mongodb:
         condition: service_healthy
