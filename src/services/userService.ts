@@ -1,49 +1,33 @@
-import {User, IUser} from '../models/User';
-import {EnhancedLogger} from '../utils/enhancedLogger';
-
-const logger = EnhancedLogger.getLogger('UserService', {
-	logToFile: true,
-	logToConsole: true,
-	logDir: '/tmp/scoutly-logs',
-	logFileName: 'user-service.log',
-});
+import {User} from '@/models/User';
 
 export class UserService {
-	static async getOrCreateUser(
-		email: string,
-		cvUrl?: string,
-		candidateInfo?: IUser['candidateInfo'],
-	): Promise<IUser> {
-		try {
-			let user = await User.findOne({email});
-
-			if (!user) {
-				logger.info(`Creating new user with email: ${email}`);
-				user = await User.create({email, cvUrl, candidateInfo});
-			}
-
-			return user;
-		} catch (error: any) {
-			logger.error(`Error in user operation:`, error);
-			throw new Error(`Error in user operation: ${error.message}`);
-		}
+	static async createUser(data: Record<string, any>) {
+		const user = new User(data);
+		await user.save();
+		return user;
 	}
 
-	static async getUserByEmail(email: string): Promise<IUser | null> {
-		try {
-			return await User.findOne({email});
-		} catch (error: any) {
-			logger.error(`Error finding user:`, error);
-			throw new Error(`Error finding user: ${error.message}`);
-		}
+	static async getAllUsers() {
+		return User.find({});
 	}
 
-	static async getAllUsers(): Promise<IUser[]> {
-		try {
-			return await User.find();
-		} catch (error: any) {
-			logger.error(`Error fetching users:`, error);
-			throw new Error(`Error fetching users: ${error.message}`);
+	static async getUserByEmail(email: string) {
+		return User.findOne({email});
+	}
+
+	static async promoteUser(data: {email: string}, secret?: string) {
+		if (!data?.email) {
+			throw new Error('Email is required');
 		}
+		// Optionally check secret if needed
+		const user = await User.findOneAndUpdate(
+			{email: data.email},
+			{$set: {isAdmin: true}},
+			{new: true},
+		);
+		if (!user) {
+			throw new Error('User not found');
+		}
+		return {message: `User ${data.email} promoted to admin`, user};
 	}
 }

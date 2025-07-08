@@ -1,144 +1,60 @@
 /**
- * Environment detection and configuration
- * Supports dev (localhost), Vercel (frontend), and Raspberry Pi (backend) deployments
+ * Centralized environment and flag configuration for Scoutly.
+ * Use this object throughout the codebase for consistent, type-safe env access.
  */
 
-export type Environment = 'development' | 'vercel' | 'raspberry-pi';
+// --- Old comprehensive config (for reference/documentation) ---
+// export const ENV = {
+//   isDev: process.env.NODE_ENV === 'development',
+//   isProd: process.env.NODE_ENV === 'production',
+//   isTest: process.env.NODE_ENV === 'test',
+//   apiUrl: process.env.NEXT_PUBLIC_API_URL,
+//   nextAuthUrl: process.env.NEXTAUTH_URL,
+//   mongoUri: process.env.MONGODB_URI,
+//   internalApiSecret: process.env.INTERNAL_API_SECRET,
+//   nextAuthSecret: process.env.NEXTAUTH_SECRET,
+//   googleClientId: process.env.GOOGLE_CLIENT_ID,
+//   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//   bootstrapAdminEmail: process.env.BOOTSTRAP_ADMIN_EMAIL,
+//   geminiApiKey: process.env.GEMINI_API_KEY,
+//   nextAuthCookieDomain: process.env.NEXTAUTH_COOKIE_DOMAIN,
+//   companyScrapeInterval: process.env.NEXT_PUBLIC_COMPANY_SCRAPE_INTERVAL_DAYS,
+//   jobStaleAfter: process.env.NEXT_PUBLIC_JOB_STALE_AFTER_DAYS,
+//   enableKanban: process.env.NEXT_PUBLIC_ENABLE_KANBAN_VIEW === 'true',
+//   enableDataViz: process.env.NEXT_PUBLIC_ENABLE_DATA_VISUALIZATION === 'true',
+// };
 
-export interface EnvironmentConfig {
-	environment: Environment;
-	isProduction: boolean;
-	isDevelopment: boolean;
-	isVercel: boolean;
-	isRaspberryPi: boolean;
-	frontendUrl: string;
-	backendUrl: string;
-	allowedOrigins: string[];
+export enum NodeEnv {
+	Development = 'development',
+	Production = 'production',
 }
 
-/**
- * Detect current environment based on various indicators
- */
-export function detectEnvironment(): Environment {
-	// Explicit and specific environment detection
-	if (
-		process.env.DEPLOYMENT_TARGET === 'vercel' ||
-		process.env.VERCEL ||
-		process.env.VERCEL_URL
-	) {
-		return 'vercel';
-	}
-	if (process.env.DEPLOYMENT_TARGET === 'raspberry-pi') {
-		return 'raspberry-pi';
-	}
-	if (process.env.DEPLOYMENT_TARGET === 'development') {
-		return 'development';
-	}
-	// Fallback: NODE_ENV
-	if (process.env.NODE_ENV === 'production') {
-		return 'raspberry-pi';
-	}
-	return 'development';
-}
+export const env = {
+	isDev: process.env.NODE_ENV === NodeEnv.Development,
+	isProd: process.env.NODE_ENV === NodeEnv.Production,
+};
 
-/**
- * Get environment-specific configuration
- */
-export function getEnvironmentConfig(): EnvironmentConfig {
-	const environment = detectEnvironment();
-	const isProduction = process.env.NODE_ENV === 'production';
+export const deployment = {
+	isPi: process.env.DEPLOYMENT === 'pi',
+	isVercel: process.env.DEPLOYMENT === 'vercel',
+};
 
-	const config: EnvironmentConfig = {
-		environment,
-		isProduction,
-		isDevelopment: environment === 'development',
-		isVercel: environment === 'vercel',
-		isRaspberryPi: environment === 'raspberry-pi',
-		frontendUrl: '',
-		backendUrl: '',
-		allowedOrigins: [],
-	};
+export const auth = {
+	nextAuthSecret: process.env.NEXTAUTH_SECRET,
+	googleClientId: process.env.GOOGLE_CLIENT_ID,
+	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+};
 
-	// Set URLs based on environment
-	switch (environment) {
-		case 'development':
-			config.frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
-			config.backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-			config.allowedOrigins = [
-				'http://localhost:3000',
-				'http://127.0.0.1:3000',
-			];
-			break;
+export const apiBaseUrl = {
+	prod: process.env.NEXT_PUBLIC_API_URL,
+	dev: 'http://localhost:3000',
+	devMongoUri: `mongodb://${process.env.MONGODB_ROOT_USERNAME}:${process.env.MONGODB_ROOT_PASSWORD}@mongodb:27017/${process.env.MONGODB_ROOT_PASSWORD}?authSource=admin`,
+};
 
-		case 'vercel':
-			config.frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL ||
-				`https://${process.env.VERCEL_URL}`;
-			config.backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'https://your-pi.example.com';
-			config.allowedOrigins = [
-				config.frontendUrl,
-				process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
-				config.backendUrl,
-			].filter(Boolean);
-			break;
+export const secret = {
+	internalApiSecret: process.env.INTERNAL_API_SECRET,
+};
 
-		case 'raspberry-pi':
-			config.frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://scoutly.vercel.app';
-			config.backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-			config.allowedOrigins = [
-				config.frontendUrl,
-				config.backendUrl,
-				'https://scoutly.vercel.app', // Default Vercel domain
-			];
-			break;
-	}
-
-	return config;
-}
-
-/**
- * Get the current environment config (singleton)
- */
-export const environmentConfig = getEnvironmentConfig();
-
-/**
- * Utility functions for environment checks
- */
-export const isServer = typeof window === 'undefined';
-export const isClient = typeof window !== 'undefined';
-export const isDev = environmentConfig.isDevelopment;
-export const isProd = environmentConfig.isProduction;
-export const isVercel = environmentConfig.isVercel;
-export const isRaspberryPi = environmentConfig.isRaspberryPi;
-
-let MONGODB_URI: string | undefined;
-
-if (environmentConfig.environment === 'vercel') {
-	MONGODB_URI = process.env.MONGODB_URI;
-} else if (environmentConfig.environment === 'raspberry-pi') {
-	MONGODB_URI = process.env.MONGODB_URI;
-} else {
-	MONGODB_URI = process.env.MONGODB_URI_LOCAL;
-}
-
-if (!MONGODB_URI) {
-	if (
-		environmentConfig.environment === 'vercel' ||
-		environmentConfig.environment === 'raspberry-pi'
-	) {
-		throw new Error(
-			`CRITICAL: MONGODB_URI is not defined for the ${environmentConfig.environment} environment.`,
-		);
-	} else {
-		throw new Error(
-			`CRITICAL: MONGODB_URI_LOCAL is not defined for the ${environmentConfig.environment} environment.`,
-		);
-	}
-}
-
-export {MONGODB_URI};
+export const header = {
+	internalApiSecret: 'X-Internal-API-Secret',
+};

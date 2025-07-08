@@ -1,50 +1,116 @@
 import {NextResponse} from 'next/server';
-// import {User} from '@/models/User';
-// import connectToDB from '@/lib/db';
-// import {Logger} from '@/utils/logger';
-
-const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET;
-
+import {
+	env,
+	deployment,
+	apiBaseUrl,
+	header,
+	secret,
+} from '@/config/environment';
+import {logger} from '@/utils/logger';
+import {endpoint} from '@/constants';
 export async function POST(req: Request) {
-	const secret = req.headers.get('X-Internal-API-Secret');
-	if (secret !== INTERNAL_API_SECRET) {
-		// logger.warn('Unauthorized attempt to access internal sign-in API');
-		return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-	}
+	await logger.debug(`POST ${endpoint.auth.signin} called`);
 
 	try {
-		// Proxy the request to the backend API
-		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-		const backendUrl = `${apiUrl.replace(/\/$/, '')}/internal/auth/signin`;
-
 		const {email} = await req.json();
 		if (!email) {
+			await logger.warn('No email provided');
 			return NextResponse.json(
 				{approved: false, message: 'No email provided'},
 				{status: 400},
 			);
 		}
 
-		const backendRes = await fetch(backendUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Internal-API-Secret': secret || '',
-			},
-			body: JSON.stringify({email}),
-		});
-
-		const data = await backendRes.json();
-
-		if (!backendRes.ok) {
-			return NextResponse.json(
-				{error: data.error || 'Backend error'},
-				{status: backendRes.status},
-			);
+		if (env.isDev) {
+			await logger.info('Development: checking/creating user in DB', {email});
+			// Use AuthService to auto-create user if not exists (dev only)
+			const {AuthService} = await import('@/services/authService');
+			await AuthService.createUserIfNotExists(email, {
+				candidateInfo: {name: email, email},
+				cvUrl: 'dev-mock-cv-url',
+				preferences: {
+					jobTypes: [],
+					locations: [],
+					salaryRange: {min: 0, max: 200000},
+				},
+			});
+			return NextResponse.json({
+				approved: true,
+				message: 'Dev auto-approve',
+			});
 		}
 
-		return NextResponse.json(data);
+		if (env.isProd && deployment.isVercel) {
+			await logger.info('Production on Vercel: proxying to backend API', {
+				email,
+			});
+			const apiUrl = apiBaseUrl.prod;
+			if (!apiUrl) {
+				await logger.error('Backend API URL not configured');
+				return NextResponse.json(
+					{error: 'Backend API URL not configured'},
+					{status: 500},
+				);
+			}
+			const backendUrl = `${apiBaseUrl.prod}${endpoint.auth.signin}`;
+			const backendRes = await fetch(backendUrl, {
+				method: 'POST',
+				headers: new Headers({
+					[header.internalApiSecret]: secret.internalApiSecret ?? '',
+				}),
+				body: JSON.stringify({email}),
+			});
+			const data = await backendRes.json();
+			if (!backendRes.ok) {
+				await logger.error('Backend error', {status: backendRes.status, data});
+				return NextResponse.json(
+					{error: data.error || 'Backend error'},
+					{status: backendRes.status},
+				);
+			}
+			await logger.info('Sign-in approval result from backend', data);
+			return NextResponse.json({
+				...data,
+				env: 'prod-vercel',
+				isDev: env.isDev,
+				isProd: env.isProd,
+				isVercel: deployment.isVercel,
+				isPi: deployment.isPi,
+				flags: {...env, ...deployment},
+			});
+		}
+
+		if (env.isProd && deployment.isPi) {
+			await logger.info('Production on Pi: checking approval and user in DB', {
+				email,
+			});
+			const {AuthService} = await import('@/services/authService');
+			// Example: Only approve if user exists and is from allowed domain
+			const allowedDomain = '@jobscoutly.tech';
+			const user = await AuthService.findUserByEmail(email);
+			const approved =
+				!!user && typeof email === 'string' && email.endsWith(allowedDomain);
+			return NextResponse.json({
+				approved,
+				message: approved
+					? 'Pi approval: user exists and allowed domain'
+					: 'Pi approval: denied (user missing or domain not allowed)',
+				env: 'prod-pi',
+				isDev: env.isDev,
+				isProd: env.isProd,
+				isVercel: deployment.isVercel,
+				isPi: deployment.isPi,
+				flags: {...env, ...deployment},
+			});
+		}
+
+		await logger.warn('Unknown environment, denying sign-in');
+		return NextResponse.json(
+			{approved: false, message: 'Unknown environment'},
+			{status: 500},
+		);
 	} catch (error: any) {
+		await logger.error('Internal server error', error);
 		return NextResponse.json(
 			{error: error.message || 'Internal server error'},
 			{status: 500},

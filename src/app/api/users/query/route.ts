@@ -1,14 +1,19 @@
 export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
-// import dbConnect from '@/middleware/database';
-// import {User} from '@/models/User';
-// import {SavedJob} from '@/models/SavedJob';
+import {env, deployment, apiBaseUrl} from '@/config/environment';
+import {endpoint} from '@/constants';
+import {logger} from '@/utils/logger';
 import {z} from 'zod';
+
+let UserService: any;
+try {
+	UserService = require('@/services/userService').UserService;
+} catch {}
 
 // --- Zod Schemas ---
 
 const SavedJobSchema = z.object({
-	_id: z.string(), // Always string after normalization
+	_id: z.string(),
 	userId: z.string().optional(),
 	jobId: z.string().optional(),
 	companyId: z.string().optional(),
@@ -44,48 +49,91 @@ const UserSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-	try {
-		const {email} = await request.json();
+	await logger.debug(`POST ${endpoint.users.query} called`, {
+		env: {...env},
+		deployment: {...deployment},
+	});
 
-		if (!email) {
-			return NextResponse.json({error: 'Email is required.'}, {status: 400});
-		}
+	const {email} = await request.json();
 
-		// Proxy the request to the backend API
-		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-		const backendUrl = `${apiUrl.replace(/\/$/, '')}/users/query`;
+	if (!email) {
+		return NextResponse.json({error: 'Email is required.'}, {status: 400});
+	}
 
-		const backendRes = await fetch(backendUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({email}),
-		});
-
-		const data = await backendRes.json();
-
-		if (!backendRes.ok) {
+	if (env.isDev || (env.isProd && deployment.isPi)) {
+		if (!UserService) {
+			await logger.error('UserService not implemented');
 			return NextResponse.json(
-				{error: data.error || 'Backend error'},
-				{status: backendRes.status},
+				{error: 'UserService not implemented'},
+				{status: 501},
 			);
 		}
-
-		// Optionally validate/normalize with Zod if needed
-		if (data.user) {
-			const parsed = UserSchema.parse(data.user);
-			return NextResponse.json({user: parsed});
+		try {
+			const user = await UserService.getUserByEmail(email);
+			if (user) {
+				const parsed = UserSchema.parse(user);
+				return NextResponse.json({user: parsed});
+			}
+			return NextResponse.json({error: 'User not found'}, {status: 404});
+		} catch (error: any) {
+			await logger.error('Error fetching user by email', error);
+			return NextResponse.json(
+				{
+					error: error.errors
+						? JSON.stringify(error.errors, null, 2)
+						: error.message || 'Internal server error',
+				},
+				{status: 500},
+			);
 		}
-		return NextResponse.json(data);
-	} catch (error: any) {
-		return NextResponse.json(
-			{
-				error: error.errors
-					? JSON.stringify(error.errors, null, 2)
-					: error.message || 'Internal server error',
-			},
-			{status: 500},
+	}
+
+	if (env.isProd && deployment.isVercel) {
+		await logger.info(
+			'Environment: Production on Vercel - proxying to backend API',
 		);
+		const apiUrl = apiBaseUrl.prod;
+		if (!apiUrl) {
+			await logger.error('Backend API URL not configured');
+			return NextResponse.json(
+				{error: 'Backend API URL not configured'},
+				{status: 500},
+			);
+		}
+		try {
+			await logger.debug('Proxying user query to backend API', {
+				url: `${apiUrl}${endpoint.users.query}`,
+			});
+			const response = await fetch(`${apiUrl}${endpoint.users.query}`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({email}),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				await logger.error('Failed to query user via backend API', {
+					status: response.status,
+				});
+				return NextResponse.json(
+					{error: data.error || 'Failed to query user via backend API'},
+					{status: response.status},
+				);
+			}
+			if (data.user) {
+				const parsed = UserSchema.parse(data.user);
+				return NextResponse.json({user: parsed});
+			}
+			return NextResponse.json(data);
+		} catch (error: any) {
+			await logger.error('Error connecting to backend API', error);
+			return NextResponse.json(
+				{
+					error: error.errors
+						? JSON.stringify(error.errors, null, 2)
+						: error.message || 'Internal server error',
+				},
+				{status: 500},
+			);
+		}
 	}
 }

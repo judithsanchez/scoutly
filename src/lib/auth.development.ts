@@ -1,88 +1,60 @@
 import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import {User} from '@/models/User';
-import {AdminUser} from '@/models/AdminUser';
-import dbConnect from '@/middleware/database';
+import {auth} from '@/config';
+import {Logger} from '@/utils/logger';
 
-/**
- * Development-only auth configuration
- *
- * This configuration is designed for development environments where:
- * - Any user can sign in
- * - Users are auto-created if they don't exist
- * - Mock data is provided for complete profiles
- * - No pre-approval checks are performed
- *
- * WARNING: This should NEVER be used in production
- */
+const logger = new Logger('NextAuthDevelopment');
+
 export const developmentAuthOptions: NextAuthOptions = {
 	providers: [
 		GoogleProvider({
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			clientId: auth.googleClientId!,
+			clientSecret: auth.googleClientSecret!,
 		}),
 	],
 	callbacks: {
 		async signIn({user, account, profile}) {
 			try {
-				await dbConnect();
-
 				if (!user.email) {
-					console.log('Dev Auth: No email provided, rejecting');
+					await logger.warn('Dev Auth: No email provided, rejecting');
 					return false;
 				}
-
-				// Check if user exists
-				let existingUser = await User.findOne({
-					email: user.email.toLowerCase(),
-				});
-
-				// Auto-create user if they don't exist
-				if (!existingUser) {
-					console.log(`Dev Auth: Auto-creating user ${user.email}`);
-
-					existingUser = await User.create({
+				// Use AuthService to auto-create user if not exists
+				const {AuthService} = await import('@/services/authService');
+				await AuthService.createUserIfNotExists(user.email, {
+					candidateInfo: {
+						name: user.name || profile?.name || 'Development User',
 						email: user.email.toLowerCase(),
-						candidateInfo: {
-							name: user.name || profile?.name || 'Development User',
-							email: user.email.toLowerCase(),
-						},
-						cvUrl: 'dev-mock-cv-url', // Mock CV URL for development
-						preferences: {
-							jobTypes: [],
-							locations: [],
-							salaryRange: {min: 0, max: 200000},
-						},
-					});
-				}
-
-				console.log(`Dev Auth: User ${user.email} signed in successfully`);
+					},
+					cvUrl: 'dev-mock-cv-url',
+					preferences: {
+						jobTypes: [],
+						locations: [],
+						salaryRange: {min: 0, max: 200000},
+					},
+				});
+				await logger.info(
+					`Dev Auth: User ${user.email} signed in successfully`,
+				);
 				return true;
 			} catch (error) {
-				console.error('Dev Auth: Error during sign-in:', error);
+				await logger.error('Dev Auth: Error during sign-in:', error);
 				return false;
 			}
 		},
 		async session({session, user}) {
 			if (session.user?.email) {
 				try {
-					await dbConnect();
-
-					// Get user data
-					const userData = await User.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					// Check if user is admin
-					const isAdmin = await AdminUser.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					// In development, always consider profile complete if user has CV
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
+					const {AuthService} = await import('@/services/authService');
+					const userData = await AuthService.findUserByEmail(
+						session.user.email,
 					);
-
+					const isAdmin = userData
+						? await AuthService.isAdmin(session.user.email)
+						: false;
+					const hasCompleteProfile = userData
+						? await AuthService.hasCompleteProfile(userData)
+						: false;
 					session.user = {
 						...session.user,
 						email: session.user.email,
@@ -90,44 +62,47 @@ export const developmentAuthOptions: NextAuthOptions = {
 						hasCompleteProfile,
 						cvUrl: userData?.cvUrl,
 					};
+					await logger.debug('Session enriched', {
+						email: session.user.email,
+						isAdmin,
+						hasCompleteProfile,
+						cvUrl: userData?.cvUrl,
+					});
 				} catch (error) {
-					console.error('Dev Auth: Error enriching session:', error);
-					// Provide fallback session for development
+					await logger.error('Dev Auth: Error enriching session:', error);
 					session.user = {
 						email: session.user.email,
 						isAdmin: false,
-						hasCompleteProfile: true, // Always true in dev for convenience
+						hasCompleteProfile: true,
 					};
 				}
 			}
 			return session;
 		},
 		async jwt({token, user, account}) {
-			// Persist admin status and profile completion in JWT
 			if (user?.email) {
 				try {
-					await dbConnect();
-
-					const userData = await User.findOne({
-						email: user.email.toLowerCase(),
-					});
-
-					const isAdmin = await AdminUser.findOne({
-						email: user.email.toLowerCase(),
-					});
-
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
-					);
-
+					const {AuthService} = await import('@/services/authService');
+					const userData = await AuthService.findUserByEmail(user.email);
+					const isAdmin = userData
+						? await AuthService.isAdmin(user.email)
+						: false;
+					const hasCompleteProfile = userData
+						? await AuthService.hasCompleteProfile(userData)
+						: true;
 					token.isAdmin = !!isAdmin;
 					token.hasCompleteProfile = hasCompleteProfile;
 					token.cvUrl = userData?.cvUrl;
+					await logger.debug('JWT enriched', {
+						email: user.email,
+						isAdmin,
+						hasCompleteProfile,
+						cvUrl: userData?.cvUrl,
+					});
 				} catch (error) {
-					console.error('Dev Auth: Error enriching JWT:', error);
-					// Provide fallback for development
+					await logger.error('Dev Auth: Error enriching JWT:', error);
 					token.isAdmin = false;
-					token.hasCompleteProfile = true; // Always true in dev
+					token.hasCompleteProfile = true;
 				}
 			}
 			return token;
