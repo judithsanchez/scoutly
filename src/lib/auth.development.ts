@@ -1,8 +1,5 @@
 import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import {User} from '@/models/User';
-import {AdminUser} from '@/models/AdminUser';
-import dbConnect from '@/middleware/database';
 import {auth} from '@/config';
 
 export const developmentAuthOptions: NextAuthOptions = {
@@ -15,35 +12,24 @@ export const developmentAuthOptions: NextAuthOptions = {
 	callbacks: {
 		async signIn({user, account, profile}) {
 			try {
-				await dbConnect();
-
 				if (!user.email) {
 					console.log('Dev Auth: No email provided, rejecting');
 					return false;
 				}
-
-				let existingUser = await User.findOne({
-					email: user.email.toLowerCase(),
-				});
-
-				if (!existingUser) {
-					console.log(`Dev Auth: Auto-creating user ${user.email}`);
-
-					existingUser = await User.create({
+				// Use AuthService to auto-create user if not exists
+				const {AuthService} = await import('@/services/authService');
+				await AuthService.createUserIfNotExists(user.email, {
+					candidateInfo: {
+						name: user.name || profile?.name || 'Development User',
 						email: user.email.toLowerCase(),
-						candidateInfo: {
-							name: user.name || profile?.name || 'Development User',
-							email: user.email.toLowerCase(),
-						},
-						cvUrl: 'dev-mock-cv-url',
-						preferences: {
-							jobTypes: [],
-							locations: [],
-							salaryRange: {min: 0, max: 200000},
-						},
-					});
-				}
-
+					},
+					cvUrl: 'dev-mock-cv-url',
+					preferences: {
+						jobTypes: [],
+						locations: [],
+						salaryRange: {min: 0, max: 200000},
+					},
+				});
 				console.log(`Dev Auth: User ${user.email} signed in successfully`);
 				return true;
 			} catch (error) {
@@ -54,20 +40,16 @@ export const developmentAuthOptions: NextAuthOptions = {
 		async session({session, user}) {
 			if (session.user?.email) {
 				try {
-					await dbConnect();
-
-					const userData = await User.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					const isAdmin = await AdminUser.findOne({
-						email: session.user.email.toLowerCase(),
-					});
-
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
+					const {AuthService} = await import('@/services/authService');
+					const userData = await AuthService.findUserByEmail(
+						session.user.email,
 					);
-
+					const isAdmin = userData
+						? await AuthService.isAdmin(session.user.email)
+						: false;
+					const hasCompleteProfile = userData
+						? await AuthService.hasCompleteProfile(userData)
+						: false;
 					session.user = {
 						...session.user,
 						email: session.user.email,
@@ -89,20 +71,14 @@ export const developmentAuthOptions: NextAuthOptions = {
 		async jwt({token, user, account}) {
 			if (user?.email) {
 				try {
-					await dbConnect();
-
-					const userData = await User.findOne({
-						email: user.email.toLowerCase(),
-					});
-
-					const isAdmin = await AdminUser.findOne({
-						email: user.email.toLowerCase(),
-					});
-
-					const hasCompleteProfile = !!(
-						userData?.cvUrl && userData?.candidateInfo
-					);
-
+					const {AuthService} = await import('@/services/authService');
+					const userData = await AuthService.findUserByEmail(user.email);
+					const isAdmin = userData
+						? await AuthService.isAdmin(user.email)
+						: false;
+					const hasCompleteProfile = userData
+						? await AuthService.hasCompleteProfile(userData)
+						: true;
 					token.isAdmin = !!isAdmin;
 					token.hasCompleteProfile = hasCompleteProfile;
 					token.cvUrl = userData?.cvUrl;
