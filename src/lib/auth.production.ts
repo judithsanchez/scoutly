@@ -89,17 +89,17 @@ export const productionAuthOptions: NextAuthOptions = {
 						if (!internalApiUrl)
 							throw new Error('Internal API URL is not configured.');
 
-						// Fetch user profile from backend API
+						// Fetch user profile from internal API (no session required)
 						const profileRes = await fetch(
-							`${internalApiUrl}/api/users/profile`,
+							`${internalApiUrl}/api/internal/user/profile`,
 							{
-								method: 'GET',
+								method: 'POST',
 								headers: {
 									'Content-Type': 'application/json',
 									'X-Internal-API-Secret':
 										process.env.INTERNAL_API_SECRET || '',
-									'X-User-Email': email,
 								},
+								body: JSON.stringify({email}),
 							},
 						);
 						let userData = null;
