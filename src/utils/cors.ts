@@ -35,6 +35,12 @@ export function getCorsConfig(): CorsConfig {
 		backendUrl = allowedOriginsConfig.fallback[0];
 	}
 
+	// DEBUG: Log allowed origins at runtime
+	if (typeof console !== 'undefined') {
+		// eslint-disable-next-line no-console
+		console.log('[CORS DEBUG] allowedOrigins:', allowedOrigins);
+	}
+
 	return {allowedOrigins, frontendUrl, backendUrl};
 }
 
@@ -44,7 +50,17 @@ export function getCorsConfig(): CorsConfig {
 export function getAllowedOrigin(
 	requestOrigin: string | null,
 ): string | undefined {
-	if (!requestOrigin) return undefined;
 	const {allowedOrigins} = getCorsConfig();
+	// DEBUG: Log the request origin and allowed origins
+	if (typeof console !== 'undefined') {
+		// eslint-disable-next-line no-console
+		console.log(
+			'[CORS DEBUG] requestOrigin:',
+			requestOrigin,
+			'allowedOrigins:',
+			allowedOrigins,
+		);
+	}
+	if (!requestOrigin) return undefined;
 	return allowedOrigins.includes(requestOrigin) ? requestOrigin : undefined;
 }

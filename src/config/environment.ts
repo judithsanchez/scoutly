@@ -20,9 +20,8 @@ export const deployment = {
 
 // --- URLs for CORS and API ---
 export const urls = {
-	frontend:
-		process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.jobscoutly.tech',
-	backend: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.jobscoutly.tech',
+	frontend: 'https://www.jobscoutly.tech',
+	backend: 'https://api.jobscoutly.tech',
 	local: 'http://localhost:3000',
 	localhost127: 'http://127.0.0.1:3000',
 	vercelFrontend: 'https://www.jobscoutly.tech',
