@@ -1,10 +1,6 @@
 export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
-import dbConnect from '@/middleware/database';
-import {SavedJob} from '@/models/SavedJob';
-import {User} from '@/models/User';
 import {z} from 'zod';
-import mongoose from 'mongoose';
 
 // --- Zod Schemas ---
 const SavedJobSchema = z.object({
@@ -64,193 +60,100 @@ const CreateSavedJobSchema = z.object({
 });
 
 // --- GET: Get saved jobs by email (query param or session) or all saved jobs ---
-export async function GET(request: NextRequest) {
+export const GET = async (request: NextRequest) => {
 	try {
-		await dbConnect();
-		const {searchParams} = new URL(request.url);
-		const email = searchParams.get('email');
-
-		let jobsRaw;
-		if (email) {
-			// Find user by email to get userId
-			const userArr = await User.find({email}).lean();
-			const user = Array.isArray(userArr) ? userArr[0] : userArr;
-			if (!user) {
-				return NextResponse.json(
-					{error: 'User not found for provided email.'},
-					{status: 404},
-				);
-			}
-			// Ensure user._id is a string for the query
-			const userIdStr =
-				typeof user._id === 'object' &&
-				user._id instanceof mongoose.Types.ObjectId
-					? user._id.toString()
-					: String(user._id);
-			jobsRaw = await SavedJob.find({userId: userIdStr}).lean();
-		} else {
-			jobsRaw = await SavedJob.find({}).lean();
+		const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+		if (!backendUrl) {
+			return NextResponse.json(
+				{error: 'Backend API URL not configured'},
+				{status: 500},
+			);
 		}
-
-		// Defensive: always array
-		const jobs = Array.isArray(jobsRaw) ? jobsRaw : jobsRaw ? [jobsRaw] : [];
-
-		// Normalize fields for Zod
-		const normalizeId = (id: any) =>
-			typeof id === 'object' && id !== null && id.toString
-				? id.toString()
-				: id ?? '';
-
-		const normalizeDate = (date: any) =>
-			date instanceof Date
-				? date.toISOString()
-				: typeof date === 'string'
-				? date
-				: '';
-
-		const normalizedJobs = jobs.map((job: any) => ({
-			...job,
-			_id: normalizeId(job._id),
-			userId: normalizeId(job.userId),
-			companyId: normalizeId(job.companyId),
-			createdAt: normalizeDate(job.createdAt),
-			updatedAt: normalizeDate(job.updatedAt),
-		}));
-
-		// Validate with Zod
-		const parsed = SavedJobArraySchema.parse(normalizedJobs);
-
-		return NextResponse.json({jobs: parsed});
+		const url = new URL(request.url);
+		const email = url.searchParams.get('email');
+		let apiUrl = `${backendUrl}/jobs/saved`;
+		if (email) {
+			apiUrl += `?email=${encodeURIComponent(email)}`;
+		}
+		const res = await fetch(apiUrl, {
+			method: 'GET',
+			headers: {'Content-Type': 'application/json'},
+		});
+		const data = await res.json();
+		return NextResponse.json(data, {status: res.status});
 	} catch (error: any) {
 		return NextResponse.json(
-			{
-				error: error.errors
-					? JSON.stringify(error.errors, null, 2)
-					: error.message || 'Internal server error',
-			},
+			{error: error.message || 'Internal server error'},
 			{status: 500},
 		);
 	}
-}
+};
+// (no trailing brace)
 
 // --- PATCH: Update status of a saved job ---
-export async function PATCH(request: NextRequest) {
+export const PATCH = async (request: NextRequest) => {
+	// Proxy PATCH to backend API
 	try {
-		await dbConnect();
-		const {searchParams} = new URL(request.url);
-		const id = searchParams.get('id');
-
+		const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+		if (!backendUrl) {
+			return NextResponse.json(
+				{error: 'Backend API URL not configured'},
+				{status: 500},
+			);
+		}
+		const url = new URL(request.url);
+		const id = url.searchParams.get('id');
 		if (!id) {
 			return NextResponse.json(
 				{error: 'SavedJob id is required as query param.'},
 				{status: 400},
 			);
 		}
-
 		const body = await request.json();
-		const parsedBody = PatchStatusSchema.parse(body);
-
-		// Update the saved job status
-		const updatedRaw = await SavedJob.findByIdAndUpdate(
-			id,
-			{status: parsedBody.status, updatedAt: new Date()},
-			{new: true},
-		).lean();
-
-		if (!updatedRaw || Array.isArray(updatedRaw)) {
-			return NextResponse.json({error: 'SavedJob not found.'}, {status: 404});
-		}
-
-		// Normalize for Zod
-		const normalizeId = (id: any) =>
-			typeof id === 'object' && id !== null && id.toString
-				? id.toString()
-				: id ?? '';
-
-		const normalizeDate = (date: any) =>
-			date instanceof Date
-				? date.toISOString()
-				: typeof date === 'string'
-				? date
-				: '';
-
-		const normalized = {
-			...updatedRaw,
-			_id: normalizeId(updatedRaw._id),
-			userId: normalizeId(updatedRaw.userId),
-			companyId: normalizeId(updatedRaw.companyId),
-			createdAt: normalizeDate(updatedRaw.createdAt),
-			updatedAt: normalizeDate(updatedRaw.updatedAt),
-		};
-
-		const parsed = SavedJobSchema.parse(normalized);
-
-		return NextResponse.json({job: parsed});
+		const res = await fetch(
+			`${backendUrl}/jobs/saved?id=${encodeURIComponent(id)}`,
+			{
+				method: 'PATCH',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify(body),
+			},
+		);
+		const data = await res.json();
+		return NextResponse.json(data, {status: res.status});
 	} catch (error: any) {
 		return NextResponse.json(
-			{
-				error: error.errors
-					? JSON.stringify(error.errors, null, 2)
-					: error.message || 'Internal server error',
-			},
+			{error: error.message || 'Internal server error'},
 			{status: 500},
 		);
 	}
-}
+};
 
 // --- POST: Create a new saved job ---
-export async function POST(request: NextRequest) {
+export const POST = async (request: NextRequest) => {
+	// Proxy POST to backend API
 	try {
-		await dbConnect();
+		const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+		if (!backendUrl) {
+			return NextResponse.json(
+				{error: 'Backend API URL not configured'},
+				{status: 500},
+			);
+		}
 		const body = await request.json();
-		const parsedBody = CreateSavedJobSchema.parse(body);
-
-		// Create the saved job
-		const createdRaw = await SavedJob.create({
-			...parsedBody,
-			createdAt: new Date(),
-			updatedAt: new Date(),
+		const res = await fetch(`${backendUrl}/jobs/saved`, {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify(body),
 		});
-
-		// Defensive: .lean() not available on create, so convert to plain object
-		const created = createdRaw.toObject ? createdRaw.toObject() : createdRaw;
-
-		// Normalize for Zod
-		const normalizeId = (id: any) =>
-			typeof id === 'object' && id !== null && id.toString
-				? id.toString()
-				: id ?? '';
-
-		const normalizeDate = (date: any) =>
-			date instanceof Date
-				? date.toISOString()
-				: typeof date === 'string'
-				? date
-				: '';
-
-		const normalized = {
-			...created,
-			_id: normalizeId(created._id),
-			userId: normalizeId(created.userId),
-			companyId: normalizeId(created.companyId),
-			createdAt: normalizeDate(created.createdAt),
-			updatedAt: normalizeDate(created.updatedAt),
-		};
-
-		const parsed = SavedJobSchema.parse(normalized);
-
-		return NextResponse.json({job: parsed});
+		const data = await res.json();
+		return NextResponse.json(data, {status: res.status});
 	} catch (error: any) {
 		return NextResponse.json(
-			{
-				error: error.errors
-					? JSON.stringify(error.errors, null, 2)
-					: error.message || 'Internal server error',
-			},
+			{error: error.message || 'Internal server error'},
 			{status: 500},
 		);
 	}
-}
+};
 
 /**
  * --- Postman Manual Test Instructions ---
