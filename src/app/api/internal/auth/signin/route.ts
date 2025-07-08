@@ -85,16 +85,14 @@ export async function POST(req: Request) {
 				email,
 			});
 			const {AuthService} = await import('@/services/authService');
-			// Example: Only approve if user exists and is from allowed domain
-			const allowedDomain = '@jobscoutly.tech';
+			// Allow any user that exists in the DB (remove domain restriction)
 			const user = await AuthService.findUserByEmail(email);
-			const approved =
-				!!user && typeof email === 'string' && email.endsWith(allowedDomain);
+			const approved = !!user;
 			return NextResponse.json({
 				approved,
 				message: approved
-					? 'Pi approval: user exists and allowed domain'
-					: 'Pi approval: denied (user missing or domain not allowed)',
+					? 'Pi approval: user exists'
+					: 'Pi approval: denied (user missing)',
 				env: 'prod-pi',
 				isDev: env.isDev,
 				isProd: env.isProd,
