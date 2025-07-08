@@ -46,5 +46,11 @@ RUN npm install -g tsx typescript
 # Copy source code
 COPY . .
 
-# Start development server
-CMD ["npm", "run", "dev"]
+# Build Next.js app for production (only if not in dev)
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+RUN if [ "$NODE_ENV" != "development" ]; then npm run build; fi
+
+# Start server: dev or prod based on NODE_ENV
+CMD [ "sh", "-c", "if [ \"$NODE_ENV\" = 'development' ]; then npm run dev; else npm run start; fi" ]
