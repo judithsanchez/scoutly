@@ -51,9 +51,9 @@ services:
         ipv4_address: 172.20.0.11
     ports:
       - '3000:3000'
-    volumes:
-      - .:/app
-      - /app/node_modules
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
     env_file:
       - .env
     environment:
