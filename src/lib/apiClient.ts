@@ -10,20 +10,31 @@ const getApiUrl = () => {
 		logger.warn(
 			'NEXT_PUBLIC_API_URL is not set. Falling back to relative path.',
 		);
-		return '/api';
+		return ''; // Use relative path, do not prepend /api
 	}
-	return url;
+	return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
 const API_URL = getApiUrl();
 
+/**
+ * apiClient - universal API fetcher for Scoutly
+ *
+ * - If endpoint starts with '/', treat as absolute API route (e.g. '/api/jobs/saved')
+ * - If endpoint does NOT start with '/', treat as relative to API_URL (for external API support)
+ * - NEVER double-prepend '/api'
+ */
 async function apiClient<T>(
 	endpoint: string,
 	options: RequestInit = {},
 ): Promise<T> {
-	const url = `${API_URL}/${
-		endpoint.startsWith('/') ? endpoint.substring(1) : endpoint
-	}`;
+	// If endpoint starts with '/', do NOT prepend API_URL if API_URL is empty (local dev)
+	let url: string;
+	if (endpoint.startsWith('/')) {
+		url = API_URL ? `${API_URL}${endpoint}` : endpoint;
+	} else {
+		url = API_URL ? `${API_URL}/${endpoint}` : `/${endpoint}`;
+	}
 
 	const defaultOptions: RequestInit = {
 		headers: {

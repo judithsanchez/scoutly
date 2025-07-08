@@ -12,6 +12,69 @@ export async function GET(request: NextRequest) {
 		deployment: {...deployment},
 	});
 
+	const url = new URL(request.url);
+	const email = url.searchParams.get('email');
+	const userId = url.searchParams.get('userId');
+
+	if (env.isDev || (env.isProd && deployment.isPi)) {
+		let UserCompanyPreferenceService: any;
+		try {
+			UserCompanyPreferenceService =
+				require('@/services/userCompanyPreferenceService').UserCompanyPreferenceService;
+		} catch {}
+		if (!UserCompanyPreferenceService) {
+			await logger.error('UserCompanyPreferenceService not implemented');
+			return NextResponse.json(
+				{error: 'UserCompanyPreferenceService not implemented'},
+				{status: 501},
+			);
+		}
+		try {
+			let preferences;
+			if (userId) {
+				preferences = await UserCompanyPreferenceService.getByUserId(userId);
+			} else if (email) {
+				preferences = await UserCompanyPreferenceService.getByEmail(email);
+			} else {
+				return NextResponse.json(
+					{error: 'Must provide userId or email as query param'},
+					{status: 400},
+				);
+			}
+
+			// Join with Company collection to build TrackedCompany[]
+			const Company = require('@/models/Company').Company;
+			const trackedCompanies = [];
+			for (const pref of preferences ?? []) {
+				const company = await Company.findById(pref.companyId);
+				if (!company) continue;
+				trackedCompanies.push({
+					_id: company._id,
+					companyID: company.companyID,
+					company: company.company,
+					careers_url: company.careers_url,
+					logo_url: company.logo_url,
+					userPreference: {
+						rank: pref.rank,
+						isTracking: pref.isTracking,
+						frequency: pref.frequency,
+						lastUpdated: pref.updatedAt,
+					},
+				});
+			}
+			return NextResponse.json({companies: trackedCompanies});
+		} catch (error) {
+			await logger.error('Error fetching user-company-preferences', error);
+			return NextResponse.json(
+				{
+					error: 'Error fetching user-company-preferences',
+					details: (error as Error).message,
+				},
+				{status: 500},
+			);
+		}
+	}
+
 	if (env.isProd && deployment.isVercel) {
 		await logger.info(
 			'Environment: Production on Vercel - proxying to backend API',
@@ -68,14 +131,6 @@ export async function GET(request: NextRequest) {
 			);
 		}
 	}
-
-	await logger.warn(
-		'Direct DB access for user-company-preferences is not implemented',
-	);
-	return NextResponse.json(
-		{error: 'Direct DB access for user-company-preferences is not implemented'},
-		{status: 501},
-	);
 }
 
 // POST /api/user-company-preferences
