@@ -46,6 +46,9 @@ RUN npm install -g tsx typescript
 # Copy source code
 COPY . .
 
+# Copy .env for build-time environment variables
+COPY .env .env
+
 # Build Next.js app for production (only if not in dev)
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
