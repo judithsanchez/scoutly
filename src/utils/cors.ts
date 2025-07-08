@@ -1,158 +1,50 @@
 /**
- * Environment detection and configuration
- * Supports dev (localhost), Vercel (frontend), and Raspberry Pi (backend) deployments
+ * CORS and environment config for Scoutly.
+ * Uses centralized flags and URLs from src/config/environment.ts.
+ * No DB connection logic here!
  */
 
-export type Environment = 'development' | 'vercel' | 'raspberry-pi';
+import {env, deployment, allowedOriginsConfig} from '@/config/environment';
 
-export interface EnvironmentConfig {
-	environment: Environment;
-	isProduction: boolean;
-	isDevelopment: boolean;
-	isVercel: boolean;
-	isRaspberryPi: boolean;
+export interface CorsConfig {
+	allowedOrigins: string[];
 	frontendUrl: string;
 	backendUrl: string;
-	allowedOrigins: string[];
 }
 
-/**
- * Detect current environment based on various indicators
- */
-export function detectEnvironment(): Environment {
-	// Explicit and specific environment detection
-	if (
-		process.env.DEPLOYMENT_TARGET === 'vercel' ||
-		process.env.VERCEL ||
-		process.env.VERCEL_URL
-	) {
-		return 'vercel';
-	}
-	if (process.env.DEPLOYMENT_TARGET === 'raspberry-pi') {
-		return 'raspberry-pi';
-	}
-	if (process.env.DEPLOYMENT_TARGET === 'development') {
-		return 'development';
-	}
-	// Fallback: NODE_ENV
-	if (process.env.NODE_ENV === 'production') {
-		return 'raspberry-pi';
-	}
-	return 'development';
-}
+export function getCorsConfig(): CorsConfig {
+	let allowedOrigins: string[] = [];
+	let frontendUrl = '';
+	let backendUrl = '';
 
-/**
- * Get environment-specific configuration
- */
-export function getEnvironmentConfig(): EnvironmentConfig {
-	const environment = detectEnvironment();
-	const isProduction = process.env.NODE_ENV === 'production';
-
-	const config: EnvironmentConfig = {
-		environment,
-		isProduction,
-		isDevelopment: environment === 'development',
-		isVercel: environment === 'vercel',
-		isRaspberryPi: environment === 'raspberry-pi',
-		frontendUrl: '',
-		backendUrl: '',
-		allowedOrigins: [],
-	};
-
-	// Set URLs based on environment
-	switch (environment) {
-		case 'development':
-			config.frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
-			config.backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-			config.allowedOrigins = [
-				'http://localhost:3000',
-				'http://127.0.0.1:3000',
-			];
-			break;
-
-		case 'vercel':
-			config.frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL ||
-				`https://${process.env.VERCEL_URL}`;
-			config.backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'https://your-pi.example.com';
-			config.allowedOrigins = [
-				config.frontendUrl,
-				process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
-				config.backendUrl,
-			].filter(Boolean);
-			break;
-
-		case 'raspberry-pi':
-			config.frontendUrl =
-				process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://scoutly.vercel.app';
-			config.backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-			config.allowedOrigins = [
-				config.frontendUrl,
-				config.backendUrl,
-				'https://scoutly.vercel.app', // Default Vercel domain
-			];
-			break;
-	}
-
-	return config;
-}
-
-/**
- * Get the current environment config (singleton)
- */
-export const environmentConfig = getEnvironmentConfig();
-
-/**
- * Utility functions for environment checks
- */
-export const isServer = typeof window === 'undefined';
-export const isClient = typeof window !== 'undefined';
-export const isDev = environmentConfig.isDevelopment;
-export const isProd = environmentConfig.isProduction;
-export const isVercel = environmentConfig.isVercel;
-export const isRaspberryPi = environmentConfig.isRaspberryPi;
-
-let MONGODB_URI: string | undefined;
-
-if (environmentConfig.environment === 'vercel') {
-	MONGODB_URI = process.env.MONGODB_URI;
-} else if (environmentConfig.environment === 'raspberry-pi') {
-	MONGODB_URI = process.env.MONGODB_URI;
-} else {
-	MONGODB_URI = process.env.MONGODB_URI_LOCAL;
-}
-
-if (!MONGODB_URI) {
-	if (
-		environmentConfig.environment === 'vercel' ||
-		environmentConfig.environment === 'raspberry-pi'
-	) {
-		throw new Error(
-			`CRITICAL: MONGODB_URI is not defined for the ${environmentConfig.environment} environment.`,
-		);
+	if (env.isDev) {
+		allowedOrigins = allowedOriginsConfig.dev;
+		frontendUrl = allowedOriginsConfig.dev[0];
+		backendUrl = allowedOriginsConfig.dev[0];
+	} else if (deployment.isVercel) {
+		allowedOrigins = allowedOriginsConfig.vercel;
+		frontendUrl = allowedOriginsConfig.vercel[0];
+		backendUrl = allowedOriginsConfig.vercel[1];
+	} else if (deployment.isPi) {
+		allowedOrigins = allowedOriginsConfig.pi;
+		frontendUrl = allowedOriginsConfig.pi[0];
+		backendUrl = allowedOriginsConfig.pi[1];
 	} else {
-		throw new Error(
-			`CRITICAL: MONGODB_URI_LOCAL is not defined for the ${environmentConfig.environment} environment.`,
-		);
+		allowedOrigins = allowedOriginsConfig.fallback;
+		frontendUrl = allowedOriginsConfig.fallback[0];
+		backendUrl = allowedOriginsConfig.fallback[0];
 	}
+
+	return {allowedOrigins, frontendUrl, backendUrl};
 }
 
+/**
+ * Utility to check if an origin is allowed.
+ */
 export function getAllowedOrigin(
 	requestOrigin: string | null,
 ): string | undefined {
 	if (!requestOrigin) return undefined;
-	// If in development, allow localhost only
-	if (process.env.NODE_ENV === 'development') {
-		return environmentConfig.allowedOrigins.includes(requestOrigin)
-			? requestOrigin
-			: undefined;
-	}
-	// In production, allow only exact matches from allowedOrigins
-	return environmentConfig.allowedOrigins.includes(requestOrigin)
-		? requestOrigin
-		: undefined;
+	const {allowedOrigins} = getCorsConfig();
+	return allowedOrigins.includes(requestOrigin) ? requestOrigin : undefined;
 }
