@@ -39,7 +39,7 @@ export const deployment = {
 	isVercel: process.env.DEPLOYMENT === 'vercel',
 };
 
-export const AUTH = {
+export const auth = {
 	nextAuthSecret: process.env.NEXTAUTH_SECRET,
 	googleClientId: process.env.GOOGLE_CLIENT_ID,
 	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -48,4 +48,12 @@ export const AUTH = {
 export const apiBaseUrl = {
 	prod: process.env.NEXT_PUBLIC_API_URL,
 	dev: 'http://localhost:3000',
+};
+
+export const secret = {
+	internalApiSecret: process.env.INTERNAL_API_SECRET,
+};
+
+export const header = {
+	internalApiSecret: 'X-Internal-API-Secret',
 };

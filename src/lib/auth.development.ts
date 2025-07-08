@@ -3,23 +3,13 @@ import GoogleProvider from 'next-auth/providers/google';
 import {User} from '@/models/User';
 import {AdminUser} from '@/models/AdminUser';
 import dbConnect from '@/middleware/database';
+import {auth} from '@/config';
 
-/**
- * Development-only auth configuration
- *
- * This configuration is designed for development environments where:
- * - Any user can sign in
- * - Users are auto-created if they don't exist
- * - Mock data is provided for complete profiles
- * - No pre-approval checks are performed
- *
- * WARNING: This should NEVER be used in production
- */
 export const developmentAuthOptions: NextAuthOptions = {
 	providers: [
 		GoogleProvider({
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			clientId: auth.googleClientId!,
+			clientSecret: auth.googleClientSecret!,
 		}),
 	],
 	callbacks: {
@@ -32,12 +22,10 @@ export const developmentAuthOptions: NextAuthOptions = {
 					return false;
 				}
 
-				// Check if user exists
 				let existingUser = await User.findOne({
 					email: user.email.toLowerCase(),
 				});
 
-				// Auto-create user if they don't exist
 				if (!existingUser) {
 					console.log(`Dev Auth: Auto-creating user ${user.email}`);
 
@@ -47,7 +35,7 @@ export const developmentAuthOptions: NextAuthOptions = {
 							name: user.name || profile?.name || 'Development User',
 							email: user.email.toLowerCase(),
 						},
-						cvUrl: 'dev-mock-cv-url', // Mock CV URL for development
+						cvUrl: 'dev-mock-cv-url',
 						preferences: {
 							jobTypes: [],
 							locations: [],
@@ -68,17 +56,14 @@ export const developmentAuthOptions: NextAuthOptions = {
 				try {
 					await dbConnect();
 
-					// Get user data
 					const userData = await User.findOne({
 						email: session.user.email.toLowerCase(),
 					});
 
-					// Check if user is admin
 					const isAdmin = await AdminUser.findOne({
 						email: session.user.email.toLowerCase(),
 					});
 
-					// In development, always consider profile complete if user has CV
 					const hasCompleteProfile = !!(
 						userData?.cvUrl && userData?.candidateInfo
 					);
@@ -92,18 +77,16 @@ export const developmentAuthOptions: NextAuthOptions = {
 					};
 				} catch (error) {
 					console.error('Dev Auth: Error enriching session:', error);
-					// Provide fallback session for development
 					session.user = {
 						email: session.user.email,
 						isAdmin: false,
-						hasCompleteProfile: true, // Always true in dev for convenience
+						hasCompleteProfile: true,
 					};
 				}
 			}
 			return session;
 		},
 		async jwt({token, user, account}) {
-			// Persist admin status and profile completion in JWT
 			if (user?.email) {
 				try {
 					await dbConnect();
@@ -125,9 +108,8 @@ export const developmentAuthOptions: NextAuthOptions = {
 					token.cvUrl = userData?.cvUrl;
 				} catch (error) {
 					console.error('Dev Auth: Error enriching JWT:', error);
-					// Provide fallback for development
 					token.isAdmin = false;
-					token.hasCompleteProfile = true; // Always true in dev
+					token.hasCompleteProfile = true;
 				}
 			}
 			return token;

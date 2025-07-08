@@ -59,7 +59,7 @@
  * Complete list of all API endpoints in the Scoutly application
  * Organized by category for easy reference
  */
-export const endpoints = {
+export const endpoint = {
 	// Admin endpoints
 	admin: {
 		dashboard: '/api/admin/dashboard',
@@ -73,6 +73,8 @@ export const endpoints = {
 		nextauth: '/api/auth/[...nextauth]',
 		session: '/api/internal/auth/session',
 		signin: '/api/internal/auth/signin',
+		profile: '/api/internal/user/profile',
+		isAdmin: '/api/internal/auth/is-admin',
 	},
 
 	// Company endpoints

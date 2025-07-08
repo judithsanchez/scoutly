@@ -1,19 +1,17 @@
+import {apiBaseUrl, auth, header, secret} from '@/config';
+import {endpoint} from '@/constants';
 import {NextAuthOptions} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import {User} from '@/models/User';
-import {AdminUser} from '@/models/AdminUser';
-import connectToDB from '@/lib/db';
 
 const isProd = process.env.NODE_ENV === 'production';
 
-// --- CRITICAL: Explicit cookie config for cross-domain session sharing ---
 const cookieDomain = process.env.NEXTAUTH_COOKIE_DOMAIN || '.jobscoutly.tech';
 
 export const productionAuthOptions: NextAuthOptions = {
 	providers: [
 		GoogleProvider({
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			clientId: auth.googleClientId!,
+			clientSecret: auth.googleClientSecret!,
 		}),
 	],
 	callbacks: {
@@ -24,20 +22,19 @@ export const productionAuthOptions: NextAuthOptions = {
 					return false;
 				}
 
-				const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+				const internalApiUrl = apiBaseUrl.prod;
 				if (!internalApiUrl) {
 					console.error('Internal API URL is not configured.');
 					return false;
 				}
 
 				const response = await fetch(
-					`${internalApiUrl}/api/internal/auth/signin`,
+					`${internalApiUrl}${endpoint.auth.signin}`,
 					{
 						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-Internal-API-Secret': process.env.INTERNAL_API_SECRET || '',
-						},
+						headers: new Headers({
+							[header.internalApiSecret]: secret.internalApiSecret ?? '',
+						}),
 						body: JSON.stringify({email: user.email}),
 					},
 				);
@@ -50,7 +47,6 @@ export const productionAuthOptions: NextAuthOptions = {
 					}
 				}
 
-				// If response is not ok or not approved
 				console.log(
 					`Sign-in rejected for ${user.email} by internal API. Status: ${response.status}`,
 				);
@@ -80,61 +76,37 @@ export const productionAuthOptions: NextAuthOptions = {
 				accountType: account?.type,
 			});
 
-			// Persist admin status and profile completion in JWT
+			// Use AuthService for all user/admin/profile checks via backend API
 			if (user || typeof token.hasCompleteProfile === 'undefined') {
 				const email = user?.email || token.email;
 				if (email) {
 					try {
-						const internalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+						const internalApiUrl = apiBaseUrl.prod;
 						if (!internalApiUrl)
 							throw new Error('Internal API URL is not configured.');
 
-						// Fetch user profile from internal API (no session required)
-						const profileRes = await fetch(
-							`${internalApiUrl}/api/internal/user/profile`,
+						// Use a single endpoint to get all session info
+						const sessionRes = await fetch(
+							`${internalApiUrl}${endpoint.auth.session}`,
 							{
 								method: 'POST',
-								headers: {
+								headers: new Headers({
+									[header.internalApiSecret]: secret.internalApiSecret ?? '',
 									'Content-Type': 'application/json',
-									'X-Internal-API-Secret':
-										process.env.INTERNAL_API_SECRET || '',
-								},
+								}),
 								body: JSON.stringify({email}),
 							},
 						);
-						let userData = null;
-						if (profileRes.ok) {
-							userData = await profileRes.json();
+						let sessionData = null;
+						if (sessionRes.ok) {
+							sessionData = await sessionRes.json();
 						}
 
-						// Fetch admin status from backend API
-						const adminRes = await fetch(
-							`${internalApiUrl}/api/internal/auth/is-admin`,
-							{
-								method: 'POST',
-								headers: {
-									'Content-Type': 'application/json',
-									'X-Internal-API-Secret':
-										process.env.INTERNAL_API_SECRET || '',
-								},
-								body: JSON.stringify({email}),
-							},
-						);
-						let isAdmin = false;
-						if (adminRes.ok) {
-							const adminData = await adminRes.json();
-							isAdmin = !!adminData.isAdmin;
-						}
-
-						const hasCompleteProfile = !!(
-							userData?.cvUrl && userData?.candidateInfo
-						);
-
-						token.isAdmin = isAdmin;
-						token.hasCompleteProfile = hasCompleteProfile;
-						token.cvUrl = userData?.cvUrl;
+						token.isAdmin = !!sessionData?.isAdmin;
+						token.hasCompleteProfile = !!sessionData?.hasCompleteProfile;
+						token.cvUrl = sessionData?.cvUrl;
 					} catch (error) {
-						console.error('Error enriching JWT (via API):', error);
+						console.error('Error enriching JWT (via AuthService API):', error);
 						token.isAdmin = false;
 						token.hasCompleteProfile = false;
 					}

@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
-import {endpoints} from '@/constants';
+import {endpoint} from '@/constants';
 
 import {CompanyService} from '@/services/companyService';
 import {logger} from '@/utils/logger';
 
 export async function GET(request: NextRequest) {
-	await logger.debug(`GET ${endpoints.companies.list} called`, {
+	await logger.debug(`GET ${endpoint.companies.list} called`, {
 		env: {...env},
 		deployment: {...deployment},
 	});
@@ -45,9 +45,9 @@ export async function GET(request: NextRequest) {
 
 		try {
 			await logger.debug('Fetching companies from backend API', {
-				url: `${apiUrl}${endpoints.companies.list}`,
+				url: `${apiUrl}${endpoint.companies.list}`,
 			});
-			const response = await fetch(`${apiUrl}${endpoints.companies.list}`);
+			const response = await fetch(`${apiUrl}${endpoint.companies.list}`);
 			if (!response.ok) {
 				await logger.error('Failed to fetch companies from backend API', {
 					status: response.status,
