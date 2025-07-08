@@ -3,27 +3,6 @@
  * Use this object throughout the codebase for consistent, type-safe env access.
  */
 
-// --- Old comprehensive config (for reference/documentation) ---
-// export const ENV = {
-//   isDev: process.env.NODE_ENV === 'development',
-//   isProd: process.env.NODE_ENV === 'production',
-//   isTest: process.env.NODE_ENV === 'test',
-//   apiUrl: process.env.NEXT_PUBLIC_API_URL,
-//   nextAuthUrl: process.env.NEXTAUTH_URL,
-//   mongoUri: process.env.MONGODB_URI,
-//   internalApiSecret: process.env.INTERNAL_API_SECRET,
-//   nextAuthSecret: process.env.NEXTAUTH_SECRET,
-//   googleClientId: process.env.GOOGLE_CLIENT_ID,
-//   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-//   bootstrapAdminEmail: process.env.BOOTSTRAP_ADMIN_EMAIL,
-//   geminiApiKey: process.env.GEMINI_API_KEY,
-//   nextAuthCookieDomain: process.env.NEXTAUTH_COOKIE_DOMAIN,
-//   companyScrapeInterval: process.env.NEXT_PUBLIC_COMPANY_SCRAPE_INTERVAL_DAYS,
-//   jobStaleAfter: process.env.NEXT_PUBLIC_JOB_STALE_AFTER_DAYS,
-//   enableKanban: process.env.NEXT_PUBLIC_ENABLE_KANBAN_VIEW === 'true',
-//   enableDataViz: process.env.NEXT_PUBLIC_ENABLE_DATA_VISUALIZATION === 'true',
-// };
-
 export enum NodeEnv {
 	Development = 'development',
 	Production = 'production',
@@ -39,6 +18,29 @@ export const deployment = {
 	isVercel: process.env.DEPLOYMENT === 'vercel',
 };
 
+// --- URLs for CORS and API ---
+export const urls = {
+	frontend:
+		process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.jobscoutly.tech',
+	backend: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.jobscoutly.tech',
+	local: 'http://localhost:3000',
+	localhost127: 'http://127.0.0.1:3000',
+	vercelFrontend: 'https://www.jobscoutly.tech',
+	vercelBackend: 'https://api.jobscoutly.tech',
+};
+
+export const allowedOriginsConfig = {
+	dev: [urls.local, urls.localhost127],
+	vercel: [
+		urls.frontend,
+		urls.backend,
+		urls.vercelFrontend,
+		urls.vercelBackend,
+	],
+	pi: [urls.frontend, urls.local, urls.vercelFrontend],
+	fallback: [urls.local, urls.localhost127],
+};
+
 export const auth = {
 	nextAuthSecret: process.env.NEXTAUTH_SECRET,
 	googleClientId: process.env.GOOGLE_CLIENT_ID,
@@ -47,7 +49,7 @@ export const auth = {
 
 export const apiBaseUrl = {
 	prod: process.env.NEXT_PUBLIC_API_URL,
-	dev: 'http://localhost:3000',
+	dev: urls.local,
 	devMongoUri: `mongodb://${process.env.MONGODB_ROOT_USERNAME}:${process.env.MONGODB_ROOT_PASSWORD}@mongodb:27017/${process.env.MONGODB_ROOT_PASSWORD}?authSource=admin`,
 };
 
