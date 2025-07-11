@@ -3,6 +3,7 @@ import {
 	ICompanyScrapeHistory,
 	ScrapeLink,
 } from '../models/CompanyScrapeHistory';
+import {connectDB} from '@/config/database';
 import {Logger} from '../utils/logger';
 import mongoose from 'mongoose';
 import {ExtractedLink} from '../utils/scraper';
@@ -15,6 +16,7 @@ export class ScrapeHistoryService {
 		userEmail: string,
 	): Promise<ICompanyScrapeHistory | null> {
 		try {
+			await connectDB();
 			return await CompanyScrapeHistory.findOne({
 				companyId: new mongoose.Types.ObjectId(companyId),
 				userEmail,
@@ -30,6 +32,7 @@ export class ScrapeHistoryService {
 		links: ExtractedLink[],
 	): Promise<ICompanyScrapeHistory> {
 		try {
+			await connectDB();
 			const objectId = new mongoose.Types.ObjectId(companyId);
 
 			// Ensure all required fields are present and strings
@@ -63,6 +66,7 @@ export class ScrapeHistoryService {
 		currentLinks: ExtractedLink[],
 	): Promise<string[]> {
 		try {
+			await connectDB();
 			const lastScrape = await this.getLastScrape(companyId, userEmail);
 			if (!lastScrape) {
 				// All URLs are new if no previous scrape exists

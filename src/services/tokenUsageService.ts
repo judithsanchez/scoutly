@@ -3,6 +3,7 @@ import {
 	type ITokenUsage,
 	TokenOperation,
 } from '@/models/TokenUsage';
+import {connectDB} from '@/config/database';
 import {Logger} from '@/utils/logger';
 import type {PipelineStage} from 'mongoose';
 
@@ -52,6 +53,7 @@ export class TokenUsageService {
 		query: Record<string, any>,
 	): Promise<TokenUsageStats> {
 		try {
+			await connectDB();
 			const usageData = await TokenUsage.aggregate([
 				{$match: query},
 				{
@@ -112,6 +114,7 @@ export class TokenUsageService {
 		granularity: 'day' | 'week' | 'month' = 'day',
 	) {
 		try {
+			await connectDB();
 			const query = this.buildTimeframeQuery({}, timeframe);
 			const pipeline = [
 				{$match: query},
@@ -150,6 +153,7 @@ export class TokenUsageService {
 
 	public static async getModelPerformanceMetrics(timeframe?: TimeframeFilter) {
 		try {
+			await connectDB();
 			const query = this.buildTimeframeQuery({}, timeframe);
 			const pipeline = [
 				{$match: query},
@@ -184,6 +188,7 @@ export class TokenUsageService {
 		usage: TokenUsageInput,
 	): Promise<ITokenUsage> {
 		try {
+			await connectDB();
 			const tokenUsage = await TokenUsage.create({
 				...usage,
 				timestamp: new Date(),
@@ -219,6 +224,7 @@ export class TokenUsageService {
 		timeframe?: TimeframeFilter,
 	): Promise<TokenUsageStats> {
 		try {
+			await connectDB();
 			const query = this.buildTimeframeQuery({userEmail}, timeframe);
 			return await this.executeStatsQuery(query);
 		} catch (error) {
@@ -232,6 +238,7 @@ export class TokenUsageService {
 		timeframe?: TimeframeFilter,
 	): Promise<TokenUsageStats> {
 		try {
+			await connectDB();
 			const query = this.buildTimeframeQuery({companyId}, timeframe);
 			return await this.executeStatsQuery(query);
 		} catch (error) {
@@ -245,6 +252,7 @@ export class TokenUsageService {
 		timeframe?: TimeframeFilter,
 	): Promise<TokenUsageStats> {
 		try {
+			await connectDB();
 			const query = this.buildTimeframeQuery({operation}, timeframe);
 			return await this.executeStatsQuery(query);
 		} catch (error) {
@@ -260,6 +268,7 @@ export class TokenUsageService {
 		granularity: 'hour' | 'day' | 'week' | 'month' = 'day',
 	) {
 		try {
+			await connectDB();
 			const query = this.buildTimeframeQuery({}, timeframe);
 			const pipeline = [
 				{$match: query},
