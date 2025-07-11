@@ -35,11 +35,13 @@ export default withAuth(
 			authorized: ({token, req}) => {
 				const pathname = req.nextUrl.pathname;
 
-				// Skip auth for public routes
+				// Skip auth for public and internal API routes
 				if (
 					pathname === '/' ||
 					pathname.startsWith('/auth/') ||
 					pathname.startsWith('/api/auth/') ||
+					pathname.startsWith('/internal/') ||
+					pathname.startsWith('/api/internal/') ||
 					pathname.startsWith('/_next/') ||
 					pathname.startsWith('/favicon.ico')
 				) {
@@ -55,14 +57,13 @@ export default withAuth(
 
 export const config = {
 	matcher: [
-		/*
-		 * Match all request paths except for the ones starting with:
-		 * - api (API routes)
-		 * - _next/static (static files)
-		 * - _next/image (image optimization files)
-		 * - favicon.ico (favicon file)
-		 * - public folder
-		 */
-		'/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+		// Match all request paths except for the ones starting with:
+		// - api (API routes)
+		// - internal (internal API routes)
+		// - _next/static (static files)
+		// - _next/image (image optimization files)
+		// - favicon.ico (favicon file)
+		// - public folder
+		'/((?!api|internal|_next/static|_next/image|favicon.ico|public).*)',
 	],
 };
