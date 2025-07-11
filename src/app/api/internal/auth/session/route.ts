@@ -1,18 +1,12 @@
 import {NextResponse} from 'next/server';
-import {
-	env,
-	deployment,
-	apiBaseUrl,
-	secret,
-	header,
-} from '@/config/environment';
-import {endpoint} from '@/constants';
+import {env, deployment, secret, header} from '@/config/environment';
 import {Logger} from '@/utils/logger';
 
 const logger = new Logger('InternalAuthSessionRoute');
 
-export async function GET(req: Request) {
-	logger.debug('GET /api/internal/auth/session called');
+// --- POST handler for JWT/session enrichment from Vercel and dev ---
+export async function POST(req: Request) {
+	logger.debug('POST /api/internal/auth/session called');
 	const apiSecret = req.headers.get(header.internalApiSecret);
 	if (apiSecret !== secret.internalApiSecret) {
 		logger.warn('Unauthorized: invalid internal API secret');
@@ -20,103 +14,46 @@ export async function GET(req: Request) {
 	}
 
 	try {
+		let email: string | undefined;
 		if (env.isDev) {
-			logger.debug('Environment: dev, using AuthService');
-			const {AuthService} = await import('@/services/authService');
-			const email = (req.headers.get('x-dev-email') || '').toLowerCase();
-			let session = null;
-			if (email) {
-				session = await AuthService.getUserSessionInfo(email);
-				logger.info('Session info fetched (dev)', {email, session});
-			} else {
-				logger.warn('No x-dev-email header provided');
+			// In dev, allow email via header for easier testing
+			email = (req.headers.get('x-dev-email') || '').toLowerCase();
+			if (!email) {
+				// Fallback to body if not in header
+				const body = await req.json().catch(() => ({}));
+				email = (body.email || '').toLowerCase();
 			}
-			return NextResponse.json({
-				session: session || {mock: true},
-				env: 'dev',
-				isDev: env.isDev,
-				isProd: env.isProd,
-				isVercel: deployment.isVercel,
-				isPi: deployment.isPi,
-				flags: {...env, ...deployment},
-			});
+		} else {
+			const body = await req.json();
+			email = (body.email || '').toLowerCase();
 		}
 
-		if (env.isProd && deployment.isVercel) {
-			const apiUrl = apiBaseUrl.prod;
-			logger.debug('Environment: prod-vercel, proxying to backend API', {
-				apiUrl,
-			});
-			if (!apiUrl) {
-				logger.error('Backend API URL not configured');
-				return NextResponse.json(
-					{error: 'Backend API URL not configured'},
-					{status: 500},
-				);
-			}
-			const backendUrl = `${apiBaseUrl.prod}${endpoint.auth.session}${
-				req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''
-			}`;
-			logger.debug('Proxying to backendUrl', {backendUrl});
-			const backendRes = await fetch(backendUrl, {
-				method: 'GET',
-				headers: new Headers({
-					[header.internalApiSecret]: secret.internalApiSecret ?? '',
-				}),
-			});
-			const data = await backendRes.json();
-			logger.info('Received response from backend API', {
-				status: backendRes.status,
-			});
-			if (!backendRes.ok) {
-				logger.error('Backend error', {status: backendRes.status, data});
-				return NextResponse.json(
-					{error: data.error || 'Backend error'},
-					{status: backendRes.status},
-				);
-			}
-			return NextResponse.json({
-				...data,
-				env: 'prod-vercel',
-				isDev: env.isDev,
-				isProd: env.isProd,
-				isVercel: deployment.isVercel,
-				isPi: deployment.isPi,
-				flags: {...env, ...deployment},
-			});
+		if (!email) {
+			logger.warn('No email provided in POST body or header');
+			return NextResponse.json({error: 'No email provided'}, {status: 400});
 		}
-
-		if (env.isProd && deployment.isPi) {
-			logger.debug('Environment: prod-pi, using AuthService');
-			const {AuthService} = await import('@/services/authService');
-			const cookie = req.headers.get('cookie') || '';
-			const sessionToken = cookie
-				.split(';')
-				.map(c => c.trim())
-				.find(c => c.startsWith('__Secure-next-auth.session-token='))
-				?.split('=')[1];
-			let session = null;
-			if (sessionToken) {
-				session = await AuthService.getUserSessionInfo(sessionToken);
-				logger.info('Session info fetched (prod-pi)', {sessionToken, session});
-			} else {
-				logger.warn('No session token found in cookie');
-			}
-			return NextResponse.json({
-				session: session || {mock: true},
-				env: 'prod-pi',
-				isDev: env.isDev,
-				isProd: env.isProd,
-				isVercel: deployment.isVercel,
-				isPi: deployment.isPi,
-				flags: {...env, ...deployment},
-			});
+		const {AuthService} = await import('@/services/authService');
+		const user = await AuthService.findUserByEmail(email);
+		if (!user) {
+			logger.warn('User not found', {email});
+			return NextResponse.json({error: 'User not found'}, {status: 404});
 		}
-
-		logger.warn('Unknown environment branch hit');
-		return NextResponse.json({error: 'Unknown environment'}, {status: 500});
+		const isAdmin = await AuthService.isAdmin(email);
+		const hasCompleteProfile = await AuthService.hasCompleteProfile(user);
+		logger.info('POST session enrichment', {
+			email,
+			isAdmin,
+			hasCompleteProfile,
+			cvUrl: user.cvUrl,
+		});
+		return NextResponse.json({
+			email: user.email,
+			isAdmin,
+			hasCompleteProfile,
+			cvUrl: user.cvUrl,
+		});
 	} catch (error: any) {
-		logger.error('Unhandled error in GET /api/internal/auth/session', error);
+		logger.error('Unhandled error in POST /api/internal/auth/session', error);
 		return NextResponse.json(
 			{error: error.message || 'Internal server error'},
 			{status: 500},
