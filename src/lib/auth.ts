@@ -9,6 +9,13 @@ function createAuthOptions(): NextAuthOptions {
 		return developmentAuthOptions;
 	}
 
+	if (env.isProd && deployment.isPi) {
+		console.log(
+			'🔒 Using production auth provider (pre-approval required, Pi)',
+		);
+		return productionAuthOptions;
+	}
+
 	if (env.isProd && deployment.isVercel) {
 		console.log('🔒 Using production auth provider (pre-approval required)');
 		return productionAuthOptions;
