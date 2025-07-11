@@ -2,6 +2,7 @@
 import {NextAuthOptions, User as NextAuthUser} from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import {apiBaseUrl, secret, auth} from '@/config/environment';
+import {logger} from '@/utils/logger';
 
 interface CustomUser extends NextAuthUser {
 	id: string;
@@ -27,6 +28,9 @@ export const authOptions: NextAuthOptions = {
 		async signIn({user}) {
 			if (!user.email) return false;
 			try {
+				logger.info('[auth/signIn] Verifying user via API proxy', {
+					email: user.email,
+				});
 				const response = await fetch(
 					`${apiBaseUrl.prod}/internal/verify-user`,
 					{
@@ -38,11 +42,28 @@ export const authOptions: NextAuthOptions = {
 						body: JSON.stringify({email: user.email}),
 					},
 				);
-				if (!response.ok) return false;
+				logger.debug('[auth/signIn] API proxy response', {
+					status: response.status,
+				});
+				if (!response.ok) {
+					const text = await response.text();
+					logger.error('[auth/signIn] API proxy error response', {
+						status: response.status,
+						body: text,
+					});
+					return false;
+				}
 				const data = await response.json();
+				logger.info('[auth/signIn] User verification result', {
+					exists: data.exists,
+					email: user.email,
+				});
 				return !!data.exists;
 			} catch (err) {
-				console.error('signIn API proxy error:', err);
+				logger.error('[auth/signIn] API proxy error', {
+					error: err,
+					email: user.email,
+				});
 				return false;
 			}
 		},
@@ -53,6 +74,9 @@ export const authOptions: NextAuthOptions = {
 		async jwt({token, user}) {
 			if (user?.email) {
 				try {
+					logger.info('[auth/jwt] Fetching user details via API proxy', {
+						email: user.email,
+					});
 					const response = await fetch(
 						`${
 							apiBaseUrl.prod
@@ -64,14 +88,27 @@ export const authOptions: NextAuthOptions = {
 							},
 						},
 					);
+					logger.debug('[auth/jwt] API proxy response', {
+						status: response.status,
+					});
 					if (response.ok) {
 						const userDetails = await response.json();
+						logger.info('[auth/jwt] User details fetched', {userDetails});
 						token.id = userDetails.id;
 						token.role = userDetails.role;
 						token.isProfileComplete = userDetails.isProfileComplete;
+					} else {
+						const text = await response.text();
+						logger.error('[auth/jwt] API proxy error response', {
+							status: response.status,
+							body: text,
+						});
 					}
 				} catch (err) {
-					console.error('jwt API proxy error:', err);
+					logger.error('[auth/jwt] API proxy error', {
+						error: err,
+						email: user.email,
+					});
 				}
 			}
 			return token;
@@ -86,6 +123,11 @@ export const authOptions: NextAuthOptions = {
 				customUser.id = token.id as string;
 				customUser.role = token.role as string;
 				customUser.isProfileComplete = token.isProfileComplete as boolean;
+				logger.debug('[auth/session] Session hydrated from token', {
+					id: customUser.id,
+					role: customUser.role,
+					isProfileComplete: customUser.isProfileComplete,
+				});
 			}
 			return session;
 		},
