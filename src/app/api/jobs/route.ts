@@ -10,7 +10,6 @@ try {
 	JobService = require('@/services/jobService').JobService;
 } catch {}
 
-// POST /api/jobs
 export async function POST(request: NextRequest) {
 	await logger.debug(`POST ${endpoint.jobs.search} called`, {
 		env: {...env},
@@ -88,74 +87,34 @@ export async function POST(request: NextRequest) {
 	}
 }
 
-/**
- * @openapi
- * /api/jobs:
- *   post:
- *     summary: Run AI-powered job matching for a candidate across selected companies.
- *     description: |
- *       Given a user's credentials, a list of company IDs, a CV URL, and candidate info, this endpoint orchestrates an AI-powered job matching workflow for each company.
- *       Returns a list of results per company, each containing an array of matched jobs and analysis details.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               credentials:
- *                 type: object
- *                 properties:
- *                   gmail:
- *                     type: string
- *                     description: User's email address.
- *                 required:
- *                   - gmail
- *               companyIds:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Array of company IDs to match against.
- *               cvUrl:
- *                 type: string
- *                 description: Publicly accessible URL to the candidate's CV.
- *               candidateInfo:
- *                 type: object
- *                 description: Candidate profile information.
- *             required:
- *               - credentials
- *               - companyIds
- *               - cvUrl
- *               - candidateInfo
- *     responses:
- *       200:
- *         description: Job matching results per company.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/JobMatchingResponse'
- *       400:
- *         description: Validation error.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 details:
- *                   type: array
- *                   items:
- *                     type: string
- *                 message:
- *                   type: string
- *       500:
- *         description: Internal server error.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- */
+// // /src/app/api/jobs/route.ts
+
+// import { NextResponse } from 'next/server';
+// import { getServerSession } from 'next-auth/next';
+// import { authOptions } from '@/lib/auth';
+// import { getSavedJobsForUser } from '@/services/jobService';
+// import { logError } from '@/utils/logger';
+
+// export async function GET() {
+//   // 1. Get the server-side session. This is secure.
+//   const session = await getServerSession(authOptions);
+
+//   // 2. Check if the user is authenticated.
+//   if (!session || !session.user?.id) {
+//     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+//   }
+
+//   try {
+//     // 3. Perform the database operation.
+//     const savedJobs = await getSavedJobsForUser(session.user.id);
+//     return NextResponse.json(savedJobs);
+
+//   } catch (error) {
+//     // 4. Handle any errors gracefully.
+//     logError('Failed to fetch saved jobs', error);
+//     return NextResponse.json(
+//       { message: 'An error occurred while fetching saved jobs.' },
+//       { status: 500 }
+//     );
+//   }
+// }
