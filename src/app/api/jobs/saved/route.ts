@@ -9,7 +9,6 @@ try {
 	SavedJobService = require('@/services/savedJobService').SavedJobService;
 } catch {}
 
-// --- GET: Get saved jobs by email (query param or session) or all saved jobs ---
 export const GET = async (request: NextRequest) => {
 	await logger.debug(`GET ${endpoint.jobs.saved} called`, {
 		env: {...env},

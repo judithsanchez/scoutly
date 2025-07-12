@@ -1,13 +1,5 @@
 export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
-// import {getServerSession} from 'next-auth/next';
-// import {isAdminUserAsync} from '@/utils/adminUtils';
-// import {connectToDatabase} from '@/lib/mongodb';
-// import {Log} from '@/models/Log';
-// import {TokenUsage} from '@/models/TokenUsage';
-// import {CompanyScrapeHistory} from '@/models/CompanyScrapeHistory';
-// import {SavedJob} from '@/models/SavedJob';
-// import {UserCompanyPreference} from '@/models/UserCompanyPreference';
 
 export async function GET(request: NextRequest) {
 	try {
