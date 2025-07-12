@@ -5,7 +5,6 @@ import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants';
 import {logger} from '@/utils/logger';
 
-// DELETE /api/user-company-preferences/[companyId]
 export async function DELETE(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
@@ -95,7 +94,6 @@ export async function DELETE(
 	);
 }
 
-// PUT /api/user-company-preferences/[companyId]
 export async function PUT(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},

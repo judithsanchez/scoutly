@@ -5,7 +5,6 @@ import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants';
 import {logger} from '@/utils/logger';
 
-// GET /api/user-company-preferences
 export async function GET(request: NextRequest) {
 	await logger.debug(`GET ${endpoint.user_company_preferences.list} called`, {
 		env: {...env},
@@ -42,7 +41,6 @@ export async function GET(request: NextRequest) {
 				);
 			}
 
-			// Join with Company collection to build TrackedCompany[]
 			const Company = require('@/models/Company').Company;
 			const trackedCompanies = [];
 			for (const pref of preferences ?? []) {
@@ -133,7 +131,6 @@ export async function GET(request: NextRequest) {
 	}
 }
 
-// POST /api/user-company-preferences
 export async function POST(request: NextRequest) {
 	await logger.debug(`POST ${endpoint.user_company_preferences.list} called`, {
 		env: {...env},
@@ -209,7 +206,6 @@ export async function POST(request: NextRequest) {
 	);
 }
 
-// PATCH /api/user-company-preferences
 export async function PATCH(request: NextRequest) {
 	await logger.debug(`PATCH ${endpoint.user_company_preferences.list} called`, {
 		env: {...env},
@@ -285,7 +281,6 @@ export async function PATCH(request: NextRequest) {
 	);
 }
 
-// DELETE /api/user-company-preferences
 export async function DELETE(request: NextRequest) {
 	await logger.debug(
 		`DELETE ${endpoint.user_company_preferences.list} called`,
