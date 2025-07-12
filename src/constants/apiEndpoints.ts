@@ -15,6 +15,7 @@ export const endpoint = {
 		list: '/api/companies',
 		create: '/api/companies/create',
 		update_rankings: '/api/companies/update-rankings',
+		byId: '/api/companies/:companyId',
 	},
 
 	jobs: {

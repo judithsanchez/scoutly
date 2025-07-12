@@ -1,13 +1,29 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {env, deployment, apiBaseUrl} from '@/config/environment';
+import {endpoint} from '@/constants/apiEndpoints';
 import {CompanyService} from '@/services/companyService';
 import {logger} from '@/utils/logger';
 import {requireAuth} from '@/utils/requireAuth';
+import {proxyToBackend} from '@/utils/proxyToBackend';
 import {CompanyZodSchema} from '@/schemas/companySchemas';
 
 export async function GET(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
 ): Promise<Response> {
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.byId.replace(
+			':companyId',
+			params.companyId,
+		)}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'GET',
+			logPrefix: '[COMPANIES][GET][BY_ID][PROXY]',
+		});
+	}
+
 	const {user, response} = await requireAuth(request);
 	if (!user) {
 		await logger.warn('[COMPANIES][GET][BY_ID] Unauthorized access attempt', {

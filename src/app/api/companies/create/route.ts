@@ -1,11 +1,24 @@
 import {NextRequest, NextResponse} from 'next/server';
+import {env, deployment, apiBaseUrl} from '@/config/environment';
+import {endpoint} from '@/constants/apiEndpoints';
 import {CompanyService} from '@/services/companyService';
 import {logger} from '@/utils/logger';
 import {requireAuth} from '@/utils/requireAuth';
+import {proxyToBackend} from '@/utils/proxyToBackend';
 import {CompanyZodSchema} from '@/schemas/companySchemas';
 import {WorkModel} from '@/types/company';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest): Promise<Response> {
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.create}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'POST',
+			logPrefix: '[COMPANIES][CREATE][POST][PROXY]',
+		});
+	}
 	const {user, response} = await requireAuth(request);
 	if (!user) {
 		await logger.warn('[COMPANIES][CREATE][POST] Unauthorized access attempt', {

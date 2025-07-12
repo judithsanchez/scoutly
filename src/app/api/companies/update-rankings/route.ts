@@ -1,14 +1,23 @@
+import {endpoint} from '@/constants/apiEndpoints';
 export const dynamic = 'force-dynamic';
 
 import {NextRequest, NextResponse} from 'next/server';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
-import {endpoint} from '@/constants/apiEndpoints';
 import {logger} from '@/utils/logger';
 import {requireAuth} from '@/utils/requireAuth';
 import {proxyToBackend} from '@/utils/proxyToBackend';
 import {getUserEmail} from '@/utils/typeHelpers';
 
 export async function POST(request: NextRequest): Promise<Response> {
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.update_rankings}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'POST',
+			logPrefix: '[COMPANIES][UPDATE-RANKINGS][PROXY]',
+		});
+	}
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.update_rankings}`;
 		return proxyToBackend({
