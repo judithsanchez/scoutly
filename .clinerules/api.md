@@ -7,3 +7,4 @@
 7.  We try to keep the zod schemas on the file of the request unless it is a schema that will be reused on other places of the application
 8.  Always remove unused imports
 9.  If you encounter a file with comments that are not really useful, remove them
+10. Unless instructed NEVER change the styling of a page, nor delete the UI without asking first

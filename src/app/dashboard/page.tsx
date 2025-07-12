@@ -1,33 +1,37 @@
 'use client';
 
-import React, {useState, useEffect, useMemo} from 'react';
+import {useAuth} from '@/contexts/AuthContext';
+import {useRouter} from 'next/navigation';
+import {useEffect, useState, useMemo, useCallback} from 'react';
+import StartScoutButton from '@/components/StartScoutButton';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import SavedJobCard from '@/components/SavedJobCard';
 import ApplicationPipeline from '@/components/ApplicationPipeline';
-import StartScoutButton from '@/components/StartScoutButton';
-import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
-import config from '@/config/appConfig';
-import {createLogger} from '@/utils/frontendLogger';
+import {logger} from '@/utils/logger';
+import {ApplicationStatus, statusPriority} from '@/types/savedJob';
 import {
 	PAGE_BACKGROUND_CONTAINER,
 	PAGE_BACKGROUND_GLOW,
 	PAGE_CONTENT_CONTAINER,
 	CARD_CONTAINER,
-	BUTTON_PRIMARY,
-	HEADING_LG,
-	TEXT_SECONDARY,
 	FLEX_BETWEEN,
 	BUTTON_SECONDARY,
-	TEXT_ACCENT,
+	HEADING_LG,
+	TEXT_SECONDARY,
 	STAT_CARD_CONTAINER,
 	STAT_CARD_NUMBER_PURPLE,
 	STAT_CARD_NUMBER_GREEN,
 	STAT_CARD_NUMBER_YELLOW,
 	STAT_CARD_NUMBER_BLUE,
+	TEXT_ACCENT,
 } from '@/constants/styles';
+import config from '@/config/appConfig';
+import {ISavedJob} from '@/types/savedJob';
 
 export default function DashboardPage() {
-	// All hooks must be called first (Rules of Hooks)
+	// --- All hooks must be at the top ---
+	const {user} = useAuth();
+	const router = useRouter();
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -37,24 +41,32 @@ export default function DashboardPage() {
 		totalJobs: number;
 	} | null>(null);
 
-	const logger = useMemo(() => createLogger('Dashboard', 'anonymous'), []);
+	// Use the default logger import (fix for createLogger)
+	const dashLogger = logger;
 
-	const fetchSavedJobs = async () => {
+	useEffect(() => {
+		if (!user) {
+			router.replace('/login');
+		}
+	}, [user, router]);
+
+	// Move all hooks above this line!
+	const fetchSavedJobs = useCallback(async () => {
 		try {
-			logger?.info('Starting to fetch saved jobs');
+			dashLogger?.info('Starting to fetch saved jobs');
 			setIsLoadingJobs(true);
 
 			const url = `/api/jobs/saved`;
-			logger?.logApiRequest(url, 'GET');
+			dashLogger?.info(`API Request: GET ${url}`);
 
 			const response = await fetch(url);
 			const data = await response.json();
 
-			logger?.logApiResponse(url, response.status, data);
+			dashLogger?.info(`API Response: ${url} [${response.status}]`, data);
 
 			if (!response.ok) {
 				const errorMessage = data.error || 'Failed to fetch saved jobs';
-				logger?.logApiError(url, new Error(errorMessage));
+				dashLogger?.error(`API Error: ${url}`, new Error(errorMessage));
 				throw new Error(errorMessage);
 			}
 
@@ -71,40 +83,44 @@ export default function DashboardPage() {
 			});
 
 			setSavedJobs(sortedJobs);
-			logger?.info('Successfully fetched and sorted saved jobs', {
+			dashLogger?.info('Successfully fetched and sorted saved jobs', {
 				jobCount: sortedJobs.length,
 			});
 		} catch (err: any) {
 			const errorMessage =
 				err.message || 'Unknown error occurred while fetching saved jobs';
-			logger?.error('Error fetching saved jobs', {
+			dashLogger?.error('Error fetching saved jobs', {
 				error: errorMessage,
 				stack: err.stack,
 			});
-			logger?.error('Failed to fetch saved jobs', {error: err});
+			dashLogger?.error('Failed to fetch saved jobs', {error: err});
 		} finally {
 			setIsLoadingJobs(false);
-			logger?.debug(
+			dashLogger?.debug(
 				'Finished fetching saved jobs (loading state set to false)',
 			);
 		}
-	};
+	}, [dashLogger]);
 
 	useEffect(() => {
-		logger.logComponentMount?.('DashboardPage');
+		dashLogger.info('Component mounted: DashboardPage');
 		fetchSavedJobs();
 
 		return () => {
-			logger.logComponentUnmount?.('DashboardPage');
+			dashLogger.info('Component unmounted: DashboardPage');
 		};
-	}, [logger]);
+	}, [dashLogger, fetchSavedJobs]);
+
+	if (!user) {
+		return <p>Redirecting to login...</p>;
+	}
 
 	const handleStatusChange = async (
 		jobId: string,
 		status: ApplicationStatus,
 	) => {
 		try {
-			logger?.logUserAction('Changed job status', {
+			dashLogger?.info('User Action: Changed job status', {
 				jobId,
 				newStatus: status,
 			});
@@ -114,7 +130,7 @@ export default function DashboardPage() {
 				status,
 			};
 
-			logger?.logApiRequest(url, 'PATCH', requestBody);
+			dashLogger?.info(`API Request: PATCH ${url}`, requestBody);
 
 			const response = await fetch(url, {
 				method: 'PATCH',
@@ -124,18 +140,18 @@ export default function DashboardPage() {
 				body: JSON.stringify(requestBody),
 			});
 
-			logger?.logApiResponse(url, response.status);
+			dashLogger?.info(`API Response: ${url} [${response.status}]`);
 
 			if (!response.ok) {
 				const data = await response.json();
 				const errorMessage = data.error || 'Failed to update job status';
-				logger?.logApiError(url, new Error(errorMessage));
+				dashLogger?.error(`API Error: ${url}`, new Error(errorMessage));
 				throw new Error(errorMessage);
 			}
 
 			const {job: updatedJob} = await response.json();
 
-			logger?.info('Job status updated successfully', {
+			dashLogger?.info('Job status updated successfully', {
 				jobId,
 				newStatus: status,
 				updatedJob,
@@ -162,7 +178,7 @@ export default function DashboardPage() {
 		} catch (err: any) {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Failed to update job status';
-			logger?.error('Error updating job status', {
+			dashLogger?.error('Error updating job status', {
 				error: errorMessage,
 				stack: err?.stack,
 				jobId,
@@ -170,7 +186,11 @@ export default function DashboardPage() {
 			});
 
 			setError(errorMessage);
-			logger?.error('Failed to update job status', {error: err, jobId, status});
+			dashLogger?.error('Failed to update job status', {
+				error: err,
+				jobId,
+				status,
+			});
 		}
 	};
 
@@ -247,14 +267,14 @@ export default function DashboardPage() {
 							</a>
 							<StartScoutButton
 								onScoutStart={async selectedCompanyIds => {
-									logger?.logUserAction('Started job search', {
+									dashLogger?.info('User Action: Started job search', {
 										selectedCompanies: selectedCompanyIds,
 									});
 
 									setSearchComplete(null);
 									try {
 										// Step 1: Fetch user info (candidate info) from new endpoint
-										logger?.info('Fetching user info for job search');
+										dashLogger?.info('Fetching user info for job search');
 										const userQueryRes = await fetch('/api/users/query', {
 											method: 'POST',
 											headers: {'Content-Type': 'application/json'},
@@ -262,7 +282,7 @@ export default function DashboardPage() {
 										});
 										if (!userQueryRes.ok) {
 											const errorText = await userQueryRes.text();
-											logger?.error('Failed to fetch user info', {
+											dashLogger?.error('Failed to fetch user info', {
 												status: userQueryRes.status,
 												response: errorText,
 											});
@@ -291,13 +311,16 @@ export default function DashboardPage() {
 											candidateInfo,
 										};
 
-										logger?.info('Sending job search request', {
+										dashLogger?.info('Sending job search request', {
 											companyCount: selectedCompanyIds.length,
 											companies: selectedCompanyIds,
 										});
 
 										const jobSearchUrl = '/api/jobs';
-										logger?.logApiRequest(jobSearchUrl, 'POST', requestBody);
+										dashLogger?.info(
+											`API Request: POST ${jobSearchUrl}`,
+											requestBody,
+										);
 
 										const searchResponse = await fetch(jobSearchUrl, {
 											method: 'POST',
@@ -307,12 +330,14 @@ export default function DashboardPage() {
 											body: JSON.stringify(requestBody),
 										});
 
-										logger?.logApiResponse(jobSearchUrl, searchResponse.status);
+										dashLogger?.info(
+											`API Response: ${jobSearchUrl} [${searchResponse.status}]`,
+										);
 
 										if (!searchResponse.ok) {
 											const errorData = await searchResponse.json();
 
-											logger?.error('Job search request failed', {
+											dashLogger?.error('Job search request failed', {
 												status: searchResponse.status,
 												errorData,
 												requestBody: {
@@ -346,7 +371,7 @@ export default function DashboardPage() {
 
 										const searchData = await searchResponse.json();
 
-										logger?.info('Job search completed successfully', {
+										dashLogger?.info('Job search completed successfully', {
 											searchData,
 										});
 
@@ -359,7 +384,7 @@ export default function DashboardPage() {
 											0,
 										);
 
-										logger?.info('Job search results processed', {
+										dashLogger?.info('Job search results processed', {
 											totalJobs,
 											processedCompanies: searchData.results.filter(
 												(r: any) => r.processed,
@@ -373,13 +398,13 @@ export default function DashboardPage() {
 											err?.message ||
 											'An unexpected error occurred while searching for jobs';
 
-										logger?.error('Job search failed', {
+										dashLogger?.error('Job search failed', {
 											error: catchErrorMessage,
 											stack: err?.stack,
 											selectedCompanies: selectedCompanyIds,
 										});
 
-										logger?.error('Failed to start scout', {error: err});
+										dashLogger?.error('Failed to start scout', {error: err});
 
 										// Store the error message for user feedback
 										const errorMessage =
@@ -388,7 +413,7 @@ export default function DashboardPage() {
 
 										// You can enhance this by setting error state if you want to show specific error messages to users
 										// For now, we'll log the detailed error and show the search as incomplete
-										logger?.error('Detailed scout error info', {
+										dashLogger?.error('Detailed scout error info', {
 											message: errorMessage,
 											stack: err?.stack,
 											timestamp: new Date().toISOString(),
