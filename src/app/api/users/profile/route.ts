@@ -37,7 +37,6 @@ export async function GET(req: NextRequest) {
 
 			let isAdmin = false;
 			try {
-				// Dynamically import to avoid circular dependency if any
 				const {AdminUserService} = await import('@/services/adminUserService');
 				isAdmin = await AdminUserService.isAdmin(user.email);
 			} catch (e) {

@@ -3,12 +3,7 @@ import bcrypt from 'bcryptjs';
 import {UserService} from '@/services/userService';
 import {logger} from '@/utils/logger';
 import {deployment, header, secret} from '@/config/environment';
-import z from 'zod';
-
-export const registerSchema = z.object({
-	email: z.string().email(),
-	password: z.string().min(8),
-});
+import {registerSchema} from '@/schemas/userSchemas';
 export async function POST(req: NextRequest) {
 	if (!deployment.isVercel) {
 		try {

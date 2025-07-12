@@ -54,6 +54,7 @@ export const apiBaseUrl = {
 
 export const secret = {
 	internalApiSecret: process.env.INTERNAL_API_SECRET,
+	jwt: process.env.JWT_SECRET,
 };
 
 export const header = {
