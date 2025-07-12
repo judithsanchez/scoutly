@@ -3,7 +3,6 @@ import {NextRequest, NextResponse} from 'next/server';
 
 export async function GET(request: NextRequest) {
 	try {
-		// Forward the request to the backend API
 		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 		const backendUrl = `${apiUrl.replace(/\/$/, '')}/admin/dashboard`;
 
@@ -32,5 +31,3 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json({error: 'Internal server error'}, {status: 500});
 	}
 }
-
-// All dashboard data is now proxied from the backend API
