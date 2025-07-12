@@ -13,7 +13,7 @@ import {registerSchema} from '@/schemas/userSchemas';
 import {proxyToBackend} from '@/utils/proxyToBackend';
 import {endpoint} from '@/constants/apiEndpoints';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.users.register}`;
 		return proxyToBackend({

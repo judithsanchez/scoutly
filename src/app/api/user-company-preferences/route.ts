@@ -6,7 +6,7 @@ import {endpoint} from '@/constants/apiEndpoints';
 import {logger} from '@/utils/logger';
 import {proxyToBackend} from '@/utils/proxyToBackend';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
 	await logger.debug(`GET ${endpoint.user_company_preferences.list} called`, {
 		env: {...env},
 		deployment: {...deployment},
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 	}
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
 	await logger.debug(`POST ${endpoint.user_company_preferences.list} called`, {
 		env: {...env},
 		deployment: {...deployment},
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 	}
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<Response> {
 	await logger.debug(`PATCH ${endpoint.user_company_preferences.list} called`, {
 		env: {...env},
 		deployment: {...deployment},
@@ -138,7 +138,7 @@ export async function PATCH(request: NextRequest) {
 	}
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<Response> {
 	await logger.debug(
 		`DELETE ${endpoint.user_company_preferences.list} called`,
 		{

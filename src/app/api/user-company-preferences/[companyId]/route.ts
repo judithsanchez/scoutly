@@ -9,7 +9,7 @@ import {proxyToBackend} from '@/utils/proxyToBackend';
 export async function DELETE(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
-) {
+): Promise<Response> {
 	await logger.debug(
 		`DELETE ${endpoint.user_company_preferences.by_company_id.replace(
 			'[companyId]',
@@ -65,7 +65,7 @@ export async function DELETE(
 export async function PUT(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
-) {
+): Promise<Response> {
 	await logger.debug(
 		`PUT ${endpoint.user_company_preferences.by_company_id.replace(
 			'[companyId]',

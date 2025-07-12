@@ -8,7 +8,7 @@ import {requireAuth} from '@/utils/requireAuth';
 import {proxyToBackend} from '@/utils/proxyToBackend';
 import {getUserEmail} from '@/utils/typeHelpers';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.update_rankings}`;
 		return proxyToBackend({
@@ -38,46 +38,44 @@ export async function POST(request: NextRequest) {
 					request.headers.get('x-forwarded-for') || request.headers.get('host'),
 			},
 		);
-		return response;
+		return response as Response;
 	}
 
-	if (!deployment.isVercel) {
-		try {
-			const reqBody = await request.json();
+	try {
+		const reqBody = await request.json();
 
-			await logger.info(
-				'[COMPANIES][UPDATE-RANKINGS][POST] Rankings update attempted',
-				{
-					user: userEmail,
-					payload: reqBody,
-				},
-			);
+		await logger.info(
+			'[COMPANIES][UPDATE-RANKINGS][POST] Rankings update attempted',
+			{
+				user: userEmail,
+				payload: reqBody,
+			},
+		);
 
-			await logger.warn(
-				'[COMPANIES][UPDATE-RANKINGS][POST] Update rankings is not implemented for this environment',
-				{
-					user: userEmail,
-				},
-			);
-			return NextResponse.json(
-				{error: 'Update rankings is not implemented in this environment'},
-				{status: 501},
-			);
-		} catch (error) {
-			await logger.error(
-				'[COMPANIES][UPDATE-RANKINGS][POST] Error updating rankings',
-				{
-					error,
-					user: userEmail,
-				},
-			);
-			return NextResponse.json(
-				{
-					error: 'Error updating rankings',
-					details: (error as Error).message,
-				},
-				{status: 500},
-			);
-		}
+		await logger.warn(
+			'[COMPANIES][UPDATE-RANKINGS][POST] Update rankings is not implemented for this environment',
+			{
+				user: userEmail,
+			},
+		);
+		return NextResponse.json(
+			{error: 'Update rankings is not implemented in this environment'},
+			{status: 501},
+		);
+	} catch (error) {
+		await logger.error(
+			'[COMPANIES][UPDATE-RANKINGS][POST] Error updating rankings',
+			{
+				error,
+				user: userEmail,
+			},
+		);
+		return NextResponse.json(
+			{
+				error: 'Error updating rankings',
+				details: (error as Error).message,
+			},
+			{status: 500},
+		);
 	}
 }

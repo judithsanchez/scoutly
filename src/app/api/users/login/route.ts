@@ -19,7 +19,7 @@ const LoginSchema = z.object({
 	password: z.string().min(8),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.users.login}`;
 		return proxyToBackend({
