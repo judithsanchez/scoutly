@@ -12,6 +12,11 @@ import {CompaniesArrayZodSchema} from '@/schemas/companySchemas';
 const querySchema = z.object({});
 
 export async function GET(request: NextRequest): Promise<Response> {
+	// Debug: Log all incoming headers
+	await logger.debug('[COMPANIES][GET] Incoming headers', {
+		headers: Object.fromEntries(request.headers.entries()),
+	});
+
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.list}`;
 		return proxyToBackend({
@@ -28,10 +33,24 @@ export async function GET(request: NextRequest): Promise<Response> {
 		headers: Object.fromEntries(request.headers.entries()),
 	});
 
+	// Debug: Log Authorization header specifically
+	await logger.debug('[COMPANIES][GET] Authorization header', {
+		authorization: request.headers.get('Authorization'),
+		AUTHORIZATION: request.headers.get('AUTHORIZATION'),
+	});
+
 	const {user, response} = await requireAuth(request);
+
+	// Debug: Log user after requireAuth
+	await logger.debug('[COMPANIES][GET] requireAuth result', {
+		user,
+		responseType: typeof response,
+	});
+
 	if (!user) {
 		await logger.warn('[COMPANIES][GET] Unauthorized access attempt', {
 			ip: request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			headers: Object.fromEntries(request.headers.entries()),
 		});
 		return response as Response;
 	}

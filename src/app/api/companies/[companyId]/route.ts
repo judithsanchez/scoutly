@@ -25,7 +25,10 @@ export async function GET(
 		if (!parseResult.success) {
 			await logger.warn('[COMPANIES][GET][BY_ID] Invalid company shape', {
 				issues: parseResult.error.issues,
-				user: user.email,
+				user:
+					typeof user === 'object' && user !== null && 'email' in user
+						? user.email
+						: undefined,
 			});
 			return NextResponse.json(
 				{error: 'Invalid company shape', details: parseResult.error.issues},
@@ -36,7 +39,10 @@ export async function GET(
 	} catch (error) {
 		await logger.error('[COMPANIES][GET][BY_ID] Error fetching company', {
 			error,
-			user: user.email,
+			user:
+				typeof user === 'object' && user !== null && 'email' in user
+					? user.email
+					: undefined,
 		});
 		return NextResponse.json(
 			{error: 'Error fetching company', details: (error as Error).message},

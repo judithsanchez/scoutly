@@ -502,8 +502,16 @@ export default function CompaniesPage() {
 					try {
 						const result = await createCompany(companyData);
 
-						if (track && result.company) {
-							await trackCompany(result.company.companyID, ranking);
+						if (
+							track &&
+							typeof result === 'object' &&
+							result !== null &&
+							'company' in result &&
+							typeof (result as any).company === 'object' &&
+							(result as any).company !== null &&
+							'companyID' in (result as any).company
+						) {
+							await trackCompany((result as any).company.companyID, ranking);
 						}
 
 						setIsAddCompanyModalOpen(false);

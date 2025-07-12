@@ -1,6 +1,7 @@
 'use client';
 
 import {Logger} from '@/utils/logger';
+import {header} from '@/config/environment';
 
 const logger = new Logger('ApiClient');
 
@@ -62,10 +63,13 @@ async function apiClient<T>(
 	}
 	mergedHeaders['Content-Type'] = 'application/json';
 
-	// Add Authorization header if JWT is present
+	// Add Authorization header if JWT is present, using config
 	if (jwt) {
-		mergedHeaders['Authorization'] = `Bearer ${jwt}`;
+		mergedHeaders[header.AUTHORIZATION] = `Bearer ${jwt}`;
 	}
+
+	// Debug: Log outgoing headers for every request
+	logger.debug('apiClient outgoing headers', mergedHeaders);
 
 	// --- CRITICAL: Always include credentials for cross-domain auth ---
 	const defaultOptions: RequestInit = {

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 	if (!deployment.isVercel) {
 		try {
 			await logger.debug('Forgot-password endpoint called');
-			const apiSecret = req.headers.get(header.internalApiSecret);
+			const apiSecret = req.headers.get(header.INTERNAL_API_SECRET);
 
 			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 				await logger.error('Unauthorized forgot-password attempt');

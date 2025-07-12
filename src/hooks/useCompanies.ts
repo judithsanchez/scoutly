@@ -1,6 +1,7 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {ICompany, CreateCompanyInput} from '@/types/company';
 import apiClient from '@/lib/apiClient';
+import {endpoint} from '@/constants/apiEndpoints';
 import {useAuth} from '@/contexts/AuthContext';
 
 interface TrackedCompany {
@@ -21,14 +22,17 @@ interface TrackedCompaniesResponse {
 	companies: TrackedCompany[];
 }
 
-async function fetchCompanies() {
-	return apiClient('/api/companies');
+async function fetchCompanies(): Promise<ICompany[]> {
+	// Ensure the return type is ICompany[]
+	return apiClient(endpoint.companies.list) as Promise<ICompany[]>;
 }
 
 async function fetchTrackedCompanies(email: string): Promise<TrackedCompany[]> {
 	if (!email) throw new Error('User not authenticated');
 	const data: TrackedCompaniesResponse = await apiClient(
-		`/api/user-company-preferences?email=${encodeURIComponent(email)}`,
+		`${endpoint.user_company_preferences.list}?email=${encodeURIComponent(
+			email,
+		)}`,
 	);
 	return data.companies;
 }
@@ -43,7 +47,7 @@ async function trackCompany({
 	rank?: number;
 }) {
 	if (!email) throw new Error('User not authenticated');
-	return apiClient('/api/user-company-preferences', {
+	return apiClient(endpoint.user_company_preferences.list, {
 		method: 'POST',
 		body: JSON.stringify({email, companyId, rank, isTracking: true}),
 	});
@@ -57,7 +61,7 @@ async function untrackCompany({
 	companyId: string;
 }) {
 	if (!email) throw new Error('User not authenticated');
-	return apiClient('/api/user-company-preferences', {
+	return apiClient(endpoint.user_company_preferences.list, {
 		method: 'DELETE',
 		body: JSON.stringify({email, companyId}),
 	});
@@ -73,14 +77,14 @@ async function updateRanking({
 	rank: number;
 }) {
 	if (!email) throw new Error('User not authenticated');
-	return apiClient('/api/user-company-preferences', {
+	return apiClient(endpoint.user_company_preferences.list, {
 		method: 'PATCH',
 		body: JSON.stringify({email, companyId, rank}),
 	});
 }
 
 async function createCompany(companyData: CreateCompanyInput) {
-	return apiClient('/api/companies/create', {
+	return apiClient(endpoint.companies.create, {
 		method: 'POST',
 		body: JSON.stringify(companyData),
 	});
@@ -97,7 +101,7 @@ export function useCompanies() {
 	const companiesQuery = useQuery<ICompany[], Error>({
 		queryKey: ['companies'],
 		queryFn: fetchCompanies,
-		retry: (failureCount, error) => {
+		retry: (failureCount: number, error: Error) => {
 			if (error instanceof Error) {
 				if (error.message.includes('Database connection error')) {
 					return false;
@@ -105,7 +109,8 @@ export function useCompanies() {
 			}
 			return failureCount < 3;
 		},
-		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+		retryDelay: (attemptIndex: number) =>
+			Math.min(1000 * 2 ** attemptIndex, 30000),
 		staleTime: 1000 * 60 * 5,
 		gcTime: 1000 * 60 * 30,
 	});
@@ -114,7 +119,7 @@ export function useCompanies() {
 		queryKey: ['trackedCompanies', getEmail()],
 		queryFn: () => fetchTrackedCompanies(getEmail()),
 		enabled: !!getEmail(),
-		retry: (failureCount, error) => {
+		retry: (failureCount: number, error: Error) => {
 			if (error instanceof Error) {
 				if (error.message.includes('Database connection error')) {
 					return false;
@@ -122,7 +127,8 @@ export function useCompanies() {
 			}
 			return failureCount < 3;
 		},
-		retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+		retryDelay: (attemptIndex: number) =>
+			Math.min(1000 * 2 ** attemptIndex, 30000),
 		staleTime: 1000 * 60 * 5,
 		gcTime: 1000 * 60 * 30,
 	});
