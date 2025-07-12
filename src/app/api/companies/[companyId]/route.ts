@@ -26,7 +26,7 @@ const updateCompanySchema = z.object({
 export async function PATCH(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
-) {
+): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.list}/${params.companyId}`;
 		return proxyToBackend({
@@ -54,83 +54,81 @@ export async function PATCH(
 			ip: request.headers.get('x-forwarded-for') || request.headers.get('host'),
 			companyId: params.companyId,
 		});
-		return response;
+		return response as Response;
 	}
 
-	if (!deployment.isVercel) {
-		try {
-			const reqBody = await request.json();
-			const parseResult = updateCompanySchema.safeParse(reqBody);
+	try {
+		const reqBody = await request.json();
+		const parseResult = updateCompanySchema.safeParse(reqBody);
 
-			if (!parseResult.success) {
-				await logger.warn('[COMPANIES][PATCH] Invalid update company payload', {
-					issues: parseResult.error.issues,
-					user: userEmail,
-					companyId: params.companyId,
-				});
-				return NextResponse.json(
-					{
-						error: 'Invalid update company payload',
-						details: parseResult.error.issues,
-					},
-					{status: 400},
-				);
-			}
-
-			const transformedData = {
-				...parseResult.data,
-				work_model: toWorkModel(parseResult.data.work_model),
-			};
-
-			const companyParse = CompanySchema.partial().safeParse(transformedData);
-			if (!companyParse.success) {
-				await logger.warn(
-					'[COMPANIES][PATCH] Invalid company shape after transform',
-					{
-						issues: companyParse.error.issues,
-						user: userEmail,
-						companyId: params.companyId,
-					},
-				);
-				return NextResponse.json(
-					{
-						error: 'Invalid company shape after transform',
-						details: companyParse.error.issues,
-					},
-					{status: 400},
-				);
-			}
-
-			const updated = await CompanyService.updateCompany(
-				params.companyId,
-				companyParse.data as Partial<ICompany>,
-			);
-			await logger.info('[COMPANIES][PATCH] Company updated successfully', {
-				companyId: params.companyId,
-				user: userEmail,
-			});
-			return NextResponse.json(updated);
-		} catch (error) {
-			await logger.error('[COMPANIES][PATCH] Error updating company', {
-				error,
+		if (!parseResult.success) {
+			await logger.warn('[COMPANIES][PATCH] Invalid update company payload', {
+				issues: parseResult.error.issues,
 				user: userEmail,
 				companyId: params.companyId,
 			});
 			return NextResponse.json(
 				{
-					error: 'Error updating company',
-					details: (error as Error).message,
+					error: 'Invalid update company payload',
+					details: parseResult.error.issues,
 				},
-				{status: 500},
+				{status: 400},
 			);
 		}
+
+		const transformedData = {
+			...parseResult.data,
+			work_model: toWorkModel(parseResult.data.work_model),
+		};
+
+		const companyParse = CompanySchema.partial().safeParse(transformedData);
+		if (!companyParse.success) {
+			await logger.warn(
+				'[COMPANIES][PATCH] Invalid company shape after transform',
+				{
+					issues: companyParse.error.issues,
+					user: userEmail,
+					companyId: params.companyId,
+				},
+			);
+			return NextResponse.json(
+				{
+					error: 'Invalid company shape after transform',
+					details: companyParse.error.issues,
+				},
+				{status: 400},
+			);
+		}
+
+		const updated = await CompanyService.updateCompany(
+			params.companyId,
+			companyParse.data as Partial<ICompany>,
+		);
+		await logger.info('[COMPANIES][PATCH] Company updated successfully', {
+			companyId: params.companyId,
+			user: userEmail,
+		});
+		return NextResponse.json(updated);
+	} catch (error) {
+		await logger.error('[COMPANIES][PATCH] Error updating company', {
+			error,
+			user: userEmail,
+			companyId: params.companyId,
+		});
+		return NextResponse.json(
+			{
+				error: 'Error updating company',
+				details: (error as Error).message,
+			},
+			{status: 500},
+		);
 	}
 }
 
 export async function DELETE(
 	request: NextRequest,
 	{params}: {params: {companyId: string}},
-) {
+): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.list}/${params.companyId}`;
 		return proxyToBackend({
@@ -158,30 +156,28 @@ export async function DELETE(
 			ip: request.headers.get('x-forwarded-for') || request.headers.get('host'),
 			companyId: params.companyId,
 		});
-		return response;
+		return response as Response;
 	}
 
-	if (!deployment.isVercel) {
-		try {
-			const deleted = await CompanyService.deleteCompany(params.companyId);
-			await logger.info('[COMPANIES][DELETE] Company deleted successfully', {
-				companyId: params.companyId,
-				user: userEmail,
-			});
-			return NextResponse.json(deleted);
-		} catch (error) {
-			await logger.error('[COMPANIES][DELETE] Error deleting company', {
-				error,
-				user: userEmail,
-				companyId: params.companyId,
-			});
-			return NextResponse.json(
-				{
-					error: 'Error deleting company',
-					details: (error as Error).message,
-				},
-				{status: 500},
-			);
-		}
+	try {
+		const deleted = await CompanyService.deleteCompany(params.companyId);
+		await logger.info('[COMPANIES][DELETE] Company deleted successfully', {
+			companyId: params.companyId,
+			user: userEmail,
+		});
+		return NextResponse.json(deleted);
+	} catch (error) {
+		await logger.error('[COMPANIES][DELETE] Error deleting company', {
+			error,
+			user: userEmail,
+			companyId: params.companyId,
+		});
+		return NextResponse.json(
+			{
+				error: 'Error deleting company',
+				details: (error as Error).message,
+			},
+			{status: 500},
+		);
 	}
 }
