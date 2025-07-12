@@ -35,8 +35,17 @@ export async function GET(req: NextRequest) {
 				return NextResponse.json({error: 'User not found'}, {status: 404});
 			}
 
+			let isAdmin = false;
+			try {
+				// Dynamically import to avoid circular dependency if any
+				const {AdminUserService} = await import('@/services/adminUserService');
+				isAdmin = await AdminUserService.isAdmin(user.email);
+			} catch (e) {
+				await logger.warn('Could not check admin status', {userId, error: e});
+			}
+
 			await logger.success('Profile returned', {userId});
-			return NextResponse.json({user});
+			return NextResponse.json({user: {...user.toObject(), isAdmin}});
 		} catch (err) {
 			await logger.error('Profile endpoint server error', err);
 			return NextResponse.json({error: 'Server error'}, {status: 500});

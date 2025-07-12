@@ -1,90 +1,53 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {env, deployment, apiBaseUrl} from '@/config/environment';
-import {endpoint} from '@/constants';
+import {AdminUserService} from '@/services/adminUserService';
 import {logger} from '@/utils/logger';
+import {deployment, header, secret} from '@/config/environment';
+import {z} from 'zod';
 
-let UserService: any;
-try {
-	UserService = require('@/services/userService').UserService;
-} catch {}
+const PromoteSchema = z.object({
+	email: z.string().email(),
+	createdBy: z.string().email(),
+	role: z.enum(['admin', 'super_admin', 'moderator']).optional(),
+});
 
-// PATCH /api/users/promote
-export async function PATCH(request: NextRequest) {
-	await logger.debug(`PATCH ${endpoint.admin.promote_user} called`, {
-		env: {...env},
-		deployment: {...deployment},
-	});
-
-	const reqBody = await request.json();
-
-	if (env.isDev || (env.isProd && deployment.isPi)) {
-		if (!UserService) {
-			await logger.error('UserService not implemented');
-			return NextResponse.json(
-				{error: 'UserService not implemented'},
-				{status: 501},
-			);
-		}
+export async function POST(req: NextRequest) {
+	if (!deployment.isVercel) {
 		try {
-			const result = await UserService.promoteUser(reqBody);
-			return NextResponse.json(result);
-		} catch (error) {
-			await logger.error('Error promoting user', error);
-			return NextResponse.json(
-				{
-					error: 'Error promoting user',
-					details: (error as Error).message,
-				},
-				{status: 500},
-			);
-		}
-	}
+			await logger.debug('Promote endpoint called');
+			const apiSecret = req.headers.get(header.internalApiSecret);
 
-	if (env.isProd && deployment.isVercel) {
-		await logger.info(
-			'Environment: Production on Vercel - proxying to backend API',
-		);
-		const apiUrl = apiBaseUrl.prod;
-		if (!apiUrl) {
-			await logger.error('Backend API URL not configured');
-			return NextResponse.json(
-				{error: 'Backend API URL not configured'},
-				{status: 500},
-			);
-		}
-		try {
-			await logger.debug('Proxying promote user to backend API', {
-				url: `${apiUrl}${endpoint.admin.promote_user}`,
-			});
-			const headers: Record<string, string> = {
-				'Content-Type': 'application/json',
-			};
-			const response = await fetch(`${apiUrl}${endpoint.admin.promote_user}`, {
-				method: 'PATCH',
-				headers,
-				body: JSON.stringify(reqBody),
-			});
-			const data = await response.json();
-			if (!response.ok) {
-				await logger.error('Failed to promote user via backend API', {
-					status: response.status,
+			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
+				await logger.error('Unauthorized promote attempt');
+				return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+			}
+
+			const body = await req.json();
+			const parseResult = PromoteSchema.safeParse(body);
+
+			if (!parseResult.success) {
+				await logger.warn('Invalid promote payload', {
+					issues: parseResult.error.issues,
 				});
 				return NextResponse.json(
-					{error: data.error || 'Failed to promote user via backend API'},
-					{status: response.status},
+					{error: 'Invalid payload', details: parseResult.error.issues},
+					{status: 400},
 				);
 			}
-			await logger.info('User promoted via backend API');
-			return NextResponse.json(data);
-		} catch (error) {
-			await logger.error('Error connecting to backend API', error);
-			return NextResponse.json(
-				{
-					error: 'Error connecting to backend API',
-					details: (error as Error).message,
-				},
-				{status: 500},
+
+			const {email, createdBy, role} = parseResult.data;
+			const admin = await AdminUserService.promote(
+				email,
+				createdBy,
+				role || 'admin',
 			);
+			await logger.success('User promoted to admin', {
+				email,
+				role: role || 'admin',
+			});
+			return NextResponse.json({admin});
+		} catch (err) {
+			await logger.error('Promote endpoint server error', err);
+			return NextResponse.json({error: 'Server error'}, {status: 500});
 		}
 	}
 }
