@@ -1,4 +1,3 @@
-import {useSession} from 'next-auth/react';
 import {useCallback, useState} from 'react';
 
 interface JobMatchingResult {
@@ -13,7 +12,6 @@ interface UseJobMatchingOptions {
 }
 
 export function useJobMatching({cvUrl}: UseJobMatchingOptions) {
-	const {data: session} = useSession();
 	const [loading, setLoading] = useState(false);
 	const [results, setResults] = useState<JobMatchingResult[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -24,13 +22,8 @@ export function useJobMatching({cvUrl}: UseJobMatchingOptions) {
 		setResults(null);
 
 		try {
-			// 1. Get user email from session
-			const email = session?.user?.email;
-			if (!email) {
-				setError('No user session found');
-				setLoading(false);
-				return;
-			}
+			// 1. Get user email (auth/session removed)
+			const email = '';
 
 			// 2. Fetch candidate info (user profile)
 			const userRes = await fetch('/api/users/query', {
@@ -95,7 +88,7 @@ export function useJobMatching({cvUrl}: UseJobMatchingOptions) {
 		} finally {
 			setLoading(false);
 		}
-	}, [session, cvUrl]);
+	}, [cvUrl]);
 
 	return {runJobMatching, loading, results, error};
 }

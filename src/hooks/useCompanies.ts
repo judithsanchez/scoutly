@@ -1,6 +1,5 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {ICompany, CreateCompanyInput} from '@/types/company';
-import {useSession} from 'next-auth/react';
 
 // Use NextAuth session for user email
 function getCurrentUserEmail(): string {
@@ -141,11 +140,10 @@ async function createCompany(companyData: CreateCompanyInput) {
 }
 
 export function useCompanies() {
-	const {data: session} = useSession();
 	const queryClient = useQueryClient();
 
 	function getEmail() {
-		return session?.user?.email || getCurrentUserEmail();
+		return getCurrentUserEmail();
 	}
 
 	const companiesQuery = useQuery<ICompany[], Error>({

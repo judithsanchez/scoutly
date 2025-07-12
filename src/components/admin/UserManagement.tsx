@@ -21,7 +21,6 @@ import {
 	CheckCircle,
 	XCircle,
 } from 'lucide-react';
-import {useSession} from 'next-auth/react';
 
 interface User {
 	_id: string;
@@ -51,7 +50,7 @@ interface CreateUserResponse {
 }
 
 export default function UserManagement() {
-	const {data: session} = useSession();
+	const session = {user: {email: ''}};
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -66,7 +65,7 @@ export default function UserManagement() {
 		try {
 			const response = await fetch('/api/admin/users', {
 				headers: {
-					'x-admin-email': session?.user?.email || '',
+					'x-admin-email': '',
 				},
 			});
 
@@ -102,7 +101,7 @@ export default function UserManagement() {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'x-admin-email': session?.user?.email || '',
+					'x-admin-email': '',
 				},
 				body: JSON.stringify({
 					email: newUserEmail,
@@ -136,7 +135,7 @@ export default function UserManagement() {
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
-					'x-admin-email': session?.user?.email || '',
+					'x-admin-email': '',
 				},
 				body: JSON.stringify({
 					email,
@@ -158,10 +157,8 @@ export default function UserManagement() {
 	};
 
 	useEffect(() => {
-		if (session?.user?.email) {
-			fetchUsers();
-		}
-	}, [session, fetchUsers]);
+		fetchUsers();
+	}, [fetchUsers]);
 
 	if (loading) {
 		return (
@@ -296,15 +293,13 @@ export default function UserManagement() {
 										{user.isAdmin && <Badge variant="default">Admin</Badge>}
 									</div>
 
-									{user.email !== session?.user?.email && (
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() => toggleUserAdmin(user.email, user.isAdmin)}
-										>
-											{user.isAdmin ? 'Remove Admin' : 'Make Admin'}
-										</Button>
-									)}
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => toggleUserAdmin(user.email, user.isAdmin)}
+									>
+										{user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+									</Button>
 								</div>
 							</div>
 						))}
