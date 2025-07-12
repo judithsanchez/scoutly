@@ -59,4 +59,5 @@ export const secret = {
 
 export const header = {
 	internalApiSecret: 'X-Internal-API-Secret',
+	authorization: 'Authorization',
 };
