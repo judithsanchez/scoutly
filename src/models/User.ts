@@ -1,6 +1,5 @@
 import mongoose, {Schema, Document} from 'mongoose';
 
-// Sub-schemas for CandidateInfo
 const CurrentResidenceSchema = new Schema(
 	{
 		city: String,
@@ -67,6 +66,7 @@ const CandidateInfoSchema = new Schema(
 );
 
 export interface IUser extends Document {
+	userId: mongoose.Types.ObjectId;
 	email: string;
 	cvUrl?: string;
 	candidateInfo?: typeof CandidateInfoSchema;
@@ -76,6 +76,13 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
 	{
+		userId: {
+			type: mongoose.Schema.Types.ObjectId,
+			required: true,
+			unique: true,
+			index: true,
+			default: () => new mongoose.Types.ObjectId(),
+		},
 		email: {
 			type: String,
 			required: true,
@@ -95,6 +102,5 @@ const UserSchema = new Schema<IUser>(
 	},
 );
 
-// Check if the model exists before compiling it
 export const User =
 	mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

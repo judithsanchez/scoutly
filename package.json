@@ -36,6 +36,8 @@
 		"@radix-ui/react-switch": "^1.2.5",
 		"@tanstack/query-core": "^5.80.6",
 		"@tanstack/react-query": "^5.80.6",
+		"@types/bcryptjs": "^2.4.6",
+		"bcryptjs": "^3.0.2",
 		"cheerio": "^1.0.0-rc.10",
 		"class-variance-authority": "^0.7.0",
 		"clsx": "^2.0.0",
