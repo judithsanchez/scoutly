@@ -1,7 +1,6 @@
 // GET /api/users/profile
 import {NextResponse} from 'next/server';
 import {getServerSession} from 'next-auth';
-import {authOptions} from '@/lib/auth';
 import {getAllowedOrigin} from '@/utils/cors';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants';
@@ -35,96 +34,13 @@ export const OPTIONS = async (req: Request) => {
 export const GET = async (req: Request) => {
 	logger.debug('GET handler called for /api/users/profile');
 	try {
-		const session = await getServerSession(authOptions);
-		if (!session || !session.user?.email) {
-			logger.warn('No session or user email');
-			return setCORSHeaders(
-				NextResponse.json({error: 'Unauthorized'}, {status: 401}),
-				req,
-			);
-		}
-
-		const email = session.user.email;
-		logger.info('Session user email', {email});
-
-		if (env.isDev) {
-			const {AuthService} = await import('@/services/authService');
-			logger.debug('Environment: dev, using AuthService');
-			const user = await AuthService.findUserByEmail(email);
-			if (!user) {
-				logger.warn('User not found in dev', {email});
-				return setCORSHeaders(
-					NextResponse.json({error: 'User not found'}, {status: 404}),
-					req,
-				);
-			}
-			logger.info('Returning user profile (dev)', {email});
-			return setCORSHeaders(
-				NextResponse.json({
-					email: user.email,
-					candidateInfo: user.candidateInfo,
-					cvUrl: user.cvUrl,
-					preferences: user.preferences,
-				}),
-				req,
-			);
-		}
-
-		if (env.isProd && deployment.isVercel) {
-			try {
-				const backendApiUrl = `${apiBaseUrl.prod}${endpoint.users.profile}`;
-				logger.debug('Proxying to backend API', {backendApiUrl});
-				const backendRes = await fetch(backendApiUrl, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						Cookie: req.headers.get('cookie') || '',
-					},
-					credentials: 'include',
-				});
-				const data = await backendRes.json();
-				logger.info('Received response from backend API', {
-					status: backendRes.status,
-				});
-				return setCORSHeaders(
-					NextResponse.json(data, {status: backendRes.status}),
-					req,
-				);
-			} catch (error) {
-				logger.error('Proxy error to backend API', error);
-				return setCORSHeaders(
-					NextResponse.json({error: 'Internal server error'}, {status: 500}),
-					req,
-				);
-			}
-		}
-
-		if (env.isProd && deployment.isPi) {
-			const {AuthService} = await import('@/services/authService');
-			logger.debug('Environment: prod-pi, using AuthService');
-			const user = await AuthService.findUserByEmail(email);
-			if (!user) {
-				logger.warn('User not found in prod-pi', {email});
-				return setCORSHeaders(
-					NextResponse.json({error: 'User not found'}, {status: 404}),
-					req,
-				);
-			}
-			logger.info('Returning user profile (prod-pi)', {email});
-			return setCORSHeaders(
-				NextResponse.json({
-					email: user.email,
-					candidateInfo: user.candidateInfo,
-					cvUrl: user.cvUrl,
-					preferences: user.preferences,
-				}),
-				req,
-			);
-		}
-
-		logger.warn('Unknown environment branch hit');
+		// Authentication removed: always return 401 or a placeholder response
+		logger.warn('Authentication removed from /api/users/profile');
 		return setCORSHeaders(
-			NextResponse.json({error: 'Unknown environment'}, {status: 500}),
+			NextResponse.json(
+				{error: 'Not implemented: authentication removed'},
+				{status: 501},
+			),
 			req,
 		);
 	} catch (error) {
