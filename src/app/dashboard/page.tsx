@@ -29,7 +29,6 @@ import config from '@/config/appConfig';
 import {ISavedJob} from '@/types/savedJob';
 
 export default function DashboardPage() {
-	// --- All hooks must be at the top ---
 	const {user} = useAuth();
 	const router = useRouter();
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
@@ -41,7 +40,6 @@ export default function DashboardPage() {
 		totalJobs: number;
 	} | null>(null);
 
-	// Use the default logger import (fix for createLogger)
 	const dashLogger = logger;
 
 	useEffect(() => {
@@ -50,7 +48,6 @@ export default function DashboardPage() {
 		}
 	}, [user, router]);
 
-	// Move all hooks above this line!
 	const fetchSavedJobs = useCallback(async () => {
 		try {
 			dashLogger?.info('Starting to fetch saved jobs');
@@ -70,15 +67,12 @@ export default function DashboardPage() {
 				throw new Error(errorMessage);
 			}
 
-			// Sort jobs by status priority and suitability score
 			const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
-				// First compare by status priority
 				const statusDiff =
 					statusPriority[a.status as ApplicationStatus] -
 					statusPriority[b.status as ApplicationStatus];
 				if (statusDiff !== 0) return -statusDiff;
 
-				// If status is the same, sort by suitability score (highest first)
 				return b.suitabilityScore - a.suitabilityScore;
 			});
 
@@ -259,7 +253,7 @@ export default function DashboardPage() {
 							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
 							</h2>
-							<p className="text-purple-400 font-medium mt-1">Anonymous</p>
+							<p className="text-purple-400 font-medium mt-1">{user.email}</p>
 						</div>
 						<div className="flex gap-3">
 							<a href="/profile" className={BUTTON_SECONDARY}>
