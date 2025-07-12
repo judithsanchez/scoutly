@@ -86,35 +86,3 @@ export async function POST(request: NextRequest) {
 		}
 	}
 }
-
-// // /src/app/api/jobs/route.ts
-
-// import { NextResponse } from 'next/server';
-// import { getServerSession } from 'next-auth/next';
-// import { authOptions } from '@/lib/auth';
-// import { getSavedJobsForUser } from '@/services/jobService';
-// import { logError } from '@/utils/logger';
-
-// export async function GET() {
-//   // 1. Get the server-side session. This is secure.
-//   const session = await getServerSession(authOptions);
-
-//   // 2. Check if the user is authenticated.
-//   if (!session || !session.user?.id) {
-//     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-//   }
-
-//   try {
-//     // 3. Perform the database operation.
-//     const savedJobs = await getSavedJobsForUser(session.user.id);
-//     return NextResponse.json(savedJobs);
-
-//   } catch (error) {
-//     // 4. Handle any errors gracefully.
-//     logError('Failed to fetch saved jobs', error);
-//     return NextResponse.json(
-//       { message: 'An error occurred while fetching saved jobs.' },
-//       { status: 500 }
-//     );
-//   }
-// }

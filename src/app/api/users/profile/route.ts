@@ -1,9 +1,5 @@
-// GET /api/users/profile
 import {NextResponse} from 'next/server';
-import {getServerSession} from 'next-auth';
 import {getAllowedOrigin} from '@/utils/cors';
-import {env, deployment, apiBaseUrl} from '@/config/environment';
-import {endpoint} from '@/constants';
 import {Logger} from '@/utils/logger';
 
 const logger = new Logger('UsersProfileRoute');
@@ -34,7 +30,6 @@ export const OPTIONS = async (req: Request) => {
 export const GET = async (req: Request) => {
 	logger.debug('GET handler called for /api/users/profile');
 	try {
-		// Authentication removed: always return 401 or a placeholder response
 		logger.warn('Authentication removed from /api/users/profile');
 		return setCORSHeaders(
 			NextResponse.json(
