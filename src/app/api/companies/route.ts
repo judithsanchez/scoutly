@@ -70,7 +70,12 @@ export async function GET(request: NextRequest): Promise<Response> {
 				{status: 400},
 			);
 		}
-		const companies = await CompanyService.getAllCompanies();
+		let companies = await CompanyService.getAllCompanies();
+		// Expose MongoDB _id as id for frontend use
+		companies = companies.map((c: any) => ({
+			...c.toObject(),
+			id: c._id?.toString(),
+		}));
 		const companiesParse = CompaniesArrayZodSchema.safeParse(companies);
 		if (!companiesParse.success) {
 			await logger.error('[COMPANIES][GET] Invalid companies response shape', {

@@ -7,21 +7,29 @@ export enum WorkModel {
 	IN_OFFICE = 'IN_OFFICE',
 }
 
+// Keep this in sync with CompanyZodSchema in src/schemas/companySchemas.ts
 export interface ICompany {
 	companyID: string;
 	company: string;
-	careers_url: string;
-	selector: string;
-	work_model: WorkModel;
-	headquarters: string;
-	office_locations: string[];
-	fields: string[];
-	openToApplication: boolean;
-	lastSuccessfulScrape?: Date;
-	isProblematic: boolean;
-	scrapeErrors: string[]; // Changed to string[] from mongoose.Schema.Types.ObjectId[]
+	description?: string;
+	website?: string;
+	logo_url?: string;
+	careers_url?: string;
+	industry?: string;
+	size?: string;
+	headquarters?: string;
+	founded?: number;
+	work_model?: WorkModel;
+	lastScraped?: Date;
 	createdAt?: Date;
 	updatedAt?: Date;
+	selector?: string;
+	office_locations?: string[];
+	fields?: string[];
+	openToApplication?: boolean;
+	lastSuccessfulScrape?: Date;
+	isProblematic?: boolean;
+	scrapeErrors?: string[];
 }
 
 // This interface is for creating a new company
