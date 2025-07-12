@@ -6,7 +6,6 @@ import SavedJobCard from '@/components/SavedJobCard';
 import ApplicationPipeline from '@/components/ApplicationPipeline';
 import StartScoutButton from '@/components/StartScoutButton';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
-import {useAuth} from '@/contexts/AuthContext';
 import config from '@/config/appConfig';
 import {createLogger} from '@/utils/frontendLogger';
 import {
@@ -28,8 +27,6 @@ import {
 } from '@/constants/styles';
 
 export default function DashboardPage() {
-	const {user, isLoading, isAuthenticated} = useAuth();
-
 	// All hooks must be called first (Rules of Hooks)
 	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
 	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
@@ -40,20 +37,14 @@ export default function DashboardPage() {
 		totalJobs: number;
 	} | null>(null);
 
-	// Initialize logger with user context (memoized to prevent recreations)
-	const logger = useMemo(
-		() => (user?.email ? createLogger('Dashboard', user.email) : null),
-		[user?.email],
-	);
+	const logger = useMemo(() => createLogger('Dashboard', 'anonymous'), []);
 
 	const fetchSavedJobs = async () => {
-		if (!user?.email) return;
-
 		try {
-			logger?.info('Starting to fetch saved jobs', {userEmail: user.email});
+			logger?.info('Starting to fetch saved jobs');
 			setIsLoadingJobs(true);
 
-			const url = `/api/jobs/saved?email=${encodeURIComponent(user.email)}`;
+			const url = `/api/jobs/saved`;
 			logger?.logApiRequest(url, 'GET');
 
 			const response = await fetch(url);
@@ -82,7 +73,6 @@ export default function DashboardPage() {
 			setSavedJobs(sortedJobs);
 			logger?.info('Successfully fetched and sorted saved jobs', {
 				jobCount: sortedJobs.length,
-				userEmail: user.email,
 			});
 		} catch (err: any) {
 			const errorMessage =
@@ -90,7 +80,6 @@ export default function DashboardPage() {
 			logger?.error('Error fetching saved jobs', {
 				error: errorMessage,
 				stack: err.stack,
-				userEmail: user.email,
 			});
 			logger?.error('Failed to fetch saved jobs', {error: err});
 		} finally {
@@ -101,46 +90,14 @@ export default function DashboardPage() {
 		}
 	};
 
-	// All effects must be called before any early returns
 	useEffect(() => {
-		if (user?.email && logger) {
-			logger.logComponentMount('DashboardPage', {userEmail: user.email});
-			fetchSavedJobs();
-		}
+		logger.logComponentMount?.('DashboardPage');
+		fetchSavedJobs();
 
 		return () => {
-			if (logger) {
-				logger.logComponentUnmount('DashboardPage');
-			}
+			logger.logComponentUnmount?.('DashboardPage');
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user?.email]);
-
-	// Show loading state while auth is being determined
-	if (isLoading) {
-		return (
-			<div className={PAGE_BACKGROUND_CONTAINER}>
-				<div className={PAGE_BACKGROUND_GLOW}></div>
-				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-slate-400">Loading...</div>
-				</main>
-			</div>
-		);
-	}
-
-	// Redirect to signin if not authenticated
-	if (!isAuthenticated || !user?.email) {
-		return (
-			<div className={PAGE_BACKGROUND_CONTAINER}>
-				<div className={PAGE_BACKGROUND_GLOW}></div>
-				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-red-400">
-						Please sign in to access the dashboard.
-					</div>
-				</main>
-			</div>
-		);
-	}
+	}, [logger]);
 
 	const handleStatusChange = async (
 		jobId: string,
@@ -150,7 +107,6 @@ export default function DashboardPage() {
 			logger?.logUserAction('Changed job status', {
 				jobId,
 				newStatus: status,
-				userEmail: user.email,
 			});
 
 			const url = `/api/jobs/saved?id=${encodeURIComponent(jobId)}`;
@@ -183,7 +139,6 @@ export default function DashboardPage() {
 				jobId,
 				newStatus: status,
 				updatedJob,
-				userEmail: user.email,
 			});
 
 			// Update jobs list with new status and resort
@@ -212,7 +167,6 @@ export default function DashboardPage() {
 				stack: err?.stack,
 				jobId,
 				status,
-				userEmail: user.email,
 			});
 
 			setError(errorMessage);
@@ -285,7 +239,7 @@ export default function DashboardPage() {
 							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
 							</h2>
-							<p className="text-purple-400 font-medium mt-1">{user.email}</p>
+							<p className="text-purple-400 font-medium mt-1">Anonymous</p>
 						</div>
 						<div className="flex gap-3">
 							<a href="/profile" className={BUTTON_SECONDARY}>
@@ -295,7 +249,6 @@ export default function DashboardPage() {
 								onScoutStart={async selectedCompanyIds => {
 									logger?.logUserAction('Started job search', {
 										selectedCompanies: selectedCompanyIds,
-										userEmail: user.email,
 									});
 
 									setSearchComplete(null);
@@ -305,14 +258,13 @@ export default function DashboardPage() {
 										const userQueryRes = await fetch('/api/users/query', {
 											method: 'POST',
 											headers: {'Content-Type': 'application/json'},
-											body: JSON.stringify({email: user.email}),
+											body: JSON.stringify({}),
 										});
 										if (!userQueryRes.ok) {
 											const errorText = await userQueryRes.text();
 											logger?.error('Failed to fetch user info', {
 												status: userQueryRes.status,
 												response: errorText,
-												userEmail: user.email,
 											});
 											throw new Error(
 												`Failed to fetch user info. Status: ${userQueryRes.status}`,
@@ -332,7 +284,7 @@ export default function DashboardPage() {
 										// Step 2: Prepare and send job search request
 										const requestBody = {
 											credentials: {
-												gmail: user.email,
+												gmail: '',
 											},
 											companyIds: selectedCompanyIds,
 											cvUrl,
@@ -342,7 +294,6 @@ export default function DashboardPage() {
 										logger?.info('Sending job search request', {
 											companyCount: selectedCompanyIds.length,
 											companies: selectedCompanyIds,
-											userEmail: user.email,
 										});
 
 										const jobSearchUrl = '/api/jobs';
@@ -371,7 +322,6 @@ export default function DashboardPage() {
 														? '[PRESENT]'
 														: '[MISSING]',
 												},
-												userEmail: user.email,
 											});
 
 											// Enhanced error message handling for better UX
@@ -398,7 +348,6 @@ export default function DashboardPage() {
 
 										logger?.info('Job search completed successfully', {
 											searchData,
-											userEmail: user.email,
 										});
 
 										const totalJobs = searchData.results.reduce(
@@ -416,7 +365,6 @@ export default function DashboardPage() {
 												(r: any) => r.processed,
 											).length,
 											totalCompanies: searchData.results.length,
-											userEmail: user.email,
 										});
 
 										handleSearchComplete(true, totalJobs);
@@ -428,7 +376,6 @@ export default function DashboardPage() {
 										logger?.error('Job search failed', {
 											error: catchErrorMessage,
 											stack: err?.stack,
-											userEmail: user.email,
 											selectedCompanies: selectedCompanyIds,
 										});
 

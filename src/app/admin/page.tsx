@@ -1,6 +1,5 @@
 'use client';
 
-import {useSession} from 'next-auth/react';
 import {useState, useEffect} from 'react';
 import {isBootstrapAdmin} from '@/utils/adminUtils';
 import {Button} from '@/components/ui/button';
@@ -45,7 +44,6 @@ interface DashboardData {
 }
 
 export default function AdminDashboard() {
-	const {data: session, status} = useSession();
 	const [dashboardData, setDashboardData] = useState<DashboardData | null>(
 		null,
 	);
@@ -55,11 +53,8 @@ export default function AdminDashboard() {
 		'dashboard' | 'users' | 'companies'
 	>('dashboard');
 
-	// Fetch dashboard data
 	useEffect(() => {
 		const fetchDashboardData = async () => {
-			if (!session) return;
-
 			setLoading(true);
 			setError(null);
 
@@ -80,50 +75,7 @@ export default function AdminDashboard() {
 		};
 
 		fetchDashboardData();
-	}, [session]);
-
-	// Handle authentication states
-	if (status === 'loading') {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-					<p className="text-gray-600">Loading...</p>
-				</div>
-			</div>
-		);
-	}
-
-	if (status === 'unauthenticated') {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold text-gray-900 mb-4">
-						Redirecting...
-					</h1>
-					<p className="text-gray-600">
-						You need to be logged in to access this page.
-					</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Check if user is admin (session-based)
-	if (!session?.user?.isAdmin) {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<h1 className="text-2xl font-bold text-red-600 mb-4">
-						Access Denied
-					</h1>
-					<p className="text-gray-600">
-						You do not have permission to access this page.
-					</p>
-				</div>
-			</div>
-		);
-	}
+	}, []);
 
 	if (loading) {
 		return (
@@ -172,11 +124,6 @@ export default function AdminDashboard() {
 							<h1 className="text-2xl font-bold text-gray-900">
 								Admin Dashboard
 							</h1>
-						</div>
-						<div className="flex items-center space-x-4">
-							<span className="text-sm text-gray-600">
-								Welcome, {session?.user?.email}
-							</span>
 						</div>
 					</div>
 

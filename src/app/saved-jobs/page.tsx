@@ -1,7 +1,6 @@
 'use client';
 
 import {useEffect, useState, useMemo} from 'react';
-import {useAuth} from '@/contexts/AuthContext';
 import SavedJobCard from '@/components/SavedJobCard';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
 import apiClient from '@/lib/apiClient'; // Import the new apiClient
@@ -15,8 +14,6 @@ import {
 } from '@/constants/styles';
 
 export default function SavedJobsPage() {
-	const {user, isLoading: authLoading, isAuthenticated} = useAuth();
-
 	interface SavedJobResponse {
 		jobs: ISavedJob[];
 		total: number;
@@ -26,20 +23,12 @@ export default function SavedJobsPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	// Use useMemo to prevent logger recreation on every render
-	const logger = useMemo(
-		() => createLogger('SavedJobsPage', user?.email || 'unknown'),
-		[user?.email],
-	);
+	const logger = useMemo(() => createLogger('SavedJobsPage', 'anonymous'), []);
 
 	const handleStatusChange = async (
 		jobId: string,
 		status: ApplicationStatus,
 	) => {
-		if (!user?.email) {
-			setError('No authenticated user. Please sign in.');
-			return;
-		}
 		try {
 			const url = `/api/jobs/saved?id=${encodeURIComponent(jobId)}`;
 			const response = await fetch(url, {
@@ -79,16 +68,9 @@ export default function SavedJobsPage() {
 
 	useEffect(() => {
 		async function fetchSavedJobs() {
-			if (!user?.email) {
-				setError('No authenticated user. Please sign in.');
-				setIsLoading(false);
-				return;
-			}
 			try {
-				logger.info('Fetching saved jobs', {email: user.email});
-				const data = await apiClient<SavedJobResponse>(
-					`/api/jobs/saved?email=${encodeURIComponent(user.email)}`,
-				);
+				logger.info('Fetching saved jobs');
+				const data = await apiClient<SavedJobResponse>(`/api/jobs/saved`);
 				const sortedJobs = data.jobs.sort((a, b) => {
 					const statusDiff =
 						statusPriority[a.status as ApplicationStatus] -
@@ -110,35 +92,15 @@ export default function SavedJobsPage() {
 			}
 		}
 
-		if (isAuthenticated) {
-			fetchSavedJobs();
-		}
+		fetchSavedJobs();
+	}, [logger]);
 
-		if (!authLoading && !isAuthenticated) {
-			setError('Please sign in to view your saved jobs.');
-			setIsLoading(false);
-		}
-	}, [user, isAuthenticated, authLoading, logger]);
-
-	if (isLoading || authLoading) {
+	if (isLoading) {
 		return (
 			<div className={PAGE_BACKGROUND_CONTAINER}>
 				<div className={PAGE_BACKGROUND_GLOW}></div>
 				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-slate-400">Loading authentication...</div>
-				</main>
-			</div>
-		);
-	}
-
-	if (!isAuthenticated || !user?.email) {
-		return (
-			<div className={PAGE_BACKGROUND_CONTAINER}>
-				<div className={PAGE_BACKGROUND_GLOW}></div>
-				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-red-400">
-						Please sign in to view your saved jobs.
-					</div>
+					<div className="text-slate-400">Loading saved jobs...</div>
 				</main>
 			</div>
 		);

@@ -1,7 +1,6 @@
 'use client';
 
 import {useState} from 'react';
-import {useSession} from 'next-auth/react';
 import {usePathname} from 'next/navigation';
 import {ThemeToggle} from './ThemeToggle';
 import Link from 'next/link';
@@ -13,7 +12,6 @@ interface NavbarProps {
 export function Navbar({onDemoClick}: NavbarProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const pathname = usePathname();
-	const {data: session} = useSession();
 
 	// Check if we're on the homepage vs internal pages
 	const isHomepage = pathname === '/';
@@ -94,19 +92,16 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								>
 									Companies
 								</Link>
-								{/* Admin link for admin users */}
-								{session?.user?.isAdmin && (
-									<Link
-										href="/admin"
-										className={`hover:text-[var(--text-color)] transition-colors ${
-											isActive('/admin')
-												? 'text-[var(--text-color)] font-semibold'
-												: ''
-										}`}
-									>
-										Admin
-									</Link>
-								)}
+								<Link
+									href="/admin"
+									className={`hover:text-[var(--text-color)] transition-colors ${
+										isActive('/admin')
+											? 'text-[var(--text-color)] font-semibold'
+											: ''
+									}`}
+								>
+									Admin
+								</Link>
 							</>
 						) : (
 							// Homepage navigation
@@ -256,20 +251,17 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						>
 							Companies
 						</Link>
-						{/* Admin link for admin users (mobile) */}
-						{session?.user?.isAdmin && (
-							<Link
-								href="/admin"
-								className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
-									isActive('/admin')
-										? 'text-[var(--text-color)] font-semibold'
-										: ''
-								}`}
-								onClick={() => setIsMobileMenuOpen(false)}
-							>
-								Admin
-							</Link>
-						)}
+						<Link
+							href="/admin"
+							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
+								isActive('/admin')
+									? 'text-[var(--text-color)] font-semibold'
+									: ''
+							}`}
+							onClick={() => setIsMobileMenuOpen(false)}
+						>
+							Admin
+						</Link>
 					</>
 				) : (
 					// Homepage mobile navigation

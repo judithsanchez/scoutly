@@ -2,7 +2,6 @@
 
 import React, {useState} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
-import {useAuth} from '@/contexts/AuthContext';
 import {
 	PAGE_CONTENT_CONTAINER,
 	PAGE_BACKGROUND_CONTAINER,
@@ -26,8 +25,6 @@ import apiClient from '@/lib/apiClient';
 import {getProfileCompleteness} from '@/utils/validateProfile';
 
 export default function ProfilePage() {
-	const {user, isLoading, isAuthenticated} = useAuth();
-
 	// All hooks must be called first (Rules of Hooks)
 	const [cvUrl, setCvUrl] = useState('');
 	const [logistics, setLogistics] = useState({
@@ -102,8 +99,6 @@ export default function ProfilePage() {
 	};
 
 	React.useEffect(() => {
-		if (!isAuthenticated || !user?.email) return;
-
 		apiClient<ProfileResponse>('/api/users/profile')
 			.then(profile => {
 				if (!profile) return;
@@ -149,33 +144,7 @@ export default function ProfilePage() {
 				setIsProfileComplete(completeness.isComplete);
 			})
 			.catch(() => {});
-	}, [isAuthenticated, user?.email]);
-
-	// Show loading state while auth is being determined
-	if (isLoading) {
-		return (
-			<div className={PAGE_BACKGROUND_CONTAINER}>
-				<div className={PAGE_BACKGROUND_GLOW} />
-				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-slate-400">Loading...</div>
-				</main>
-			</div>
-		);
-	}
-
-	// Redirect to signin if not authenticated
-	if (!isAuthenticated || !user?.email) {
-		return (
-			<div className={PAGE_BACKGROUND_CONTAINER}>
-				<div className={PAGE_BACKGROUND_GLOW} />
-				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-red-400">
-						Please sign in to access your profile.
-					</div>
-				</main>
-			</div>
-		);
-	}
+	}, []);
 
 	const handleSaveProfile = async () => {
 		setIsSaving(true);
@@ -207,11 +176,6 @@ export default function ProfilePage() {
 
 			setSaveMessage('Profile saved successfully!');
 			setTimeout(() => setSaveMessage(null), 3000);
-
-			// Trigger session refresh so hasCompleteProfile updates
-			if (typeof window !== 'undefined') {
-				await fetch('/api/auth/session?update', {method: 'POST'});
-			}
 		} catch (error) {
 			setSaveMessage('Failed to save profile. Please try again.');
 			setTimeout(() => setSaveMessage(null), 3000);
@@ -244,7 +208,7 @@ export default function ProfilePage() {
 				)}
 
 				<AuthInfoSection
-					email={user.email}
+					email=""
 					onSave={handleSaveProfile}
 					isSaving={isSaving}
 					saveMessage={saveMessage}
