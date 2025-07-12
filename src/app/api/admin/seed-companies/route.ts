@@ -14,12 +14,6 @@ export async function POST(req: NextRequest) {
 		deployment: {...deployment},
 	});
 
-	const secret = req.headers.get('X-Internal-API-Secret');
-	if (secret !== process.env.INTERNAL_API_SECRET) {
-		await logger.warn('Unauthorized seed-companies attempt');
-		return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-	}
-
 	if (env.isDev || (env.isProd && deployment.isPi)) {
 		if (!AdminService) {
 			await logger.error('AdminService not implemented');
@@ -65,7 +59,6 @@ export async function POST(req: NextRequest) {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-Internal-API-Secret': secret || '',
 					},
 				},
 			);

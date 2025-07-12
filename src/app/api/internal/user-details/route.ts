@@ -4,10 +4,6 @@ import {secret} from '@/config/environment';
 
 export async function GET(request: Request) {
 	try {
-		const internalSecret = request.headers.get('x-internal-secret');
-		if (!internalSecret || internalSecret !== secret.internalApiSecret) {
-			return NextResponse.json({message: 'Forbidden'}, {status: 403});
-		}
 		const {searchParams} = new URL(request.url);
 		const email = searchParams.get('email');
 		if (!email) {

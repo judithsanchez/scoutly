@@ -13,11 +13,6 @@ const logger = new Logger('InternalUserProfileRoute');
 
 export const POST = async (req: Request) => {
 	logger.debug('POST /api/internal/user/profile called');
-	const apiSecret = req.headers.get(header.internalApiSecret);
-	if (apiSecret !== secret.internalApiSecret) {
-		logger.warn('Forbidden: invalid internal API secret');
-		return NextResponse.json({error: 'Forbidden'}, {status: 403});
-	}
 
 	try {
 		const {email} = await req.json();
@@ -61,7 +56,6 @@ export const POST = async (req: Request) => {
 			const backendRes = await fetch(backendUrl, {
 				method: 'POST',
 				headers: new Headers({
-					[header.internalApiSecret]: secret.internalApiSecret ?? '',
 					'Content-Type': 'application/json',
 				}),
 				body: JSON.stringify({email}),

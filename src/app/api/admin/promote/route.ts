@@ -5,11 +5,6 @@ import {NextResponse} from 'next/server';
 
 export async function POST(req: Request) {
 	try {
-		const secret = req.headers.get('X-Internal-API-Secret');
-		if (secret !== process.env.INTERNAL_API_SECRET) {
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		}
-
 		const {email} = await req.json();
 		if (!email) {
 			return NextResponse.json({error: 'Missing email'}, {status: 400});
@@ -23,7 +18,6 @@ export async function POST(req: Request) {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Internal-API-Secret': secret || '',
 			},
 			body: JSON.stringify({email}),
 		});

@@ -16,7 +16,6 @@ export async function PATCH(request: NextRequest) {
 	});
 
 	const reqBody = await request.json();
-	const secret = request.headers.get('x-internal-api-secret');
 
 	if (env.isDev || (env.isProd && deployment.isPi)) {
 		if (!UserService) {
@@ -27,7 +26,7 @@ export async function PATCH(request: NextRequest) {
 			);
 		}
 		try {
-			const result = await UserService.promoteUser(reqBody, secret);
+			const result = await UserService.promoteUser(reqBody);
 			return NextResponse.json(result);
 		} catch (error) {
 			await logger.error('Error promoting user', error);
@@ -60,7 +59,6 @@ export async function PATCH(request: NextRequest) {
 			const headers: Record<string, string> = {
 				'Content-Type': 'application/json',
 			};
-			if (secret) headers['x-internal-api-secret'] = secret;
 			const response = await fetch(`${apiUrl}${endpoint.admin.promote_user}`, {
 				method: 'PATCH',
 				headers,

@@ -14,12 +14,6 @@ const logger = new Logger('api/verify-user');
 export async function POST(request: Request) {
 	await logger.debug('POST /verify-user called');
 	try {
-		const internalSecret = request.headers.get('x-internal-secret');
-		await logger.debug('Checking internal secret', {internalSecret});
-		if (!internalSecret || internalSecret !== process.env.INTERNAL_API_SECRET) {
-			await logger.warn('Forbidden: Invalid internal secret', {internalSecret});
-			return NextResponse.json({message: 'Forbidden'}, {status: 403});
-		}
 		const {email} = await request.json();
 		await logger.debug('Parsed request body', {email});
 		if (!email) {
@@ -65,7 +59,6 @@ export async function POST(request: Request) {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						[header.internalApiSecret]: secret.internalApiSecret ?? '',
 					},
 					body: JSON.stringify({email}),
 				});
