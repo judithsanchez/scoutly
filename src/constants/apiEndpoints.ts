@@ -8,6 +8,7 @@ export const endpoint = {
 
 	auth: {
 		register: '/api/auth/register',
+		login: '/api/auth/login',
 	},
 
 	companies: {
@@ -36,6 +37,7 @@ export const endpoint = {
 		profile: '/api/users/profile',
 		query: '/api/users/query',
 		register: '/api/users/register',
+		login: '/api/users/login',
 		emails: '/api/users/emails',
 		delete: '/api/users/delete',
 		forgot_password: '/api/users/forgot-password',

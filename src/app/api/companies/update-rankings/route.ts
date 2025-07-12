@@ -1,24 +1,22 @@
 export const dynamic = 'force-dynamic';
 
 import {NextRequest, NextResponse} from 'next/server';
-import {env, deployment} from '@/config/environment';
-import {endpoint} from '@/constants';
+import {env, deployment, apiBaseUrl} from '@/config/environment';
+import {endpoint} from '@/constants/apiEndpoints';
 import {logger} from '@/utils/logger';
-import {z} from 'zod';
 import {requireAuth} from '@/utils/requireAuth';
-
-const updateRankingsSchema = z.object({
-	rankings: z.array(
-		z.object({
-			companyID: z.string(),
-			rank: z.number().int().min(0).max(100),
-		}),
-	),
-});
+import {proxyToBackend} from '@/utils/proxyToBackend';
+import {getUserEmail} from '@/utils/typeHelpers';
 
 export async function POST(request: NextRequest) {
-	if (deployment.isVercel) {
-		return NextResponse.json({error: 'Not available on Vercel'}, {status: 403});
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.update_rankings}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'POST',
+			logPrefix: '[COMPANIES][UPDATE-RANKINGS][PROXY]',
+		});
 	}
 
 	await logger.debug(
@@ -31,6 +29,7 @@ export async function POST(request: NextRequest) {
 	);
 
 	const {user, response} = await requireAuth(request);
+	const userEmail = getUserEmail(user);
 	if (!user) {
 		await logger.warn(
 			'[COMPANIES][UPDATE-RANKINGS][POST] Unauthorized access attempt',
@@ -45,29 +44,11 @@ export async function POST(request: NextRequest) {
 	if (!deployment.isVercel) {
 		try {
 			const reqBody = await request.json();
-			const parseResult = updateRankingsSchema.safeParse(reqBody);
-
-			if (!parseResult.success) {
-				await logger.warn(
-					'[COMPANIES][UPDATE-RANKINGS][POST] Invalid update rankings payload',
-					{
-						issues: parseResult.error.issues,
-						user: user.email,
-					},
-				);
-				return NextResponse.json(
-					{
-						error: 'Invalid update rankings payload',
-						details: parseResult.error.issues,
-					},
-					{status: 400},
-				);
-			}
 
 			await logger.info(
 				'[COMPANIES][UPDATE-RANKINGS][POST] Rankings update attempted',
 				{
-					user: user.email,
+					user: userEmail,
 					payload: reqBody,
 				},
 			);
@@ -75,7 +56,7 @@ export async function POST(request: NextRequest) {
 			await logger.warn(
 				'[COMPANIES][UPDATE-RANKINGS][POST] Update rankings is not implemented for this environment',
 				{
-					user: user.email,
+					user: userEmail,
 				},
 			);
 			return NextResponse.json(
@@ -87,7 +68,7 @@ export async function POST(request: NextRequest) {
 				'[COMPANIES][UPDATE-RANKINGS][POST] Error updating rankings',
 				{
 					error,
-					user: user.email,
+					user: userEmail,
 				},
 			);
 			return NextResponse.json(

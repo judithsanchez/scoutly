@@ -82,7 +82,6 @@ export const GET = async (request: NextRequest) => {
 	}
 };
 
-// --- PATCH: Update status of a saved job ---
 export const PATCH = async (request: NextRequest) => {
 	await logger.debug(`PATCH ${endpoint.jobs.saved} called`, {
 		env: {...env},
@@ -162,7 +161,6 @@ export const PATCH = async (request: NextRequest) => {
 	}
 };
 
-// --- POST: Create a new saved job ---
 export const POST = async (request: NextRequest) => {
 	await logger.debug(`POST ${endpoint.jobs.saved} called`, {
 		env: {...env},

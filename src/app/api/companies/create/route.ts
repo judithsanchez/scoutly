@@ -1,28 +1,28 @@
 export const dynamic = 'force-dynamic';
 
 import {NextRequest, NextResponse} from 'next/server';
-import {env, deployment} from '@/config/environment';
-import {endpoint} from '@/constants';
+import {env, deployment, apiBaseUrl} from '@/config/environment';
+import {endpoint} from '@/constants/apiEndpoints';
 import {CompanyService} from '@/services/companyService';
 import {logger} from '@/utils/logger';
-import {z} from 'zod';
 import {requireAuth} from '@/utils/requireAuth';
-
-const createCompanySchema = z.object({
-	companyID: z.string(),
-	company: z.string(),
-	careers_url: z.string().url(),
-	selector: z.string(),
-	work_model: z.string(),
-	headquarters: z.string(),
-	office_locations: z.array(z.string()),
-	fields: z.array(z.string()),
-	openToApplication: z.boolean().optional(),
-});
+import {proxyToBackend} from '@/utils/proxyToBackend';
+import {
+	CreateCompanyRequestSchema,
+	CompanySchema,
+} from '@/schemas/companySchemas';
+import {ICompany} from '@/types/company';
+import {getUserEmail, toWorkModel} from '@/utils/typeHelpers';
 
 export async function POST(request: NextRequest) {
-	if (deployment.isVercel) {
-		return NextResponse.json({error: 'Not available on Vercel'}, {status: 403});
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.create}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'POST',
+			logPrefix: '[COMPANIES][CREATE][PROXY]',
+		});
 	}
 
 	await logger.debug(
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
 	);
 
 	const {user, response} = await requireAuth(request);
+	const userEmail = getUserEmail(user);
 	if (!user) {
 		await logger.warn('[COMPANIES][CREATE][POST] Unauthorized access attempt', {
 			ip: request.headers.get('x-forwarded-for') || request.headers.get('host'),
@@ -45,14 +46,14 @@ export async function POST(request: NextRequest) {
 	if (!deployment.isVercel) {
 		try {
 			const reqBody = await request.json();
-			const parseResult = createCompanySchema.safeParse(reqBody);
+			const parseResult = CreateCompanyRequestSchema.safeParse(reqBody);
 
 			if (!parseResult.success) {
 				await logger.warn(
 					'[COMPANIES][CREATE][POST] Invalid create company payload',
 					{
 						issues: parseResult.error.issues,
-						user: user.email,
+						user: userEmail,
 					},
 				);
 				return NextResponse.json(
@@ -64,19 +65,44 @@ export async function POST(request: NextRequest) {
 				);
 			}
 
-			const company = await CompanyService.createCompany(parseResult.data);
+			const transformedData = {
+				...parseResult.data,
+				work_model: toWorkModel(parseResult.data.work_model),
+			};
+
+			const companyParse = CompanySchema.safeParse(transformedData);
+			if (!companyParse.success) {
+				await logger.warn(
+					'[COMPANIES][CREATE][POST] Invalid company shape after transform',
+					{
+						issues: companyParse.error.issues,
+						user: userEmail,
+					},
+				);
+				return NextResponse.json(
+					{
+						error: 'Invalid company shape after transform',
+						details: companyParse.error.issues,
+					},
+					{status: 400},
+				);
+			}
+
+			const company = await CompanyService.createCompany(
+				companyParse.data as Partial<ICompany>,
+			);
 			await logger.info(
 				'[COMPANIES][CREATE][POST] Company created successfully',
 				{
 					companyID: company.companyID,
-					user: user.email,
+					user: userEmail,
 				},
 			);
 			return NextResponse.json(company, {status: 201});
 		} catch (error) {
 			await logger.error('[COMPANIES][CREATE][POST] Error creating company', {
 				error,
-				user: user.email,
+				user: userEmail,
 			});
 			return NextResponse.json(
 				{
