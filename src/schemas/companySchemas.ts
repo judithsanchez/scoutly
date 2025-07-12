@@ -3,7 +3,7 @@ import {z} from 'zod';
 // Zod schema for Company
 export const CompanyZodSchema = z.object({
 	companyID: z.string(),
-	name: z.string(),
+	company: z.string(),
 	description: z.string().optional(),
 	website: z.string().url().optional(),
 	logo_url: z.string().url().optional(),
