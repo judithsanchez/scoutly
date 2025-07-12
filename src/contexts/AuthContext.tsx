@@ -39,6 +39,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		// Try to load token from localStorage on mount
 		const stored =
 			typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
+		console.log('AuthContext useEffect loaded token:', stored);
 		if (stored) {
 			setToken(stored);
 			try {
@@ -50,8 +51,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	}, []);
 
 	const login = (newToken: string) => {
+		console.log('AuthContext login called with token:', newToken);
 		setToken(newToken);
 		localStorage.setItem('jwt', newToken);
+		console.log('AuthContext localStorage now:', localStorage.getItem('jwt'));
 		try {
 			setUser(jwtDecode<UserSession>(newToken));
 		} catch {

@@ -1,8 +1,3 @@
-/**
- * Centralized environment and flag configuration for Scoutly.
- * Use this object throughout the codebase for consistent, type-safe env access.
- */
-
 export enum NodeEnv {
 	Development = 'development',
 	Production = 'production',
@@ -18,7 +13,6 @@ export const deployment = {
 	isVercel: process.env.DEPLOYMENT === 'vercel',
 };
 
-// --- URLs for CORS and API ---
 export const urls = {
 	frontend: 'https://www.jobscoutly.tech',
 	backend: 'https://api.jobscoutly.tech',
@@ -58,6 +52,8 @@ export const secret = {
 };
 
 export const header = {
-	internalApiSecret: 'X-Internal-API-Secret',
-	authorization: 'Authorization',
+	INTERNAL_API_SECRET: 'X-Internal-API-Secret',
+	AUTHORIZATION: 'Authorization',
+	X_FORWARDED_FOR: 'X-Forwarded-For',
+	HOST: 'Host',
 };

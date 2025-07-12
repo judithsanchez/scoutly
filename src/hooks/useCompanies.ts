@@ -1,20 +1,7 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {ICompany, CreateCompanyInput} from '@/types/company';
-
-// Use NextAuth session for user email
-function getCurrentUserEmail(): string {
-	if (typeof window === 'undefined') return '';
-	try {
-		// @ts-ignore
-		if (window.__NEXTAUTH_SESSION && window.__NEXTAUTH_SESSION.user?.email) {
-			// @ts-ignore
-			return window.__NEXTAUTH_SESSION.user.email;
-		}
-		return '';
-	} catch {
-		return '';
-	}
-}
+import apiClient from '@/lib/apiClient';
+import {useAuth} from '@/contexts/AuthContext';
 
 interface TrackedCompany {
 	_id: string;
@@ -35,22 +22,14 @@ interface TrackedCompaniesResponse {
 }
 
 async function fetchCompanies() {
-	const response = await fetch('/api/companies');
-	if (!response.ok) {
-		throw new Error('Failed to fetch companies');
-	}
-	return response.json();
+	return apiClient('/api/companies');
 }
 
 async function fetchTrackedCompanies(email: string): Promise<TrackedCompany[]> {
 	if (!email) throw new Error('User not authenticated');
-	const response = await fetch(
-		'/api/user-company-preferences?email=' + encodeURIComponent(email),
+	const data: TrackedCompaniesResponse = await apiClient(
+		`/api/user-company-preferences?email=${encodeURIComponent(email)}`,
 	);
-	if (!response.ok) {
-		throw new Error('Failed to fetch tracked companies');
-	}
-	const data: TrackedCompaniesResponse = await response.json();
 	return data.companies;
 }
 
@@ -64,18 +43,10 @@ async function trackCompany({
 	rank?: number;
 }) {
 	if (!email) throw new Error('User not authenticated');
-	const response = await fetch('/api/user-company-preferences', {
+	return apiClient('/api/user-company-preferences', {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
 		body: JSON.stringify({email, companyId, rank, isTracking: true}),
 	});
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.error || 'Failed to track company');
-	}
-	return response.json();
 }
 
 async function untrackCompany({
@@ -86,18 +57,10 @@ async function untrackCompany({
 	companyId: string;
 }) {
 	if (!email) throw new Error('User not authenticated');
-	const response = await fetch('/api/user-company-preferences', {
+	return apiClient('/api/user-company-preferences', {
 		method: 'DELETE',
-		headers: {
-			'Content-Type': 'application/json',
-		},
 		body: JSON.stringify({email, companyId}),
 	});
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.error || 'Failed to untrack company');
-	}
-	return response.json();
 }
 
 async function updateRanking({
@@ -110,40 +73,25 @@ async function updateRanking({
 	rank: number;
 }) {
 	if (!email) throw new Error('User not authenticated');
-	const response = await fetch('/api/user-company-preferences', {
+	return apiClient('/api/user-company-preferences', {
 		method: 'PATCH',
-		headers: {
-			'Content-Type': 'application/json',
-		},
 		body: JSON.stringify({email, companyId, rank}),
 	});
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.error || 'Failed to update company ranking');
-	}
-	return response.json();
 }
 
 async function createCompany(companyData: CreateCompanyInput) {
-	const response = await fetch('/api/companies/create', {
+	return apiClient('/api/companies/create', {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
 		body: JSON.stringify(companyData),
 	});
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.error || 'Failed to create company');
-	}
-	return response.json();
 }
 
 export function useCompanies() {
 	const queryClient = useQueryClient();
+	const {user} = useAuth();
 
 	function getEmail() {
-		return getCurrentUserEmail();
+		return user?.email || '';
 	}
 
 	const companiesQuery = useQuery<ICompany[], Error>({

@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import {header} from '@/config';
 import {NextRequest, NextResponse} from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -10,8 +11,8 @@ export async function GET(request: NextRequest) {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
-				...(request.headers.get('Authorization')
-					? {Authorization: request.headers.get('Authorization')!}
+				...(request.headers.get(header.AUTHORIZATION)
+					? {Authorization: request.headers.get(header.AUTHORIZATION)!}
 					: {}),
 			},
 		});

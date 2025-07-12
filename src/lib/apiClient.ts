@@ -36,14 +36,42 @@ async function apiClient<T>(
 		url = API_URL ? `${API_URL}/${endpoint}` : `/${endpoint}`;
 	}
 
+	// Get JWT from localStorage if present (client-side only)
+	let jwt: string | null = null;
+	if (typeof window !== 'undefined') {
+		jwt = localStorage.getItem('jwt');
+	}
+
+	// Convert headers to a plain object of string:string
+	let mergedHeaders: Record<string, string> = {};
+	if (options.headers) {
+		// If it's a Headers instance, convert to object
+		if (options.headers instanceof Headers) {
+			options.headers.forEach((value, key) => {
+				mergedHeaders[key] = value;
+			});
+		} else if (Array.isArray(options.headers)) {
+			// If it's an array of tuples
+			for (const [key, value] of options.headers) {
+				mergedHeaders[key] = value;
+			}
+		} else {
+			// Assume it's already a Record<string, string>
+			mergedHeaders = {...(options.headers as Record<string, string>)};
+		}
+	}
+	mergedHeaders['Content-Type'] = 'application/json';
+
+	// Add Authorization header if JWT is present
+	if (jwt) {
+		mergedHeaders['Authorization'] = `Bearer ${jwt}`;
+	}
+
+	// --- CRITICAL: Always include credentials for cross-domain auth ---
 	const defaultOptions: RequestInit = {
-		headers: {
-			'Content-Type': 'application/json',
-			...options.headers,
-		},
-		// --- CRITICAL: Always include credentials for cross-domain auth ---
-		credentials: 'include',
 		...options,
+		headers: mergedHeaders,
+		credentials: 'include',
 	};
 
 	try {

@@ -1,8 +1,4 @@
 import {NextResponse} from 'next/server';
-// import connectToDB from '@/lib/db';
-// import {AdminUser} from '@/models/AdminUser';
-// import {User} from '@/models/User';
-
 export async function POST(req: Request) {
 	try {
 		const {email} = await req.json();
@@ -10,7 +6,6 @@ export async function POST(req: Request) {
 			return NextResponse.json({error: 'Missing email'}, {status: 400});
 		}
 
-		// Proxy the request to the backend API
 		const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 		const backendUrl = `${apiUrl.replace(/\/$/, '')}/admin/promote`;
 

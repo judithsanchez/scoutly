@@ -33,8 +33,10 @@ export default function LoginForm() {
 				body: JSON.stringify({email, password}),
 			});
 			const data = await res.json();
+			console.log('Login response token:', data.token);
 			if (res.ok && data.token) {
 				login(data.token);
+				console.log('LocalStorage after login:', localStorage.getItem('jwt'));
 			} else {
 				setError(data.error || 'Login failed');
 			}

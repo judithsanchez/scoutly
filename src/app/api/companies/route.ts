@@ -7,7 +7,7 @@ import {logger} from '@/utils/logger';
 import {z} from 'zod';
 import {requireAuth} from '@/utils/requireAuth';
 import {proxyToBackend} from '@/utils/proxyToBackend';
-import {GetCompaniesResponseSchema} from '@/schemas/companySchemas';
+import {CompaniesArrayZodSchema} from '@/schemas/companySchemas';
 
 const querySchema = z.object({});
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 			);
 		}
 		const companies = await CompanyService.getAllCompanies();
-		const companiesParse = GetCompaniesResponseSchema.safeParse(companies);
+		const companiesParse = CompaniesArrayZodSchema.safeParse(companies);
 		if (!companiesParse.success) {
 			await logger.error('[COMPANIES][GET] Invalid companies response shape', {
 				issues: companiesParse.error.issues,
