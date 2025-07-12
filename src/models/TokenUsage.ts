@@ -55,19 +55,16 @@ const TokenUsageSchema = new Schema<ITokenUsage>(
 	},
 );
 
-// Indexes for common queries
 TokenUsageSchema.index({processId: 1});
 TokenUsageSchema.index({userEmail: 1});
 TokenUsageSchema.index({timestamp: -1});
 TokenUsageSchema.index({companyId: 1});
 
-// Compound indexes for common query patterns
 TokenUsageSchema.index({userEmail: 1, timestamp: -1});
 TokenUsageSchema.index({companyId: 1, timestamp: -1});
 TokenUsageSchema.index({operation: 1, timestamp: -1});
 TokenUsageSchema.index({userEmail: 1, operation: 1, timestamp: -1});
 
-// Static methods for common computations
 TokenUsageSchema.statics.getTokensInTimeframe = async function (
 	startDate: Date,
 	endDate: Date,
@@ -116,7 +113,6 @@ TokenUsageSchema.statics.getTokensInTimeframe = async function (
 	);
 };
 
-// Instance methods
 TokenUsageSchema.methods.getAccuracyPercentage = function (): number {
 	return (this.actualTokens / Math.max(this.estimatedTokens, 1)) * 100;
 };
