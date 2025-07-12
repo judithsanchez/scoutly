@@ -25,7 +25,6 @@ import apiClient from '@/lib/apiClient';
 import {getProfileCompleteness} from '@/utils/validateProfile';
 
 export default function ProfilePage() {
-	// All hooks must be called first (Rules of Hooks)
 	const [cvUrl, setCvUrl] = useState('');
 	const [logistics, setLogistics] = useState({
 		currentResidence: {
@@ -65,7 +64,6 @@ export default function ProfilePage() {
 	const [missingFields, setMissingFields] = useState<string[]>([]);
 	const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
 
-	// Type for profile response
 	type ProfileResponse = {
 		cvUrl?: string;
 		candidateInfo?: {
@@ -104,7 +102,6 @@ export default function ProfilePage() {
 				if (!profile) return;
 				setCvUrl(profile.cvUrl || '');
 				if (profile.candidateInfo) {
-					// Populate logistics, languages, preferences from candidateInfo if present
 					const logistics = profile.candidateInfo.logistics || {};
 					setLogistics({
 						currentResidence: {
@@ -135,7 +132,6 @@ export default function ProfilePage() {
 						},
 					);
 				}
-				// Check completeness on load
 				const completeness = getProfileCompleteness({
 					cvUrl: profile.cvUrl,
 					candidateInfo: profile.candidateInfo,
@@ -150,7 +146,6 @@ export default function ProfilePage() {
 		setIsSaving(true);
 		setSaveMessage(null);
 
-		// Check completeness before saving
 		const completeness = getProfileCompleteness({
 			cvUrl,
 			candidateInfo: {
@@ -215,7 +210,6 @@ export default function ProfilePage() {
 				/>
 
 				<div className="space-y-6">
-					{/* CV URL */}
 					<ProfileCard>
 						<FormField
 							id="cvUrl"
@@ -228,7 +222,6 @@ export default function ProfilePage() {
 						/>
 					</ProfileCard>
 
-					{/* Logistics */}
 					<ProfileCard title="Logistics">
 						<div className="space-y-6">
 							<div>
@@ -369,7 +362,6 @@ export default function ProfilePage() {
 						</div>
 					</ProfileCard>
 
-					{/* Languages */}
 					<ProfileCard title="Languages">
 						<div className="space-y-3">
 							{languages.map((lang, index) => (
@@ -407,7 +399,6 @@ export default function ProfilePage() {
 						/>
 					</ProfileCard>
 
-					{/* Preferences */}
 					<ProfileCard title="Preferences">
 						<div className="space-y-6">
 							<ArrayInput

@@ -4,7 +4,6 @@
  * This file contains configuration settings for the application
  */
 
-// API endpoint paths
 export const API_ENDPOINTS = {
 	SAVED_JOBS: '/api/jobs/saved',
 	SAVED_JOB_STATUS: '/api/jobs/saved/status',
@@ -15,7 +14,6 @@ export const API_ENDPOINTS = {
 	PROFILE: '/api/profile',
 };
 
-// Route paths
 export const ROUTES = {
 	HOME: '/',
 	DASHBOARD: '/dashboard',
@@ -29,20 +27,17 @@ export const ROUTES = {
 	},
 };
 
-// Pagination defaults
 export const PAGINATION = {
 	DEFAULT_PAGE_SIZE: 10,
 	MAX_PAGE_SIZE: 100,
 };
 
-// Timeout values (in milliseconds)
 export const TIMEOUTS = {
-	API_REQUEST: 30000, // 30 seconds
-	DEBOUNCE_SEARCH: 500, // 500ms
-	SESSION_EXPIRY: 24 * 60 * 60 * 1000, // 24 hours
+	API_REQUEST: 30000,
+	DEBOUNCE_SEARCH: 500,
+	SESSION_EXPIRY: 24 * 60 * 60 * 1000,
 };
 
-// Feature flags
 export const FEATURES = {
 	ENABLE_ANALYTICS: true,
 	ENABLE_NOTIFICATIONS: false,

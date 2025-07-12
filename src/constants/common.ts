@@ -2,14 +2,11 @@
  * Common constant values used throughout the application
  */
 
-// Company-related constants
 export const COMPANY_RANKING_MIN = 1;
 export const COMPANY_RANKING_MAX = 10;
 
-// Application-related constants
 export const MAX_SAVED_JOBS = 100;
 
-// Job matching orchestrator constants
 export const JOB_MATCHING = {
 	MAX_PARALLEL_COMPANIES: 10,
 	ERROR_MESSAGES: {

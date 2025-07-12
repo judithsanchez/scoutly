@@ -2,21 +2,16 @@
  * API-related constants
  */
 
-// Default API configuration
 export const API_CONFIG = {
-	// Base URL for API requests (empty for same-origin requests)
 	BASE_URL: '',
 
-	// Default timeout in milliseconds
 	DEFAULT_TIMEOUT: 30000,
 
-	// Default headers for all API requests
 	DEFAULT_HEADERS: {
 		'Content-Type': 'application/json',
 		Accept: 'application/json',
 	},
 
-	// Query parameter keys
 	QUERY_PARAMS: {
 		EMAIL: 'gmail',
 		PAGE: 'page',
@@ -26,7 +21,6 @@ export const API_CONFIG = {
 	},
 };
 
-// API response status codes
 export const API_STATUS = {
 	OK: 200,
 	CREATED: 201,
@@ -37,7 +31,6 @@ export const API_STATUS = {
 	SERVER_ERROR: 500,
 };
 
-// Standard error messages
 export const API_ERRORS = {
 	CONNECTION: 'Connection error. Please check your internet connection.',
 	TIMEOUT: 'Request timed out. Please try again.',
