@@ -57,6 +57,11 @@ export class UserService {
 		return User.findOne({email});
 	}
 
+	static async getUserById(userId: string) {
+		await connectDB();
+		return User.findOne({userId});
+	}
+
 	static async promoteUser(data: {email: string}, secret?: string) {
 		await connectDB();
 		if (!data?.email) {
@@ -71,5 +76,18 @@ export class UserService {
 			throw new Error('User not found');
 		}
 		return {message: `User ${data.email} promoted to admin`, user};
+	}
+
+	static async updateUserProfile(
+		email: string,
+		update: {cvUrl?: string; candidateInfo?: any},
+	) {
+		await connectDB();
+		const user = await User.findOneAndUpdate(
+			{email},
+			{$set: update},
+			{new: true},
+		);
+		return user;
 	}
 }

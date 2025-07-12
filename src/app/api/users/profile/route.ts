@@ -1,48 +1,88 @@
-import {NextResponse} from 'next/server';
-import {getAllowedOrigin} from '@/utils/cors';
-import {Logger} from '@/utils/logger';
+import {NextRequest, NextResponse} from 'next/server';
+import {UserService} from '@/services/userService';
+import {logger} from '@/utils/logger';
+import {deployment, header, secret} from '@/config/environment';
+import {z} from 'zod';
+import {CandidateInfoSchema} from '@/schemas/userSchemas';
 
-const logger = new Logger('UsersProfileRoute');
+const UpdateProfileSchema = z.object({
+	email: z.string().email(),
+	cvUrl: z.string().url().optional(),
+	candidateInfo: CandidateInfoSchema.optional(),
+});
 
-function setCORSHeaders(res: NextResponse, req?: Request) {
-	const requestOrigin = req?.headers.get('origin') || null;
-	const allowedOrigin = getAllowedOrigin(requestOrigin);
-	logger.debug('setCORSHeaders called', {requestOrigin, allowedOrigin});
-	if (allowedOrigin) {
-		res.headers.set('Access-Control-Allow-Origin', allowedOrigin);
-		res.headers.set('Vary', 'Origin');
-		logger.debug('Access-Control-Allow-Origin set', {allowedOrigin});
-	} else {
-		logger.warn('Origin not allowed, header not set', {requestOrigin});
+export async function GET(req: NextRequest) {
+	if (!deployment.isVercel) {
+		try {
+			await logger.debug('Profile endpoint called');
+			const apiSecret = req.headers.get(header.internalApiSecret);
+
+			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
+				await logger.error('Unauthorized profile attempt');
+				return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+			}
+
+			const {searchParams} = new URL(req.url);
+			const userId = searchParams.get('userId');
+			if (!userId) {
+				await logger.warn('Missing userId in profile request');
+				return NextResponse.json({error: 'Missing userId'}, {status: 400});
+			}
+
+			const user = await UserService.getUserById(userId);
+			if (!user) {
+				await logger.info('User not found for profile', {userId});
+				return NextResponse.json({error: 'User not found'}, {status: 404});
+			}
+
+			await logger.success('Profile returned', {userId});
+			return NextResponse.json({user});
+		} catch (err) {
+			await logger.error('Profile endpoint server error', err);
+			return NextResponse.json({error: 'Server error'}, {status: 500});
+		}
 	}
-	res.headers.set('Access-Control-Allow-Credentials', 'true');
-	res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-	res.headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
-	return res;
 }
 
-export const OPTIONS = async (req: Request) => {
-	logger.debug('OPTIONS handler called for /api/users/profile');
-	const res = new NextResponse(null, {status: 204});
-	return setCORSHeaders(res, req);
-};
+export async function PATCH(req: NextRequest) {
+	if (!deployment.isVercel) {
+		try {
+			await logger.debug('Profile update endpoint called');
+			const apiSecret = req.headers.get(header.internalApiSecret);
 
-export const GET = async (req: Request) => {
-	logger.debug('GET handler called for /api/users/profile');
-	try {
-		logger.warn('Authentication removed from /api/users/profile');
-		return setCORSHeaders(
-			NextResponse.json(
-				{error: 'Not implemented: authentication removed'},
-				{status: 501},
-			),
-			req,
-		);
-	} catch (error) {
-		logger.error('Unhandled error in GET /api/users/profile', error);
-		return setCORSHeaders(
-			NextResponse.json({error: 'Internal server error'}, {status: 500}),
-			req,
-		);
+			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
+				await logger.error('Unauthorized profile update attempt');
+				return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+			}
+
+			const body = await req.json();
+			const parseResult = UpdateProfileSchema.safeParse(body);
+
+			if (!parseResult.success) {
+				await logger.warn('Invalid profile update payload', {
+					issues: parseResult.error.issues,
+				});
+				return NextResponse.json(
+					{error: 'Invalid payload', details: parseResult.error.issues},
+					{status: 400},
+				);
+			}
+
+			const {email, cvUrl, candidateInfo} = parseResult.data;
+			const updated = await UserService.updateUserProfile(email, {
+				cvUrl,
+				candidateInfo,
+			});
+			if (!updated) {
+				await logger.info('User not found for profile update', {email});
+				return NextResponse.json({error: 'User not found'}, {status: 404});
+			}
+
+			await logger.success('Profile updated', {email});
+			return NextResponse.json({user: updated});
+		} catch (err) {
+			await logger.error('Profile update endpoint server error', err);
+			return NextResponse.json({error: 'Server error'}, {status: 500});
+		}
 	}
-};
+}
