@@ -3,7 +3,6 @@
 import React, {useState, useEffect} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {useAuth} from '@/contexts/AuthContext';
 import {useTheme} from 'next-themes';
 
 interface NavItem {
@@ -14,11 +13,9 @@ interface NavItem {
 
 export default function AdminNavbar() {
 	const pathname = usePathname();
-	const {user, isAuthenticated} = useAuth();
 	const {theme, setTheme} = useTheme();
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-	// Close mobile menu when changing routes
 	useEffect(() => {
 		setIsMobileMenuOpen(false);
 	}, [pathname]);
@@ -59,7 +56,6 @@ export default function AdminNavbar() {
 						</span>
 					</Link>
 
-					{/* Desktop Navigation */}
 					<div className="hidden md:flex items-center gap-6 text-sm font-medium">
 						{navItems.map(item => (
 							<Link
@@ -76,9 +72,7 @@ export default function AdminNavbar() {
 						))}
 					</div>
 
-					{/* Right side actions */}
 					<div className="flex items-center gap-2">
-						{/* Theme toggle button */}
 						<button
 							onClick={toggleTheme}
 							className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-200/50 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
@@ -123,26 +117,6 @@ export default function AdminNavbar() {
 							)}
 						</button>
 
-						{/* User profile */}
-						{isAuthenticated && (
-							<div className="relative">
-								<button className="h-10 px-2 flex items-center gap-2 rounded-xl bg-slate-200/50 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors text-sm font-medium">
-									<span className="hidden sm:inline">
-										{user?.name || user?.email?.split('@')[0] || 'User'}
-									</span>
-									<div className="h-7 w-7 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">
-										{user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-									</div>
-									{process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true' && (
-										<span className="absolute -top-2 -right-2 bg-amber-500 text-xs px-1 rounded-full text-white">
-											DEV
-										</span>
-									)}
-								</button>
-							</div>
-						)}
-
-						{/* Mobile menu button */}
 						<button
 							onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 							className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-slate-200/50 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
@@ -184,7 +158,6 @@ export default function AdminNavbar() {
 					</div>
 				</div>
 
-				{/* Mobile Navigation Menu */}
 				{isMobileMenuOpen && (
 					<div className="md:hidden pt-4 pb-2 border-t border-slate-200 dark:border-slate-700/50 mt-3">
 						<div className="flex flex-col space-y-3">
