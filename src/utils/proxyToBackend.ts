@@ -1,5 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {logger} from '@/utils/logger';
+import { secret, header } from '@/config/environment';
 
 export async function proxyToBackend({
 	request,
@@ -15,11 +16,19 @@ export async function proxyToBackend({
 	const method = methodOverride || request.method;
 	const headers: Record<string, string> = {};
 
-	request.headers.forEach((value, key) => {
-		if (!['host', 'content-length'].includes(key.toLowerCase())) {
-			headers[key] = value;
-		}
-	});
+	   request.headers.forEach((value: string, key: string) => {
+			   if (!['host', 'content-length'].includes(key.toLowerCase())) {
+					   if (key === header.INTERNAL_API_SECRET) {
+							   headers[key] = secret.internalApiSecret ?? '';
+					   } else {
+							   headers[key] = value;
+					   }
+			   }
+	   });
+
+	   if (!(header.INTERNAL_API_SECRET in headers)) {
+			   headers[header.INTERNAL_API_SECRET] = secret.internalApiSecret ?? '';
+	   }
 
 	let body: any = undefined;
 	if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
