@@ -5,6 +5,12 @@ import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants/apiEndpoints';
 import {logger} from '@/utils/logger';
 import {proxyToBackend} from '@/utils/proxyToBackend';
+import {requireAuth} from '@/utils/requireAuth';
+import {UserCompanyPreferenceCreateSchema} from '@/schemas/userCompanyPreferenceSchemas';
+import {
+	UserCompanyPreferenceResponseSchema,
+	UserCompanyPreferenceArrayResponseSchema,
+} from '@/schemas/userCompanyPreferenceResponseSchemas';
 
 export async function GET(request: NextRequest): Promise<Response> {
 	await logger.debug(`GET ${endpoint.user_company_preferences.list} called`, {
@@ -24,6 +30,19 @@ export async function GET(request: NextRequest): Promise<Response> {
 			methodOverride: 'GET',
 			logPrefix: '[USER_COMPANY_PREFERENCES][GET][PROXY]',
 		});
+	}
+
+	// Require auth for getting tracked companies
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn(
+			'[USER_COMPANY_PREFERENCES][GET] Unauthorized access attempt',
+			{
+				ip:
+					request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			},
+		);
+		return response as Response;
 	}
 
 	try {
@@ -55,7 +74,25 @@ export async function GET(request: NextRequest): Promise<Response> {
 		}
 
 		// Service should return tracked companies already joined with company info
-		return NextResponse.json({companies: preferences});
+		const parseResult =
+			UserCompanyPreferenceArrayResponseSchema.safeParse(preferences);
+		if (!parseResult.success) {
+			await logger.warn(
+				'[USER_COMPANY_PREFERENCES][GET] Invalid response shape',
+				{
+					issues: parseResult.error.issues,
+					user:
+						user && typeof user === 'object' && 'email' in user
+							? user.email
+							: undefined,
+				},
+			);
+			return NextResponse.json(
+				{error: 'Invalid response shape', details: parseResult.error.issues},
+				{status: 500},
+			);
+		}
+		return NextResponse.json({companies: parseResult.data});
 	} catch (error) {
 		await logger.error('Error fetching user-company-preferences', error);
 		return NextResponse.json(
@@ -84,12 +121,65 @@ export async function POST(request: NextRequest): Promise<Response> {
 		});
 	}
 
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn(
+			'[USER_COMPANY_PREFERENCES][POST] Unauthorized access attempt',
+			{
+				ip:
+					request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			},
+		);
+		return response as Response;
+	}
+
 	try {
 		const reqBody = await request.json();
+		const parseResult = UserCompanyPreferenceCreateSchema.safeParse(reqBody);
+		if (!parseResult.success) {
+			await logger.warn(
+				'[USER_COMPANY_PREFERENCES][POST] Invalid request body',
+				{
+					issues: parseResult.error.issues,
+					user:
+						user && typeof user === 'object' && 'email' in user
+							? user.email
+							: undefined,
+				},
+			);
+			return NextResponse.json(
+				{error: 'Invalid request body', details: parseResult.error.issues},
+				{status: 400},
+			);
+		}
 		const {UserCompanyPreferenceService} = await import(
 			'@/services/userCompanyPreferenceService'
 		);
-		const result = await UserCompanyPreferenceService.create(reqBody);
+		const result = await UserCompanyPreferenceService.create(parseResult.data);
+		// Validate response if single object
+		if (result && result.created) {
+			const toValidate = Array.isArray(result.created)
+				? result.created
+				: [result.created];
+			const parseRes =
+				UserCompanyPreferenceArrayResponseSchema.safeParse(toValidate);
+			if (!parseRes.success) {
+				await logger.warn(
+					'[USER_COMPANY_PREFERENCES][POST] Invalid response shape',
+					{
+						issues: parseRes.error.issues,
+						user:
+							user && typeof user === 'object' && 'email' in user
+								? user.email
+								: undefined,
+					},
+				);
+				return NextResponse.json(
+					{error: 'Invalid response shape', details: parseRes.error.issues},
+					{status: 500},
+				);
+			}
+		}
 		return NextResponse.json(result, {status: 201});
 	} catch (error) {
 		await logger.error('Error creating user-company-preferences', error);

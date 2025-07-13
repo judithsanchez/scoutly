@@ -62,16 +62,18 @@ export const UserCompanyPreferenceService = {
 		const filter: any = {companyId};
 		if (data?.userId) filter.userId = data.userId;
 		if (data?.email) filter.email = data.email;
-		const deleted = await UserCompanyPreference.deleteMany(filter);
-		return {success: true, deletedCount: deleted.deletedCount};
+		const deleted = await UserCompanyPreference.findOneAndDelete(filter);
+		return {success: true, deleted};
 	},
 
 	async updateByCompanyId(companyId: string, data: any) {
 		const filter: any = {companyId};
 		if (data?.userId) filter.userId = data.userId;
 		if (data?.email) filter.email = data.email;
-		const updated = await UserCompanyPreference.updateMany(filter, data);
-		return {success: true, modifiedCount: updated.modifiedCount};
+		const updated = await UserCompanyPreference.findOneAndUpdate(filter, data, {
+			new: true,
+		});
+		return {success: true, updated};
 	},
 };
 

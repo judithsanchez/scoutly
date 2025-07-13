@@ -5,6 +5,9 @@ import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants/apiEndpoints';
 import {logger} from '@/utils/logger';
 import {proxyToBackend} from '@/utils/proxyToBackend';
+import {requireAuth} from '@/utils/requireAuth';
+import {UserCompanyPreferenceUpdateSchema} from '@/schemas/userCompanyPreferenceSchemas';
+import {UserCompanyPreferenceResponseSchema} from '@/schemas/userCompanyPreferenceResponseSchemas';
 
 export async function DELETE(
 	request: NextRequest,
@@ -37,6 +40,18 @@ export async function DELETE(
 		});
 	}
 
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn(
+			'[USER_COMPANY_PREFERENCES][DELETE] Unauthorized access attempt',
+			{
+				ip:
+					request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			},
+		);
+		return response as Response;
+	}
+
 	try {
 		const reqBody = await request.json();
 		const {UserCompanyPreferenceService} = await import(
@@ -46,6 +61,28 @@ export async function DELETE(
 			params.companyId,
 			reqBody,
 		);
+		// Optionally validate response if you return the deleted object
+		if (result && result.deleted) {
+			const parseRes = UserCompanyPreferenceResponseSchema.safeParse(
+				result.deleted,
+			);
+			if (!parseRes.success) {
+				await logger.warn(
+					'[USER_COMPANY_PREFERENCES][DELETE] Invalid response shape',
+					{
+						issues: parseRes.error.issues,
+						user:
+							user && typeof user === 'object' && 'email' in user
+								? user.email
+								: undefined,
+					},
+				);
+				return NextResponse.json(
+					{error: 'Invalid response shape', details: parseRes.error.issues},
+					{status: 500},
+				);
+			}
+		}
 		return NextResponse.json(result);
 	} catch (error) {
 		await logger.error(
@@ -93,15 +130,66 @@ export async function PUT(
 		});
 	}
 
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn(
+			'[USER_COMPANY_PREFERENCES][PUT] Unauthorized access attempt',
+			{
+				ip:
+					request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			},
+		);
+		return response as Response;
+	}
+
 	try {
 		const reqBody = await request.json();
+		const parseResult = UserCompanyPreferenceUpdateSchema.safeParse(reqBody);
+		if (!parseResult.success) {
+			await logger.warn(
+				'[USER_COMPANY_PREFERENCES][PUT] Invalid request body',
+				{
+					issues: parseResult.error.issues,
+					user:
+						user && typeof user === 'object' && 'email' in user
+							? user.email
+							: undefined,
+				},
+			);
+			return NextResponse.json(
+				{error: 'Invalid request body', details: parseResult.error.issues},
+				{status: 400},
+			);
+		}
 		const {UserCompanyPreferenceService} = await import(
 			'@/services/userCompanyPreferenceService'
 		);
 		const result = await UserCompanyPreferenceService.updateByCompanyId(
 			params.companyId,
-			reqBody,
+			parseResult.data,
 		);
+		// Optionally validate response if you return the updated object
+		if (result && result.updated) {
+			const parseRes = UserCompanyPreferenceResponseSchema.safeParse(
+				result.updated,
+			);
+			if (!parseRes.success) {
+				await logger.warn(
+					'[USER_COMPANY_PREFERENCES][PUT] Invalid response shape',
+					{
+						issues: parseRes.error.issues,
+						user:
+							user && typeof user === 'object' && 'email' in user
+								? user.email
+								: undefined,
+					},
+				);
+				return NextResponse.json(
+					{error: 'Invalid response shape', details: parseRes.error.issues},
+					{status: 500},
+				);
+			}
+		}
 		return NextResponse.json(result);
 	} catch (error) {
 		await logger.error(
