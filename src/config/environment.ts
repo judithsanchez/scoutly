@@ -50,7 +50,14 @@ export const apiBaseUrl = {
 export const secret = {
 	internalApiSecret: process.env.INTERNAL_API_SECRET,
 	jwt: process.env.JWT_SECRET,
+
 };
+
+// Warn at runtime if INTERNAL_API_SECRET is missing
+if (!secret.internalApiSecret) {
+	// eslint-disable-next-line no-console
+	console.warn('[env] INTERNAL_API_SECRET is missing! This may break internal API authentication.');
+}
 
 export const header = {
 	INTERNAL_API_SECRET: 'X-Internal-API-Secret',
