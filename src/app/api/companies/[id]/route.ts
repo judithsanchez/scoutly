@@ -9,12 +9,12 @@ import {CompanyZodSchema} from '@/schemas/companySchemas';
 
 export async function GET(
 	request: NextRequest,
-	{params}: {params: {companyId: string}},
+	{params}: {params: {id: string}},
 ): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.byId.replace(
-			':companyId',
-			params.companyId,
+			':id',
+			params.id,
 		)}`;
 		return proxyToBackend({
 			request,
@@ -33,7 +33,7 @@ export async function GET(
 	}
 
 	try {
-		const company = await CompanyService.getCompanyById(params.companyId);
+		const company = await CompanyService.getCompanyById(params.id);
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
@@ -74,12 +74,12 @@ export async function GET(
 
 export async function PATCH(
 	request: NextRequest,
-	{params}: {params: {companyId: string}},
+	{params}: {params: {id: string}},
 ): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.byId.replace(
-			':companyId',
-			params.companyId,
+			':id',
+			params.id,
 		)}`;
 		return proxyToBackend({
 			request,
@@ -99,7 +99,7 @@ export async function PATCH(
 
 	try {
 		const body = await request.json();
-		const company = await CompanyService.updateCompany(params.companyId, body);
+		const company = await CompanyService.updateCompany(params.id, body);
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
@@ -124,12 +124,12 @@ export async function PATCH(
 
 export async function DELETE(
 	request: NextRequest,
-	{params}: {params: {companyId: string}},
+	{params}: {params: {id: string}},
 ): Promise<Response> {
 	if (deployment.isVercel && env.isProd) {
 		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.byId.replace(
-			':companyId',
-			params.companyId,
+			':id',
+			params.id,
 		)}`;
 		return proxyToBackend({
 			request,
@@ -152,7 +152,7 @@ export async function DELETE(
 	}
 
 	try {
-		const company = await CompanyService.deleteCompany(params.companyId);
+		const company = await CompanyService.deleteCompany(params.id);
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}

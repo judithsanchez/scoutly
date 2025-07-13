@@ -2,6 +2,7 @@ import {z} from 'zod';
 
 // Zod schema for Company
 export const CompanyZodSchema = z.object({
+	id: z.string(), // <-- Ensure id is included
 	companyID: z.string(),
 	company: z.string(),
 	description: z.string().optional(),

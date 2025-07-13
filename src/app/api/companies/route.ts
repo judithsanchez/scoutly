@@ -72,10 +72,13 @@ export async function GET(request: NextRequest): Promise<Response> {
 		}
 		let companies = await CompanyService.getAllCompanies();
 		// Expose MongoDB _id as id for frontend use
-		companies = companies.map((c: any) => ({
-			...c.toObject(),
-			id: c._id?.toString(),
-		}));
+		companies = companies.map((c: any) => {
+			const obj = typeof c.toObject === 'function' ? c.toObject() : c;
+			return {
+				...obj,
+				id: (c._id || obj._id)?.toString(),
+			};
+		});
 		const companiesParse = CompaniesArrayZodSchema.safeParse(companies);
 		if (!companiesParse.success) {
 			await logger.error('[COMPANIES][GET] Invalid companies response shape', {
