@@ -13,7 +13,9 @@ export async function DELETE(req: NextRequest) {
 	if (!deployment.isVercel) {
 		try {
 			await logger.debug('Delete user endpoint called');
-			const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
+			const apiSecret =
+  req.headers.get(header.INTERNAL_API_SECRET) ||
+  req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
 
 			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 				await logger.error('Unauthorized delete-user attempt');

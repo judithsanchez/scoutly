@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
 			deployment: {...deployment},
 		});
 
-		const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
+		const apiSecret =
+  req.headers.get(header.INTERNAL_API_SECRET) ||
+  req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
 		if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 			await logger.error('Unauthorized seed companies attempt');
 			return NextResponse.json({error: 'Unauthorized'}, {status: 401});

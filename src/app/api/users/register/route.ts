@@ -26,7 +26,9 @@ export async function POST(req: NextRequest): Promise<Response> {
 
 	try {
 		await logger.debug('[USERS][REGISTER][POST] Registration endpoint called');
-		const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
+		const apiSecret =
+  req.headers.get(header.INTERNAL_API_SECRET) ||
+  req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
 
 		if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 			await logger.error(
