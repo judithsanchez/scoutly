@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 	   if (!deployment.isVercel) {
 			   try {
 					   await logger.debug('Emails endpoint called');
-					   const apiSecret = req.headers.get(header.INTERNAL_API_SECRET);
+					   const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
 
 					   if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 							   await logger.error('Unauthorized emails attempt');

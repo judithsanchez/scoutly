@@ -32,7 +32,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
 	try {
 		await logger.debug('[USERS][LOGIN][POST] Login endpoint called');
-		const apiSecret = req.headers.get(header.INTERNAL_API_SECRET);
+		const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
 
 		if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 			await logger.error('[USERS][LOGIN][POST] Unauthorized login attempt');

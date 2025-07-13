@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 	if (!deployment.isVercel) {
 		try {
 			await logger.debug('Profile endpoint called');
-			const apiSecret = req.headers.get(header.INTERNAL_API_SECRET);
+			const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
 
 			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 				await logger.error('Unauthorized profile attempt');
@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest) {
 	if (!deployment.isVercel) {
 		try {
 			await logger.debug('Profile update endpoint called');
-			const apiSecret = req.headers.get(header.INTERNAL_API_SECRET);
+			const apiSecret = req.headers.get(header.INTERNAL_API_SECRET.toLowerCase();
 
 			if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 				await logger.error('Unauthorized profile update attempt');
