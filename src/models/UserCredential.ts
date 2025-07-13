@@ -1,3 +1,4 @@
+import { env } from '@/config';
 import mongoose, {Schema, Document, Types} from 'mongoose';
 
 export interface IUserCredential extends Document {
@@ -32,7 +33,7 @@ const UserCredentialSchema = new Schema<IUserCredential>(
 	},
 	{
 		timestamps: true,
-		autoIndex: false,
+		autoIndex: !env.isProd
 	},
 );
 
