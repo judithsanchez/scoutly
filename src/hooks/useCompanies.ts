@@ -4,6 +4,7 @@ import apiClient from '@/lib/apiClient';
 import {endpoint} from '@/constants/apiEndpoints';
 import {useAuth} from '@/contexts/AuthContext';
 
+// This matches the 'joined' shape returned by the backend
 export interface TrackedCompany {
 	_id: string;
 	id: string;
@@ -14,12 +15,13 @@ export interface TrackedCompany {
 		rank: number;
 		isTracking: boolean;
 		frequency: string;
-		lastUpdated: Date;
+		lastUpdated: string; // ISO string from backend
 	};
 }
 
 interface TrackedCompaniesResponse {
-	companies: TrackedCompany[];
+	companies: any[]; // flat shape, not used in frontend
+	joined: TrackedCompany[];
 }
 
 // Extend ICompany to include id for API responses
@@ -32,54 +34,63 @@ async function fetchCompanies(): Promise<ICompanyWithId[]> {
 	return apiClient(endpoint.companies.list) as Promise<ICompanyWithId[]>;
 }
 
-async function fetchTrackedCompanies(email: string): Promise<TrackedCompany[]> {
-	if (!email) throw new Error('User not authenticated');
+async function fetchTrackedCompanies(
+	userId: string,
+): Promise<TrackedCompany[]> {
+	if (!userId) throw new Error('User not authenticated');
 	const data: TrackedCompaniesResponse = await apiClient(
-		`${endpoint.user_company_preferences.list}?email=${encodeURIComponent(
-			email,
+		`${endpoint.user_company_preferences.list}?userId=${encodeURIComponent(
+			userId,
 		)}`,
 	);
-	return data.companies;
+	// Use the 'joined' array for tracked companies
+	return data.joined || [];
 }
 
 async function trackCompany({
-	email,
+	userId,
 	id,
 	rank,
 }: {
-	email: string;
+	userId: string;
 	id: string;
 	rank?: number;
 }) {
-	if (!email) throw new Error('User not authenticated');
+	if (!userId) throw new Error('User not authenticated');
 	return apiClient(endpoint.user_company_preferences.list, {
 		method: 'POST',
-		body: JSON.stringify({email, companyId: id, rank, isTracking: true}),
+		body: JSON.stringify({userId, companyId: id, rank, isTracking: true}),
 	});
 }
 
-async function untrackCompany({email, id}: {email: string; id: string}) {
-	if (!email) throw new Error('User not authenticated');
-	return apiClient(endpoint.user_company_preferences.list, {
-		method: 'DELETE',
-		body: JSON.stringify({email, companyId: id}),
-	});
+async function untrackCompany({userId, id}: {userId: string; id: string}) {
+	if (!userId) throw new Error('User not authenticated');
+	return apiClient(
+		endpoint.user_company_preferences.by_company_id.replace('[companyId]', id),
+		{
+			method: 'DELETE',
+			body: JSON.stringify({userId}),
+		},
+	);
 }
 
 async function updateRanking({
-	email,
+	userId,
 	id,
 	rank,
 }: {
-	email: string;
+	userId: string;
 	id: string;
 	rank: number;
 }) {
-	if (!email) throw new Error('User not authenticated');
-	return apiClient(endpoint.user_company_preferences.list, {
-		method: 'PATCH',
-		body: JSON.stringify({email, companyId: id, rank}),
-	});
+	if (!userId) throw new Error('User not authenticated');
+	return apiClient(
+		endpoint.user_company_preferences.by_company_id.replace('[companyId]', id),
+		{
+			method: 'PUT',
+			body: JSON.stringify({userId, rank}),
+		},
+	);
 }
 
 async function createCompany(companyData: CreateCompanyInput) {
@@ -93,8 +104,8 @@ export function useCompanies() {
 	const queryClient = useQueryClient();
 	const {user} = useAuth();
 
-	function getEmail() {
-		return user?.email || '';
+	function getUserId() {
+		return user?.userId || '';
 	}
 
 	const companiesQuery = useQuery<ICompanyWithId[], Error>({
@@ -115,9 +126,9 @@ export function useCompanies() {
 	});
 
 	const trackedCompaniesQuery = useQuery<TrackedCompany[], Error>({
-		queryKey: ['trackedCompanies', getEmail()],
-		queryFn: () => fetchTrackedCompanies(getEmail()),
-		enabled: !!getEmail(),
+		queryKey: ['trackedCompanies', getUserId()],
+		queryFn: () => fetchTrackedCompanies(getUserId()),
+		enabled: !!getUserId(),
 		retry: (failureCount: number, error: Error) => {
 			if (error instanceof Error) {
 				if (error.message.includes('Database connection error')) {
@@ -134,29 +145,30 @@ export function useCompanies() {
 
 	const trackMutation = useMutation({
 		mutationFn: ({id, rank}: {id: string; rank?: number}) =>
-			trackCompany({email: getEmail(), id, rank}),
+			trackCompany({userId: getUserId(), id, rank}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
-				queryKey: ['trackedCompanies', getEmail()],
+				queryKey: ['trackedCompanies', getUserId()],
 			});
 		},
 	});
 
 	const untrackMutation = useMutation({
-		mutationFn: ({id}: {id: string}) => untrackCompany({email: getEmail(), id}),
+		mutationFn: ({id}: {id: string}) =>
+			untrackCompany({userId: getUserId(), id}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
-				queryKey: ['trackedCompanies', getEmail()],
+				queryKey: ['trackedCompanies', getUserId()],
 			});
 		},
 	});
 
 	const updateRankingMutation = useMutation({
 		mutationFn: ({id, rank}: {id: string; rank: number}) =>
-			updateRanking({email: getEmail(), id, rank}),
+			updateRanking({userId: getUserId(), id, rank}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
-				queryKey: ['trackedCompanies', getEmail()],
+				queryKey: ['trackedCompanies', getUserId()],
 			});
 		},
 	});
@@ -170,7 +182,7 @@ export function useCompanies() {
 
 	return {
 		companies: companiesQuery.data || ([] as ICompanyWithId[]),
-		trackedCompanies: trackedCompaniesQuery.data || [],
+		trackedCompanies: trackedCompaniesQuery.data || [], // now joined shape
 		isLoading: companiesQuery.isLoading || trackedCompaniesQuery.isLoading,
 		isError: companiesQuery.isError || trackedCompaniesQuery.isError,
 		error: companiesQuery.error || trackedCompaniesQuery.error,

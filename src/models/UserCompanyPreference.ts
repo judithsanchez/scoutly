@@ -6,6 +6,9 @@ export interface IUserCompanyPreference extends Document {
 	rank: number; // 1-100, with 100 being highest priority
 	isTracking: boolean;
 	frequency?: string; // e.g. "Weekly", "Monthly", etc.
+	_id: mongoose.Types.ObjectId;
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 const UserCompanyPreferenceSchema = new Schema<IUserCompanyPreference>(

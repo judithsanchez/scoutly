@@ -73,9 +73,10 @@ export async function GET(request: NextRequest): Promise<Response> {
 			);
 		}
 
-		// Service should return tracked companies already joined with company info
-		const parseResult =
-			UserCompanyPreferenceArrayResponseSchema.safeParse(preferences);
+		// Validate the flat shape for Zod
+		const parseResult = UserCompanyPreferenceArrayResponseSchema.safeParse(
+			preferences.companies,
+		);
 		if (!parseResult.success) {
 			await logger.warn(
 				'[USER_COMPANY_PREFERENCES][GET] Invalid response shape',
@@ -92,7 +93,11 @@ export async function GET(request: NextRequest): Promise<Response> {
 				{status: 500},
 			);
 		}
-		return NextResponse.json({companies: parseResult.data});
+		// Return both flat and joined shapes
+		return NextResponse.json({
+			companies: preferences.companies,
+			joined: preferences.joined,
+		});
 	} catch (error) {
 		await logger.error('Error fetching user-company-preferences', error);
 		return NextResponse.json(
@@ -155,32 +160,72 @@ export async function POST(request: NextRequest): Promise<Response> {
 		const {UserCompanyPreferenceService} = await import(
 			'@/services/userCompanyPreferenceService'
 		);
-		const result = await UserCompanyPreferenceService.create(parseResult.data);
-		// Validate response if single object
-		if (result && result.created) {
-			const toValidate = Array.isArray(result.created)
-				? result.created
-				: [result.created];
-			const parseRes =
-				UserCompanyPreferenceArrayResponseSchema.safeParse(toValidate);
-			if (!parseRes.success) {
-				await logger.warn(
-					'[USER_COMPANY_PREFERENCES][POST] Invalid response shape',
-					{
-						issues: parseRes.error.issues,
-						user:
-							user && typeof user === 'object' && 'email' in user
-								? user.email
-								: undefined,
-					},
-				);
+		try {
+			const result = await UserCompanyPreferenceService.create(
+				parseResult.data,
+			);
+			// Serialize created record for Zod
+			if (result && result.created) {
+				const createdArr = Array.isArray(result.created)
+					? result.created
+					: [result.created];
+				const serialized = createdArr.map((pref: any) => ({
+					_id: pref._id?.toString(),
+					userId: pref.userId,
+					companyId: pref.companyId?.toString(),
+					rank: pref.rank,
+					isTracking: pref.isTracking,
+					frequency: pref.frequency,
+					createdAt:
+						pref.createdAt instanceof Date
+							? pref.createdAt.toISOString()
+							: pref.createdAt,
+					updatedAt:
+						pref.updatedAt instanceof Date
+							? pref.updatedAt.toISOString()
+							: pref.updatedAt,
+				}));
+				const parseRes =
+					UserCompanyPreferenceArrayResponseSchema.safeParse(serialized);
+				if (!parseRes.success) {
+					await logger.warn(
+						'[USER_COMPANY_PREFERENCES][POST] Invalid response shape',
+						{
+							issues: parseRes.error.issues,
+							user:
+								user && typeof user === 'object' && 'email' in user
+									? user.email
+									: undefined,
+						},
+					);
+					return NextResponse.json(
+						{error: 'Invalid response shape', details: parseRes.error.issues},
+						{status: 500},
+					);
+				}
 				return NextResponse.json(
-					{error: 'Invalid response shape', details: parseRes.error.issues},
-					{status: 500},
+					serialized.length === 1 ? serialized[0] : serialized,
+					{status: 201},
 				);
 			}
+			return NextResponse.json(result, {status: 201});
+		} catch (error: any) {
+			// Handle duplicate key error
+			if (error?.code === 11000) {
+				return NextResponse.json(
+					{error: 'Company is already being tracked by this user.'},
+					{status: 409},
+				);
+			}
+			await logger.error('Error creating user-company-preferences', error);
+			return NextResponse.json(
+				{
+					error: 'Error creating user-company-preferences',
+					details: (error as Error).message,
+				},
+				{status: 500},
+			);
 		}
-		return NextResponse.json(result, {status: 201});
 	} catch (error) {
 		await logger.error('Error creating user-company-preferences', error);
 		return NextResponse.json(

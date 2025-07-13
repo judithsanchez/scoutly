@@ -4,12 +4,96 @@ import {Company} from '@/models/Company';
 export const UserCompanyPreferenceService = {
 	async getByUserId(userId: string) {
 		const preferences = await UserCompanyPreference.find({userId});
-		return await joinWithCompany(preferences);
+		// Flat shape for Zod validation
+		const flat = preferences.map(
+			(
+				pref: import('@/models/UserCompanyPreference').IUserCompanyPreference,
+			) => ({
+				_id: pref._id.toString(),
+				userId: pref.userId,
+				companyId: pref.companyId.toString(),
+				rank: pref.rank,
+				isTracking: pref.isTracking,
+				frequency: pref.frequency,
+				createdAt:
+					pref.createdAt instanceof Date
+						? pref.createdAt.toISOString()
+						: pref.createdAt,
+				updatedAt:
+					pref.updatedAt instanceof Date
+						? pref.updatedAt.toISOString()
+						: pref.updatedAt,
+			}),
+		);
+		// Joined shape for frontend
+		const joined = [];
+		for (const pref of preferences) {
+			const company = await Company.findById(pref.companyId);
+			if (!company) continue;
+			joined.push({
+				_id: company._id.toString(),
+				id: company._id.toString(),
+				company: company.company,
+				careers_url: company.careers_url,
+				logo_url: company.logo_url,
+				userPreference: {
+					rank: pref.rank,
+					isTracking: pref.isTracking,
+					frequency: pref.frequency,
+					lastUpdated:
+						pref.updatedAt instanceof Date
+							? pref.updatedAt.toISOString()
+							: pref.updatedAt,
+				},
+			});
+		}
+		return {companies: flat, joined};
 	},
 
 	async getByEmail(email: string) {
 		const preferences = await UserCompanyPreference.find({email});
-		return await joinWithCompany(preferences);
+		const flat = preferences.map(
+			(
+				pref: import('@/models/UserCompanyPreference').IUserCompanyPreference,
+			) => ({
+				_id: pref._id.toString(),
+				userId: pref.userId,
+				companyId: pref.companyId.toString(),
+				rank: pref.rank,
+				isTracking: pref.isTracking,
+				frequency: pref.frequency,
+				createdAt:
+					pref.createdAt instanceof Date
+						? pref.createdAt.toISOString()
+						: pref.createdAt,
+				updatedAt:
+					pref.updatedAt instanceof Date
+						? pref.updatedAt.toISOString()
+						: pref.updatedAt,
+			}),
+		);
+		const joined = [];
+		for (const pref of preferences) {
+			const company = await Company.findById(pref.companyId);
+			if (!company) continue;
+			joined.push({
+				_id: company._id.toString(),
+				id: company._id.toString(),
+				company: company.company,
+				careers_url: company.careers_url,
+				logo_url: company.logo_url,
+				userPreference: {
+					rank: pref.rank,
+					isTracking: pref.isTracking,
+					frequency: pref.frequency,
+					lastUpdated:
+						pref.updatedAt instanceof Date
+							? pref.updatedAt.toISOString()
+							: pref.updatedAt,
+				},
+			});
+		}
+		return {companies: flat, joined};
 	},
 
 	async create(data: any) {

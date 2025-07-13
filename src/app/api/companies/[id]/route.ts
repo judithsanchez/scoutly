@@ -37,11 +37,19 @@ export async function GET(
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
-		// Remove _id and ensure id is present for type safety
-		const {_id, ...companyData} = company.toObject
-			? company.toObject()
-			: company;
-		const companyWithId = {...companyData, id: _id?.toString()};
+		// Serialize _id and any Date fields
+		const obj = company.toObject ? company.toObject() : company;
+		const {_id, ...companyData} = obj;
+		// Convert all Date fields to ISO strings
+		const companyWithId = {
+			...companyData,
+			id: _id?.toString(),
+		};
+		for (const key in companyWithId) {
+			if (companyWithId[key] instanceof Date) {
+				companyWithId[key] = companyWithId[key].toISOString();
+			}
+		}
 		const parseResult = CompanyZodSchema.safeParse(companyWithId);
 		if (!parseResult.success) {
 			await logger.warn('[COMPANIES][GET][BY_ID] Invalid company shape', {
@@ -103,10 +111,33 @@ export async function PATCH(
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
-		return NextResponse.json({
-			...company.toObject(),
-			id: company._id?.toString(),
-		});
+		// Serialize _id and any Date fields
+		const obj = company.toObject ? company.toObject() : company;
+		const {_id, ...companyData} = obj;
+		const companyWithId = {
+			...companyData,
+			id: _id?.toString(),
+		};
+		for (const key in companyWithId) {
+			if (companyWithId[key] instanceof Date) {
+				companyWithId[key] = companyWithId[key].toISOString();
+			}
+		}
+		const parseResult = CompanyZodSchema.safeParse(companyWithId);
+		if (!parseResult.success) {
+			await logger.warn('[COMPANIES][PATCH][BY_ID] Invalid company shape', {
+				issues: parseResult.error.issues,
+				user:
+					typeof user === 'object' && user !== null && 'email' in user
+						? user.email
+						: undefined,
+			});
+			return NextResponse.json(
+				{error: 'Invalid company shape', details: parseResult.error.issues},
+				{status: 500},
+			);
+		}
+		return NextResponse.json(parseResult.data);
 	} catch (error) {
 		await logger.error('[COMPANIES][PATCH][BY_ID] Error updating company', {
 			error,
