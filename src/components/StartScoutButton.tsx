@@ -27,12 +27,16 @@ export default function StartScoutButton({
 		isRefetching: isLoadingTrackedCompanies,
 	} = useCompanies();
 
+	// Ensure companies is typed as ICompanyWithId[]
+	const companiesWithId =
+		companies as unknown as import('@/hooks/useCompanies').ICompanyWithId[];
+
 	// Calculate companies available for scouting (not recently scraped)
 	const availableCompanies = React.useMemo(() => {
 		if (
-			!companies ||
+			!companiesWithId ||
 			!trackedCompanies ||
-			!companies.length ||
+			!companiesWithId.length ||
 			!trackedCompanies.length
 		)
 			return [];
@@ -41,28 +45,31 @@ export default function StartScoutButton({
 		const now = new Date();
 
 		// Filter companies that are tracked and not recently scraped
-		return companies.filter(company => {
-			// Find if the company is tracked
-			const trackedCompany = trackedCompanies.find(
-				tc => tc.companyID === company.companyID,
-			);
+		return companiesWithId.filter(
+			(company: import('@/hooks/useCompanies').ICompanyWithId) => {
+				// Find if the company is tracked
+				const trackedCompany = trackedCompanies.find(
+					(tc: import('@/hooks/useCompanies').TrackedCompany) =>
+						tc.id === company.id,
+				);
 
-			// If not tracked, it's not available for scouting
-			if (!trackedCompany) return false;
+				// If not tracked, it's not available for scouting
+				if (!trackedCompany) return false;
 
-			// If no scrape history, it's available
-			if (!company.lastSuccessfulScrape) return true;
+				// If no scrape history, it's available
+				if (!company.lastSuccessfulScrape) return true;
 
-			// Check if the company was scraped recently
-			const scrapeDate = new Date(company.lastSuccessfulScrape);
-			const daysSinceScrape = Math.floor(
-				(now.getTime() - scrapeDate.getTime()) / (1000 * 60 * 60 * 24),
-			);
+				// Check if the company was scraped recently
+				const scrapeDate = new Date(company.lastSuccessfulScrape);
+				const daysSinceScrape = Math.floor(
+					(now.getTime() - scrapeDate.getTime()) / (1000 * 60 * 60 * 24),
+				);
 
-			// If it was scraped more than the interval days ago, it's available
-			return daysSinceScrape >= config.app.companyScrapeIntervalDays;
-		});
-	}, [companies, trackedCompanies]);
+				// If it was scraped more than the interval days ago, it's available
+				return daysSinceScrape >= config.app.companyScrapeIntervalDays;
+			},
+		);
+	}, [companiesWithId, trackedCompanies]);
 
 	const handleScoutStart = async () => {
 		if (!onScoutStart || selectedCompanies.length === 0) return;
@@ -81,14 +88,20 @@ export default function StartScoutButton({
 
 	const toggleCompanySelection = (companyId: string) => {
 		if (selectedCompanies.includes(companyId)) {
-			setSelectedCompanies(selectedCompanies.filter(id => id !== companyId));
+			setSelectedCompanies(
+				selectedCompanies.filter((id: string) => id !== companyId),
+			);
 		} else {
 			setSelectedCompanies([...selectedCompanies, companyId]);
 		}
 	};
 
 	const selectAllCompanies = () => {
-		setSelectedCompanies(availableCompanies.map(company => company.companyID));
+		setSelectedCompanies(
+			availableCompanies.map(
+				(company: import('@/hooks/useCompanies').ICompanyWithId) => company.id,
+			),
+		);
 	};
 
 	const clearSelection = () => {
@@ -105,8 +118,8 @@ export default function StartScoutButton({
 					availableCompanies.length === 0
 				}
 				className={`bg-purple-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-purple-700 transition-all shadow-lg 
-          hover:shadow-purple-500/30 transform hover:-translate-y-0.5 flex items-center justify-center gap-2
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${className}`}
+		  hover:shadow-purple-500/30 transform hover:-translate-y-0.5 flex items-center justify-center gap-2
+		  disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${className}`}
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -270,7 +283,7 @@ export default function StartScoutButton({
 								onClick={handleScoutStart}
 								disabled={selectedCompanies.length === 0 || isLoading}
 								className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-all
-                  disabled:opacity-50 disabled:cursor-not-allowed"
+				  disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								{isLoading ? (
 									<span className="flex items-center gap-2">

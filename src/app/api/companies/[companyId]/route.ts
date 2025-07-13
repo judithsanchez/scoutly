@@ -37,7 +37,12 @@ export async function GET(
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
-		const parseResult = CompanyZodSchema.safeParse(company);
+		// Remove _id and ensure id is present for type safety
+		const {_id, ...companyData} = company.toObject
+			? company.toObject()
+			: company;
+		const companyWithId = {...companyData, id: _id?.toString()};
+		const parseResult = CompanyZodSchema.safeParse(companyWithId);
 		if (!parseResult.success) {
 			await logger.warn('[COMPANIES][GET][BY_ID] Invalid company shape', {
 				issues: parseResult.error.issues,
@@ -62,6 +67,106 @@ export async function GET(
 		});
 		return NextResponse.json(
 			{error: 'Error fetching company', details: (error as Error).message},
+			{status: 500},
+		);
+	}
+}
+
+export async function PATCH(
+	request: NextRequest,
+	{params}: {params: {companyId: string}},
+): Promise<Response> {
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.byId.replace(
+			':companyId',
+			params.companyId,
+		)}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'PATCH',
+			logPrefix: '[COMPANIES][PATCH][BY_ID][PROXY]',
+		});
+	}
+
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn('[COMPANIES][PATCH][BY_ID] Unauthorized access attempt', {
+			ip: request.headers.get('x-forwarded-for') || request.headers.get('host'),
+		});
+		return response as Response;
+	}
+
+	try {
+		const body = await request.json();
+		const company = await CompanyService.updateCompany(params.companyId, body);
+		if (!company) {
+			return NextResponse.json({error: 'Company not found'}, {status: 404});
+		}
+		return NextResponse.json({
+			...company.toObject(),
+			id: company._id?.toString(),
+		});
+	} catch (error) {
+		await logger.error('[COMPANIES][PATCH][BY_ID] Error updating company', {
+			error,
+			user:
+				typeof user === 'object' && user !== null && 'email' in user
+					? user.email
+					: undefined,
+		});
+		return NextResponse.json(
+			{error: 'Error updating company', details: (error as Error).message},
+			{status: 500},
+		);
+	}
+}
+
+export async function DELETE(
+	request: NextRequest,
+	{params}: {params: {companyId: string}},
+): Promise<Response> {
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.companies.byId.replace(
+			':companyId',
+			params.companyId,
+		)}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'DELETE',
+			logPrefix: '[COMPANIES][DELETE][BY_ID][PROXY]',
+		});
+	}
+
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn(
+			'[COMPANIES][DELETE][BY_ID] Unauthorized access attempt',
+			{
+				ip:
+					request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			},
+		);
+		return response as Response;
+	}
+
+	try {
+		const company = await CompanyService.deleteCompany(params.companyId);
+		if (!company) {
+			return NextResponse.json({error: 'Company not found'}, {status: 404});
+		}
+		return NextResponse.json({success: true, id: company._id?.toString()});
+	} catch (error) {
+		await logger.error('[COMPANIES][DELETE][BY_ID] Error deleting company', {
+			error,
+			user:
+				typeof user === 'object' && user !== null && 'email' in user
+					? user.email
+					: undefined,
+		});
+		return NextResponse.json(
+			{error: 'Error deleting company', details: (error as Error).message},
 			{status: 500},
 		);
 	}

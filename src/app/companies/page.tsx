@@ -2,7 +2,7 @@
 
 import {Navbar} from '@/components/Navbar';
 import {useCompanies} from '@/hooks/useCompanies';
-import {ICompany} from '@/types/company';
+import type {TrackedCompany, ICompanyWithId} from '@/hooks/useCompanies';
 import {useEffect, useState} from 'react';
 import {AddCompanyModal} from '@/components/AddCompanyModal';
 import {createLogger} from '@/utils/frontendLogger';
@@ -18,8 +18,8 @@ import {
 	FLEX_BETWEEN,
 } from '@/constants/styles';
 
-const CompanyCard = ({company}: {company: ICompany}) => {
-	const logger = createLogger('CompanyCard', company.companyID);
+const CompanyCard = ({company}: {company: ICompanyWithId}) => {
+	const logger = createLogger('CompanyCard', company.id);
 	const {
 		trackedCompanies,
 		trackCompany,
@@ -29,7 +29,9 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	} = useCompanies();
 
 	const trackedCompany = Array.isArray(trackedCompanies)
-		? trackedCompanies.find(tracked => tracked.companyID === company.companyID)
+		? trackedCompanies.find(
+				(tracked: TrackedCompany) => tracked.id === company.id,
+		  )
 		: undefined;
 
 	const isActuallyTracked = !!trackedCompany;
@@ -53,14 +55,14 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 
 		try {
 			if (optimisticIsTracked) {
-				await untrackCompany(company.companyID);
+				await untrackCompany(company.id);
 			} else {
-				await trackCompany(company.companyID, optimisticRanking);
+				await trackCompany(company.id, optimisticRanking);
 			}
 		} catch (error) {
 			logger.error('Failed to update company tracking status', {
 				error,
-				companyId: company.companyID,
+				companyId: company.id,
 			});
 			setOptimisticIsTracked(optimisticIsTracked); // Revert on error
 		} finally {
@@ -75,11 +77,11 @@ const CompanyCard = ({company}: {company: ICompany}) => {
 	const handleRankingSave = async () => {
 		setIsRankingLoading(true);
 		try {
-			await updateRanking(company.companyID, optimisticRanking);
+			await updateRanking(company.id, optimisticRanking);
 		} catch (error) {
 			logger.error('Failed to update company ranking', {
 				error,
-				companyId: company.companyID,
+				companyId: company.id,
 				newRanking: optimisticRanking,
 			});
 			setOptimisticRanking(companyRanking); // Revert on error
@@ -382,12 +384,14 @@ export default function CompaniesPage() {
 	}, [isLoading, trackedCompanies, filters.showTrackedOnly]);
 
 	const getCompanyRanking = (companyId: string): number => {
-		const tracked = trackedCompanies.find(t => t.companyID === companyId);
+		const tracked = trackedCompanies.find(
+			(t: TrackedCompany) => t.id === companyId,
+		);
 		return tracked?.userPreference?.rank ?? 0;
 	};
 
-	const filteredCompanies = (allCompanies ?? ([] as ICompany[]))
-		.filter(company => {
+	const filteredCompanies = (allCompanies ?? ([] as ICompanyWithId[]))
+		.filter((company: ICompanyWithId) => {
 			const searchMatch = company.company
 				.toLowerCase()
 				.includes(filters.search.toLowerCase());
@@ -396,25 +400,21 @@ export default function CompaniesPage() {
 			const trackedMatch =
 				!filters.showTrackedOnly ||
 				trackedCompanies.some(
-					tracked => tracked.companyID === company.companyID,
+					(tracked: TrackedCompany) => tracked.id === company.id,
 				);
 
 			return searchMatch && workModelMatch && trackedMatch;
 		})
-		.sort((a, b) => {
+		.sort((a: ICompanyWithId, b: ICompanyWithId) => {
 			switch (filters.sort) {
 				case 'name-asc':
 					return a.company.localeCompare(b.company);
 				case 'name-desc':
 					return b.company.localeCompare(a.company);
 				case 'ranking-desc':
-					return (
-						getCompanyRanking(b.companyID) - getCompanyRanking(a.companyID)
-					);
+					return getCompanyRanking(b.id) - getCompanyRanking(a.id);
 				case 'ranking-asc':
-					return (
-						getCompanyRanking(a.companyID) - getCompanyRanking(b.companyID)
-					);
+					return getCompanyRanking(a.id) - getCompanyRanking(b.id);
 				default:
 					return 0;
 			}
@@ -488,7 +488,7 @@ export default function CompaniesPage() {
 							className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
 						>
 							{filteredCompanies.map(company => (
-								<CompanyCard key={company.companyID} company={company} />
+								<CompanyCard key={company.id} company={company} />
 							))}
 						</div>
 					)}
@@ -509,9 +509,9 @@ export default function CompaniesPage() {
 							'company' in result &&
 							typeof (result as any).company === 'object' &&
 							(result as any).company !== null &&
-							'companyID' in (result as any).company
+							'id' in (result as any).company
 						) {
-							await trackCompany((result as any).company.companyID, ranking);
+							await trackCompany((result as any).company.id, ranking);
 						}
 
 						setIsAddCompanyModalOpen(false);

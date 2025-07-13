@@ -1,24 +1,31 @@
 import {Company} from '@/models/Company';
 import {UserCompanyPreference} from '@/models/UserCompanyPreference';
 import {ICompany, WorkModel} from '@/types/company';
+import {connectDB} from '@/config/database';
+import mongoose from 'mongoose';
 
 export class CompanyService {
-	static async getCompanyById(companyID: string) {
-		return Company.findOne({companyID});
+	static async getCompanyById(id: string) {
+		await connectDB();
+		if (!mongoose.Types.ObjectId.isValid(id)) return null;
+		return Company.findById(id);
 	}
 
 	static async getAllCompanies() {
+		await connectDB();
 		return Company.find({});
 	}
 
 	static async createCompany(data: Partial<ICompany>) {
+		await connectDB();
 		const company = new Company(data);
 		await company.save();
 		return company;
 	}
 
-	static async updateCompany(companyID: string, data: Partial<ICompany>) {
-		// Remove undefined fields to avoid overwriting with undefined
+	static async updateCompany(id: string, data: Partial<ICompany>) {
+		await connectDB();
+		if (!mongoose.Types.ObjectId.isValid(id)) return null;
 		const updateData: Record<string, any> = {};
 		(Object.keys(data) as (keyof ICompany)[]).forEach(key => {
 			if (data[key] !== undefined) {
@@ -38,16 +45,18 @@ export class CompanyService {
 				}
 			}
 		});
-		const updated = await Company.findOneAndUpdate(
-			{companyID},
+		const updated = await Company.findByIdAndUpdate(
+			id,
 			{$set: updateData},
 			{new: true},
 		);
 		return updated;
 	}
 
-	static async deleteCompany(companyID: string) {
-		const company = await Company.findOneAndDelete({companyID});
+	static async deleteCompany(id: string) {
+		await connectDB();
+		if (!mongoose.Types.ObjectId.isValid(id)) return null;
+		const company = await Company.findByIdAndDelete(id);
 		if (company) {
 			// Remove all user-company-preference records for this company
 			await UserCompanyPreference.deleteMany({companyId: company._id});
