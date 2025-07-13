@@ -73,27 +73,42 @@ export async function POST(req: NextRequest): Promise<Response> {
 			);
 		}
 
-		const user = await UserService.createUser({email});
-		const passwordHash = await bcrypt.hash(password, 12);
-
-		await UserService.createCredential({
-			userId: user.userId,
-			email,
-			passwordHash,
-		});
-
-		await logger.success('[USERS][REGISTER][POST] User registered', {
-			userId: user.userId,
-			email,
-		});
-
-		return NextResponse.json({success: true, userId: user.userId});
+		try {
+			const user = await UserService.createUser({email});
+			const passwordHash = await bcrypt.hash(password, 12);
+			await UserService.createCredential({
+				userId: user.userId,
+				email,
+				passwordHash,
+			});
+			await logger.success('[USERS][REGISTER][POST] User registered', {
+				userId: user.userId,
+				email,
+			});
+			return NextResponse.json({success: true, userId: user.userId});
+		} catch (err: any) {
+			// Handle duplicate key error from MongoDB
+			if (err && err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+				await logger.info(
+					'[USERS][REGISTER][POST] Duplicate email registration attempt',
+					{email},
+				);
+				return NextResponse.json(
+					{error: 'Email already registered'},
+					{status: 409},
+				);
+			}
+			await logger.error(
+				'[USERS][REGISTER][POST] Registration server error',
+				err,
+			);
+			return NextResponse.json({error: 'Server error'}, {status: 500});
+		}
 	} catch (err) {
 		await logger.error(
 			'[USERS][REGISTER][POST] Registration server error',
 			err,
 		);
-
 		return NextResponse.json({error: 'Server error'}, {status: 500});
 	}
 }
