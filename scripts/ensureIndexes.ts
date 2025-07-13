@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { User } from '../src/models/User';
-// Import other models as needed
+import { UserCredential } from '../src/models/UserCredential';
 import { apiBaseUrl } from '../src/config/environment';
 
 const MONGODB_URI = apiBaseUrl.mongoUri;
@@ -14,8 +14,7 @@ async function ensureIndexes() {
   try {
     await mongoose.connect(MONGODB_URI);
     await User.ensureIndexes();
-    // Add other models here, e.g.:
-    // await UserCredential.ensureIndexes();
+    await UserCredential.ensureIndexes();
     console.log('Indexes ensured for all models.');
     await mongoose.disconnect();
   } catch (err) {

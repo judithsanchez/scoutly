@@ -1,3 +1,4 @@
+import { env } from '@/config';
 import mongoose, {Schema, Document} from 'mongoose';
 
 const CurrentResidenceSchema = new Schema(
