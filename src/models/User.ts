@@ -99,7 +99,7 @@ const UserSchema = new Schema<IUser>(
 	},
 	{
 		timestamps: true,
-		autoIndex: true,
+		autoIndex: false,
 	},
 );
 

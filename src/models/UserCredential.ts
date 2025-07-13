@@ -32,7 +32,7 @@ const UserCredentialSchema = new Schema<IUserCredential>(
 	},
 	{
 		timestamps: true,
-		autoIndex: true,
+		autoIndex: false,
 	},
 );
 
