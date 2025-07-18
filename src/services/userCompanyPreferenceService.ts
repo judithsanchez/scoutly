@@ -154,10 +154,23 @@ export const UserCompanyPreferenceService = {
 		const filter: any = {companyId};
 		if (data?.userId) filter.userId = data.userId;
 		if (data?.email) filter.email = data.email;
-		const updated = await UserCompanyPreference.findOneAndUpdate(filter, data, {
-			new: true,
-		});
-		return {success: true, updated};
+	   const updatedDoc = await UserCompanyPreference.findOneAndUpdate(filter, data, {
+		   new: true,
+	   });
+	   let updated = null;
+	   if (updatedDoc) {
+		   updated = {
+			   _id: updatedDoc._id.toString(),
+			   userId: updatedDoc.userId,
+			   companyId: updatedDoc.companyId.toString(),
+			   rank: updatedDoc.rank,
+			   isTracking: updatedDoc.isTracking,
+			   frequency: updatedDoc.frequency,
+			   createdAt: updatedDoc.createdAt instanceof Date ? updatedDoc.createdAt.toISOString() : String(updatedDoc.createdAt),
+			   updatedAt: updatedDoc.updatedAt instanceof Date ? updatedDoc.updatedAt.toISOString() : String(updatedDoc.updatedAt),
+		   };
+	   }
+	   return {success: true, updated};
 	},
 };
 
