@@ -147,7 +147,9 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 									min="1"
 									max="100"
 									value={optimisticRanking}
-									onChange={e => handleRankingChange(Math.max(1, parseInt(e.target.value)))}
+									onChange={e =>
+										handleRankingChange(Math.max(1, parseInt(e.target.value)))
+									}
 									className="w-full"
 								/>
 								<div className="flex justify-between mt-1 text-xs text-[var(--text-muted)]">

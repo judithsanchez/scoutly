@@ -53,6 +53,13 @@ export async function POST(request: NextRequest): Promise<Response> {
 		};
 
 		const company = await CompanyService.createCompany(companyData);
+		// Ensure the returned object has an 'id' field as string for Zod validation
+		const companyObj =
+			typeof company.toObject === 'function' ? company.toObject() : company;
+		const companyWithId = {
+			...companyObj,
+			id: (company._id || companyObj._id)?.toString(),
+		};
 		await logger.info('[COMPANIES][CREATE][POST] Company created', {
 			companyID: company.companyID,
 			user:
@@ -60,7 +67,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 					? user.email
 					: undefined,
 		});
-		return NextResponse.json(company, {status: 201});
+		return NextResponse.json(companyWithId, {status: 201});
 	} catch (error) {
 		await logger.error('[COMPANIES][CREATE][POST] Error creating company', {
 			error,
