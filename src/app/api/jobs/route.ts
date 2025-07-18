@@ -1,32 +1,62 @@
 import {corsOptionsResponse} from '@/utils/cors';
-
 export async function OPTIONS() {
 	return corsOptionsResponse('jobs');
 }
 export const dynamic = 'force-dynamic';
-
 import {NextRequest, NextResponse} from 'next/server';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
-import {endpoint} from '@/constants';
+import {endpoint} from '@/constants/apiEndpoints';
 import {JobSearchRequestSchema} from '@/schemas/jobSearchSchemas';
 import {logger} from '@/utils/logger';
+import {requireAuth} from '@/utils/requireAuth';
+import {proxyToBackend} from '@/utils/proxyToBackend';
 
 let JobService: any;
 try {
 	JobService = require('@/services/jobService').JobService;
 } catch {}
-
 export async function POST(request: NextRequest) {
+	await logger.debug('[JOBS][POST] Incoming headers', {
+		headers: Object.fromEntries(request.headers.entries()),
+	});
+
+	// Proxy to backend if on Vercel/prod
+	if (deployment.isVercel && env.isProd) {
+		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.jobs.search}`;
+		return proxyToBackend({
+			request,
+			backendUrl: apiUrlFull,
+			methodOverride: 'POST',
+			logPrefix: '[JOBS][POST][PROXY]',
+		});
+	}
+
 	await logger.debug(`POST ${endpoint.jobs.search} called`, {
 		env: {...env},
 		deployment: {...deployment},
+		headers: Object.fromEntries(request.headers.entries()),
 	});
 
+	// Require authentication
+	const {user, response} = await requireAuth(request);
+	if (!user) {
+		await logger.warn('[JOBS][POST] Unauthorized access attempt', {
+			ip: request.headers.get('x-forwarded-for') || request.headers.get('host'),
+			headers: Object.fromEntries(request.headers.entries()),
+		});
+		return response as Response;
+	}
+
+	// Validate request body
 	const reqBody = await request.json();
 	const parseResult = JobSearchRequestSchema.safeParse(reqBody);
 	if (!parseResult.success) {
 		await logger.warn('[JOBS][POST] Invalid job search payload', {
 			issues: parseResult.error.issues,
+			user:
+				typeof user === 'object' && user !== null && 'email' in user
+					? (user as any).email
+					: undefined,
 		});
 		return NextResponse.json(
 			{error: 'Invalid job search payload', details: parseResult.error.issues},
@@ -34,6 +64,7 @@ export async function POST(request: NextRequest) {
 		);
 	}
 
+	// Local dev or Pi: use JobService
 	if (env.isDev || (env.isProd && deployment.isPi)) {
 		if (!JobService) {
 			await logger.error('JobService not implemented');
@@ -57,48 +88,16 @@ export async function POST(request: NextRequest) {
 		}
 	}
 
-	if (env.isProd && deployment.isVercel) {
-		await logger.info(
-			'Environment: Production on Vercel - proxying to backend API',
-		);
-		const apiUrl = apiBaseUrl.prod;
-		if (!apiUrl) {
-			await logger.error('Backend API URL not configured');
-			return NextResponse.json(
-				{error: 'Backend API URL not configured'},
-				{status: 500},
-			);
-		}
-		try {
-			await logger.debug('Proxying job search to backend API', {
-				url: `${apiUrl}${endpoint.jobs.search}`,
-			});
-			const response = await fetch(`${apiUrl}${endpoint.jobs.search}`, {
-				method: 'POST',
-				headers: {'Content-Type': 'application/json'},
-				body: JSON.stringify(reqBody),
-			});
-			const data = await response.json();
-			if (!response.ok) {
-				await logger.error('Failed to search jobs via backend API', {
-					status: response.status,
-				});
-				return NextResponse.json(
-					{error: data.error || 'Failed to search jobs via backend API'},
-					{status: response.status},
-				);
-			}
-			await logger.info('Job search completed via backend API');
-			return NextResponse.json(data);
-		} catch (error) {
-			await logger.error('Error connecting to backend API', error);
-			return NextResponse.json(
-				{
-					error: 'Error connecting to backend API',
-					details: (error as Error).message,
-				},
-				{status: 500},
-			);
-		}
-	}
+	await logger.error('Job search not implemented for this environment', {
+		env,
+		deployment,
+		user:
+			typeof user === 'object' && user !== null && 'email' in user
+				? (user as any).email
+				: undefined,
+	});
+	return NextResponse.json(
+		{error: 'Job search not implemented for this environment'},
+		{status: 501},
+	);
 }

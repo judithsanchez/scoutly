@@ -217,27 +217,27 @@ export default function StartScoutButton({
 								</div>
 							) : (
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-									{availableCompanies.map(company => (
-										<div
-											key={company.companyID}
-											onClick={() => toggleCompanySelection(company.companyID)}
-											className={`border p-3 rounded-lg cursor-pointer transition-colors ${
-												selectedCompanies.includes(company.companyID)
-													? 'border-purple-500 bg-purple-500/10'
-													: 'border-slate-600 hover:border-slate-500'
-											}`}
-										>
-											<div className="flex items-center justify-between">
-												<div className="font-medium text-white">
-													{company.company}
-												</div>
-												<div
-													className={`h-5 w-5 rounded-full flex items-center justify-center border ${
-														selectedCompanies.includes(company.companyID)
-															? 'bg-purple-500 border-purple-500'
-															: 'border-slate-500'
-													}`}
-												>
+				   {availableCompanies.map(company => (
+					   <div
+						   key={company.id}
+						   onClick={() => toggleCompanySelection(company.id)}
+						   className={`border p-3 rounded-lg cursor-pointer transition-colors ${
+							   selectedCompanies.includes(company.id)
+								   ? 'border-purple-500 bg-purple-500/10'
+								   : 'border-slate-600 hover:border-slate-500'
+						   }`}
+					   >
+						   <div className="flex items-center justify-between">
+							   <div className="font-medium text-white">
+								   {company.company}
+							   </div>
+							   <div
+								   className={`h-5 w-5 rounded-full flex items-center justify-center border ${
+									   selectedCompanies.includes(company.id)
+										   ? 'bg-purple-500 border-purple-500'
+										   : 'border-slate-500'
+								   }`}
+							   >
 													{selectedCompanies.includes(company.companyID) && (
 														<svg
 															width="14"

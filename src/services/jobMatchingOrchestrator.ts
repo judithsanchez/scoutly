@@ -17,7 +17,7 @@ import {
 	updateUsageStats,
 	type UsageStats,
 } from '@/utils/rateLimiting';
-import {createBatches, processSequentialBatches} from '@/utils/batchProcessing';
+import {createBatches} from '@/utils/batchProcessing';
 import {
 	loadPromptTemplates,
 	validateTemplates,
@@ -32,11 +32,10 @@ import {
 	type JobAnalysisResult,
 	type AIProcessorConfig,
 } from '@/utils/aiProcessor';
-// Pipeline imports
 import {executeJobMatchingPipeline} from './pipeline/JobMatchingPipelineConfig';
 
 const logger = new Logger('JobMatchingOrchestrator');
-const MODEL_NAME = 'gemini-2.0-flash-lite'; // Must match modelName in rateLimits.ts
+const MODEL_NAME = 'gemini-2.0-flash-lite';
 const BATCH_SIZE = 5;
 
 export class JobMatchingOrchestrator {
@@ -64,7 +63,6 @@ export class JobMatchingOrchestrator {
 			throw new Error('GEMINI_API_KEY environment variable is required');
 		}
 
-		// Log the API key format to debug without revealing the key
 		logger.info(
 			`Initializing with GEMINI_API_KEY: ${
 				apiKey ? 'Set (length: ' + apiKey.length + ')' : 'MISSING!'

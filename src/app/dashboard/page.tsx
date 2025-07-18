@@ -3,8 +3,10 @@
 import {useAuth} from '@/contexts/AuthContext';
 import {useDashboard} from '@/hooks/useDashboard';
 import {useRouter} from 'next/navigation';
-import {useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
+import {useProfile} from '@/hooks/useProfile';
 import StartScoutButton from '@/components/StartScoutButton';
+import {useJobs} from '@/hooks/useJobs';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import SavedJobCard from '@/components/SavedJobCard';
 import ApplicationPipeline from '@/components/ApplicationPipeline';
@@ -33,6 +35,12 @@ export default function DashboardPage() {
 	const {user} = useAuth();
 	const router = useRouter();
 	const {
+		profile,
+		loading: profileLoading,
+		error: profileError,
+		refetch: refetchProfile,
+	} = useProfile();
+	const {
 		savedJobs,
 		isLoadingJobs,
 		error,
@@ -40,6 +48,7 @@ export default function DashboardPage() {
 		updateJobStatus,
 		setSavedJobs,
 	} = useDashboard();
+	const {searchJobs} = useJobs();
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
 	const [searchComplete, setSearchComplete] = useState<{
 		success: boolean;
@@ -61,6 +70,14 @@ export default function DashboardPage() {
 
 	if (!user) {
 		return <p>Redirecting to login...</p>;
+	}
+
+	if (profileLoading) {
+		return <p>Loading profile...</p>;
+	}
+
+	if (profileError) {
+		return <p>Error loading profile: {profileError}</p>;
 	}
 
 	const handleStatusChange = async (
@@ -149,27 +166,15 @@ export default function DashboardPage() {
 
 									setSearchComplete(null);
 									try {
-										// Step 1: Fetch user info (candidate info) from new endpoint
-										dashLogger?.info('Fetching user info for job search');
-										const userQueryRes = await fetch('/api/users/query', {
-											method: 'POST',
-											headers: {'Content-Type': 'application/json'},
-											body: JSON.stringify({}),
-										});
-										if (!userQueryRes.ok) {
-											const errorText = await userQueryRes.text();
-											dashLogger?.error('Failed to fetch user info', {
-												status: userQueryRes.status,
-												response: errorText,
-											});
+										// Use profile from useProfile hook
+										if (!profile) {
 											throw new Error(
-												`Failed to fetch user info. Status: ${userQueryRes.status}`,
+												'User profile not loaded. Please try again.',
 											);
 										}
-										const userData = await userQueryRes.json();
-										const candidateInfo = userData?.user || {};
-										const cvUrl =
-											candidateInfo.cvUrl || candidateInfo.cv_url || null;
+
+										const candidateInfo = profile.candidateInfo || {};
+										const cvUrl = profile.cvUrl || null;
 
 										if (!cvUrl) {
 											throw new Error(
@@ -192,30 +197,16 @@ export default function DashboardPage() {
 											companies: selectedCompanyIds,
 										});
 
-										const jobSearchUrl = '/api/jobs';
 										dashLogger?.info(
-											`API Request: POST ${jobSearchUrl}`,
+											'API Request: POST /api/jobs',
 											requestBody,
 										);
-
-										const searchResponse = await fetch(jobSearchUrl, {
-											method: 'POST',
-											headers: {
-												'Content-Type': 'application/json',
-											},
-											body: JSON.stringify(requestBody),
-										});
-
-										dashLogger?.info(
-											`API Response: ${jobSearchUrl} [${searchResponse.status}]`,
-										);
-
-										if (!searchResponse.ok) {
-											const errorData = await searchResponse.json();
-
+										let searchData;
+										try {
+											searchData = await searchJobs(requestBody);
+										} catch (err: any) {
 											dashLogger?.error('Job search request failed', {
-												status: searchResponse.status,
-												errorData,
+												error: err,
 												requestBody: {
 													...requestBody,
 													cvUrl: cvUrl ? '[PRESENT]' : '[MISSING]',
@@ -224,29 +215,11 @@ export default function DashboardPage() {
 														: '[MISSING]',
 												},
 											});
-
-											// Enhanced error message handling for better UX
 											let errorMessage =
+												err?.message ||
 												'An error occurred while searching for jobs';
-
-											if (
-												errorData.error === 'Validation failed' &&
-												errorData.details
-											) {
-												errorMessage = `Missing required information: ${errorData.details.join(
-													', ',
-												)}. Please complete your profile.`;
-											} else if (errorData.message) {
-												errorMessage = errorData.message;
-											} else if (errorData.error) {
-												errorMessage = errorData.error;
-											}
-
 											throw new Error(errorMessage);
 										}
-
-										const searchData = await searchResponse.json();
-
 										dashLogger?.info('Job search completed successfully', {
 											searchData,
 										});
