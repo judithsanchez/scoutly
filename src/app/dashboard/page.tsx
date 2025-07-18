@@ -1,6 +1,7 @@
 'use client';
 
 import {useAuth} from '@/contexts/AuthContext';
+import apiClient from '@/lib/apiClient';
 import {useRouter} from 'next/navigation';
 import {useEffect, useState, useMemo, useCallback} from 'react';
 import StartScoutButton from '@/components/StartScoutButton';
@@ -56,23 +57,15 @@ export default function DashboardPage() {
 			const url = `/api/jobs/saved`;
 			dashLogger?.info(`API Request: GET ${url}`);
 
-			const response = await fetch(url);
-			const data = await response.json();
+			const data = await apiClient<{jobs: ISavedJob[]}>(url);
 
-			dashLogger?.info(`API Response: ${url} [${response.status}]`, data);
-
-			if (!response.ok) {
-				const errorMessage = data.error || 'Failed to fetch saved jobs';
-				dashLogger?.error(`API Error: ${url}`, new Error(errorMessage));
-				throw new Error(errorMessage);
-			}
+			dashLogger?.info(`API Response: ${url}`, data);
 
 			const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
 				const statusDiff =
 					statusPriority[a.status as ApplicationStatus] -
 					statusPriority[b.status as ApplicationStatus];
 				if (statusDiff !== 0) return -statusDiff;
-
 				return b.suitabilityScore - a.suitabilityScore;
 			});
 
@@ -112,7 +105,7 @@ export default function DashboardPage() {
 	const handleStatusChange = async (
 		jobId: string,
 		status: ApplicationStatus,
-	) => {
+	): Promise<void> => {
 		try {
 			dashLogger?.info('User Action: Changed job status', {
 				jobId,
@@ -120,30 +113,16 @@ export default function DashboardPage() {
 			});
 
 			const url = `/api/jobs/saved?id=${encodeURIComponent(jobId)}`;
-			const requestBody = {
-				status,
-			};
+			const requestBody = {status};
 
 			dashLogger?.info(`API Request: PATCH ${url}`, requestBody);
 
-			const response = await fetch(url, {
+			const data = await apiClient<{job: ISavedJob}>(url, {
 				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-				},
 				body: JSON.stringify(requestBody),
 			});
 
-			dashLogger?.info(`API Response: ${url} [${response.status}]`);
-
-			if (!response.ok) {
-				const data = await response.json();
-				const errorMessage = data.error || 'Failed to update job status';
-				dashLogger?.error(`API Error: ${url}`, new Error(errorMessage));
-				throw new Error(errorMessage);
-			}
-
-			const {job: updatedJob} = await response.json();
+			const updatedJob = data.job;
 
 			dashLogger?.info('Job status updated successfully', {
 				jobId,
@@ -152,8 +131,8 @@ export default function DashboardPage() {
 			});
 
 			// Update jobs list with new status and resort
-			setSavedJobs(currentJobs => {
-				const updatedJobs = currentJobs.map(job =>
+			setSavedJobs((currentJobs: ISavedJob[]) => {
+				const updatedJobs = currentJobs.map((job: ISavedJob) =>
 					job._id === jobId ? {...job, ...updatedJob} : job,
 				);
 
@@ -175,13 +154,6 @@ export default function DashboardPage() {
 			dashLogger?.error('Error updating job status', {
 				error: errorMessage,
 				stack: err?.stack,
-				jobId,
-				status,
-			});
-
-			setError(errorMessage);
-			dashLogger?.error('Failed to update job status', {
-				error: err,
 				jobId,
 				status,
 			});
