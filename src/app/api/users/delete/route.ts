@@ -1,3 +1,9 @@
+// --- CORS OPTIONS handler ---
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('users/delete');
+}
 import {NextRequest, NextResponse} from 'next/server';
 import {UserService} from '@/services/userService';
 import {UserCredential} from '@/models/UserCredential';

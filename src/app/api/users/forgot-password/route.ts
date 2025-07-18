@@ -1,3 +1,8 @@
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('users/forgot-password');
+}
 import {NextRequest, NextResponse} from 'next/server';
 import {UserService} from '@/services/userService';
 import {logger} from '@/utils/logger';

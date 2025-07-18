@@ -1,3 +1,8 @@
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('jobs/check-stale');
+}
 export const dynamic = 'force-dynamic';
 import {NextRequest, NextResponse} from 'next/server';
 import {checkForStaleJobs} from '@/utils/staleJobChecker';

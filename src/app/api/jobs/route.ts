@@ -1,3 +1,8 @@
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('jobs');
+}
 export const dynamic = 'force-dynamic';
 
 import {NextRequest, NextResponse} from 'next/server';

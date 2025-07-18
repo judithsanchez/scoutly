@@ -1,3 +1,8 @@
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('users/register');
+}
 import {NextRequest, NextResponse} from 'next/server';
 import bcrypt from 'bcryptjs';
 import {UserService} from '@/services/userService';

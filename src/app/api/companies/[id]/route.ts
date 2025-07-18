@@ -1,3 +1,8 @@
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('companies/[id]');
+}
 import {NextRequest, NextResponse} from 'next/server';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants/apiEndpoints';

@@ -1,3 +1,8 @@
+import { corsOptionsResponse } from '@/utils/cors';
+
+export async function OPTIONS() {
+  return corsOptionsResponse('users/promote');
+}
 import {NextRequest, NextResponse} from 'next/server';
 import {AdminUserService} from '@/services/adminUserService';
 import {logger} from '@/utils/logger';

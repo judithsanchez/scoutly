@@ -6,21 +6,20 @@ import {ICompany} from '@/models/Company';
 
 const logger = new Logger('ScrapeAPI');
 
-function addCorsHeaders(response: NextResponse) {
-	response.headers.set('Access-Control-Allow-Origin', '*');
-	response.headers.set(
-		'Access-Control-Allow-Methods',
-		'GET, POST, PUT, DELETE, OPTIONS',
-	);
-	response.headers.set(
-		'Access-Control-Allow-Headers',
-		'Content-Type, Authorization',
-	);
-	return response;
-}
+import { corsOptionsResponse } from '@/utils/cors';
 
 export async function OPTIONS() {
-	return addCorsHeaders(new NextResponse(null, {status: 200}));
+  return corsOptionsResponse('scrape');
+}
+
+function addCorsHeaders(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', 'https://www.jobscoutly.tech');
+  response.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT,OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, Authorization, X-Internal-API-Secret');
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('X-CORS-Debug', 'addCorsHeaders for scrape');
+  return response;
+}
 }
 
 export async function POST(request: NextRequest) {
