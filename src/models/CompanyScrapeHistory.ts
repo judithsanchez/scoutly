@@ -8,12 +8,12 @@ export interface ScrapeLink {
 }
 
 export interface ICompanyScrapeHistory extends Document {
-	companyId: mongoose.Schema.Types.ObjectId;
-	userEmail: string;
-	lastScrapeDate: Date;
-	links: ScrapeLink[];
-	createdAt: Date;
-	updatedAt: Date;
+   companyId: mongoose.Schema.Types.ObjectId;
+   userId: string;
+   lastScrapeDate: Date;
+   links: ScrapeLink[];
+   createdAt: Date;
+   updatedAt: Date;
 }
 
 const ScrapedLinkSchema = new Schema(
@@ -33,12 +33,11 @@ const CompanyScrapeHistorySchema = new Schema<ICompanyScrapeHistory>(
 			ref: 'Company',
 			required: true,
 		},
-		userEmail: {
-			type: String,
-			required: true,
-			lowercase: true,
-			trim: true,
-		},
+   userId: {
+	   type: String,
+	   required: true,
+	   trim: true,
+   },
 		lastScrapeDate: {
 			type: Date,
 			required: true,
@@ -52,7 +51,7 @@ const CompanyScrapeHistorySchema = new Schema<ICompanyScrapeHistory>(
 );
 
 // Create a compound index to ensure uniqueness of company-user pairs
-CompanyScrapeHistorySchema.index({companyId: 1, userEmail: 1}, {unique: true});
+CompanyScrapeHistorySchema.index({companyId: 1, userId: 1}, {unique: true});
 
 // Check if the model exists before compiling it
 export const CompanyScrapeHistory =

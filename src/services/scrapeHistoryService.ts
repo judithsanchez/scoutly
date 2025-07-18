@@ -11,26 +11,26 @@ import {ExtractedLink} from '../utils/scraper';
 const logger = new Logger('ScrapeHistoryService');
 
 export class ScrapeHistoryService {
-	static async getLastScrape(
-		companyId: string,
-		userEmail: string,
-	): Promise<ICompanyScrapeHistory | null> {
+   static async getLastScrape(
+	   companyId: string,
+	   userId: string,
+   ): Promise<ICompanyScrapeHistory | null> {
 		try {
 			await connectDB();
-			return await CompanyScrapeHistory.findOne({
-				companyId: new mongoose.Types.ObjectId(companyId),
-				userEmail,
-			});
+		   return await CompanyScrapeHistory.findOne({
+			   companyId: new mongoose.Types.ObjectId(companyId),
+			   userId,
+		   });
 		} catch (error: any) {
 			throw new Error(`Error getting last scrape: ${error.message}`);
 		}
 	}
 
-	static async recordScrape(
-		companyId: string,
-		userEmail: string,
-		links: ExtractedLink[],
-	): Promise<ICompanyScrapeHistory> {
+   static async recordScrape(
+	   companyId: string,
+	   userId: string,
+	   links: ExtractedLink[],
+   ): Promise<ICompanyScrapeHistory> {
 		try {
 			await connectDB();
 			const objectId = new mongoose.Types.ObjectId(companyId);
@@ -43,31 +43,31 @@ export class ScrapeHistoryService {
 				title: link.title ? String(link.title) : undefined,
 			}));
 
-			const update = {
-				companyId: objectId,
-				userEmail,
-				lastScrapeDate: new Date(),
-				links: scrapeLinks,
-			};
+		   const update = {
+			   companyId: objectId,
+			   userId,
+			   lastScrapeDate: new Date(),
+			   links: scrapeLinks,
+		   };
 
-			return await CompanyScrapeHistory.findOneAndUpdate(
-				{companyId: objectId, userEmail},
-				update,
-				{upsert: true, new: true},
-			);
+		   return await CompanyScrapeHistory.findOneAndUpdate(
+			   {companyId: objectId, userId},
+			   update,
+			   {upsert: true, new: true},
+		   );
 		} catch (error: any) {
 			throw new Error(`Error recording scrape: ${error.message}`);
 		}
 	}
 
-	static async findNewLinks(
-		companyId: string,
-		userEmail: string,
-		currentLinks: ExtractedLink[],
-	): Promise<string[]> {
+   static async findNewLinks(
+	   companyId: string,
+	   userId: string,
+	   currentLinks: ExtractedLink[],
+   ): Promise<string[]> {
 		try {
 			await connectDB();
-			const lastScrape = await this.getLastScrape(companyId, userEmail);
+		   const lastScrape = await this.getLastScrape(companyId, userId);
 			if (!lastScrape) {
 				// All URLs are new if no previous scrape exists
 				return currentLinks.map(link => String(link.url));
