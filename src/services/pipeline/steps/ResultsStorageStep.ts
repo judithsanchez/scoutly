@@ -50,10 +50,10 @@ export class ResultsStorageStep implements PipelineStep {
 			}
 
 			// Get user for database operations
-			const user = await UserService.getUserByEmail(context.userEmail);
-			if (!user) {
-				throw new Error(`User not found: ${context.userEmail}`);
-			}
+		   const user = await UserService.getUserById(context.userId);
+		   if (!user) {
+			   throw new Error(`User not found: ${context.userId}`);
+		   }
 
 			let totalSaved = 0;
 			let totalSkipped = 0;
@@ -189,9 +189,9 @@ export class ResultsStorageStep implements PipelineStep {
 	 * Validate context before saving results
 	 */
 	validate(context: PipelineContext): void {
-		if (!context.userEmail || typeof context.userEmail !== 'string') {
-			throw new Error('User email is required for saving results');
-		}
+	   if (!context.userId || typeof context.userId !== 'string') {
+		   throw new Error('User ID is required for saving results');
+	   }
 
 		if (!context.analysisResults || context.analysisResults.size === 0) {
 			logger.info('No analysis results to validate - step will be skipped');
@@ -290,7 +290,7 @@ export class ResultsStorageStep implements PipelineStep {
 	async onError(error: Error, context: PipelineContext): Promise<void> {
 		logger.error('Results storage step failed:', {
 			error: error.message,
-			userEmail: context.userEmail,
+		   userId: context.userId,
 			analysisResultsCount: context.analysisResults
 				? Array.from(context.analysisResults.values()).reduce(
 						(sum, results) => sum + results.length,

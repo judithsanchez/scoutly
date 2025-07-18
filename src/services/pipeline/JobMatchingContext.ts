@@ -32,6 +32,7 @@ export class JobMatchingContext implements PipelineContext {
 	cvUrl: string;
 	candidateInfo: Record<string, any>;
 	userEmail: string;
+	userId: string;
 
 	// Processing state
 	cvContent?: string;
@@ -67,6 +68,7 @@ export class JobMatchingContext implements PipelineContext {
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
 		userEmail: string,
+		userId: string,
 		usageStats: UsageStats,
 		aiConfig: AIProcessorConfig,
 		modelLimits: IGeminiRateLimit,
@@ -75,6 +77,7 @@ export class JobMatchingContext implements PipelineContext {
 		this.cvUrl = cvUrl;
 		this.candidateInfo = candidateInfo;
 		this.userEmail = userEmail;
+		this.userId = userId;
 		this.usageStats = usageStats;
 		this.aiConfig = aiConfig;
 		this.modelLimits = modelLimits;

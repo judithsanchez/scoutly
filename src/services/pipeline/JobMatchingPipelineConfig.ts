@@ -64,6 +64,7 @@ export async function createJobMatchingContext(
 	cvUrl: string,
 	candidateInfo: Record<string, any>,
 	userEmail: string,
+	userId: string,
 ): Promise<JobMatchingContext> {
 	// Initialize AI model
 	const apiKey = process.env.GEMINI_API_KEY;
@@ -99,6 +100,7 @@ export async function createJobMatchingContext(
 		cvUrl,
 		candidateInfo,
 		userEmail,
+		userId,
 		usageStats,
 		aiConfig,
 		modelLimits,
@@ -115,7 +117,7 @@ export async function executeJobMatchingPipeline(
 	companies: ICompany[],
 	cvUrl: string,
 	candidateInfo: Record<string, any>,
-	userEmail: string,
+	userId: string,
 ): Promise<Map<string, JobAnalysisResult[]>> {
 	logger.info(
 		`🚀 Starting complete job matching pipeline for ${companies.length} companies`,
@@ -124,11 +126,13 @@ export async function executeJobMatchingPipeline(
 	try {
 		// Create pipeline and context
 		const pipeline = await createJobMatchingPipeline();
+		// userId is now passed instead of userEmail
 		const context = await createJobMatchingContext(
 			companies,
 			cvUrl,
 			candidateInfo,
-			userEmail,
+			'', // userEmail is deprecated, pass empty string
+			userId,
 		);
 
 		// Execute pipeline
