@@ -144,14 +144,14 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 							<div className="mt-2">
 								<input
 									type="range"
-									min="0"
+									min="1"
 									max="100"
 									value={optimisticRanking}
-									onChange={e => handleRankingChange(parseInt(e.target.value))}
+									onChange={e => handleRankingChange(Math.max(1, parseInt(e.target.value)))}
 									className="w-full"
 								/>
 								<div className="flex justify-between mt-1 text-xs text-[var(--text-muted)]">
-									<span>0</span>
+									<span>1</span>
 									<span>50</span>
 									<span>100</span>
 								</div>
