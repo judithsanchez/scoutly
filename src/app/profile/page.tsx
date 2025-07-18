@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
 import {
 	PAGE_CONTENT_CONTAINER,
@@ -21,187 +21,73 @@ import {
 } from '@/components/profile/ProfileComponents';
 
 import {Language} from '@/components/form/types';
-import apiClient from '@/lib/apiClient';
-import {getProfileCompleteness} from '@/utils/validateProfile';
+import { useProfile } from '@/hooks/useProfile';
 
 export default function ProfilePage() {
+	const {
+		profile,
+		loading,
+		error,
+		saveProfile,
+		saveMessage,
+		isSaving,
+		missingFields,
+		isProfileComplete,
+		refetch,
+	} = useProfile();
+
+	// Local state for form fields, initialized from profile
 	const [cvUrl, setCvUrl] = useState('');
 	const [logistics, setLogistics] = useState({
-		currentResidence: {
-			city: '',
-			country: '',
-			countryCode: '',
-			timezone: '',
-		},
+		currentResidence: { city: '', country: '', countryCode: '', timezone: '' },
 		willingToRelocate: false,
-		workAuthorization: [
-			{
-				region: '',
-				regionCode: '',
-				status: '',
-			},
-		],
+		workAuthorization: [{ region: '', regionCode: '', status: '' }],
 	});
-	const [languages, setLanguages] = useState<Language[]>([
-		{
-			language: '',
-			level: '',
-		},
-	]);
+	const [languages, setLanguages] = useState<Language[]>([{ language: '', level: '' }]);
 	const [preferences, setPreferences] = useState({
 		careerGoals: [''],
 		jobTypes: [''],
 		workEnvironments: [''],
 		companySizes: [''],
-		exclusions: {
-			industries: [''],
-			technologies: [''],
-			roleTypes: [''],
-		},
+		exclusions: { industries: [''], technologies: [''], roleTypes: [''] },
 	});
-	const [isSaving, setIsSaving] = useState(false);
-	const [saveMessage, setSaveMessage] = useState<string | null>(null);
-	const [missingFields, setMissingFields] = useState<string[]>([]);
-	const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
 
-	type ProfileResponse = {
-		cvUrl?: string;
-		candidateInfo?: {
-			logistics?: {
-				currentResidence?: {
-					city?: string;
-					country?: string;
-					countryCode?: string;
-					timezone?: string;
-				};
-				willingToRelocate?: boolean;
-				workAuthorization?: {
-					region: string;
-					regionCode: string;
-					status: string;
-				}[];
-			};
-			languages?: {language: string; level: string}[];
-			preferences?: {
-				careerGoals: string[];
-				jobTypes: string[];
-				workEnvironments: string[];
-				companySizes: string[];
-				exclusions: {
-					industries: string[];
-					technologies: string[];
-					roleTypes: string[];
-				};
-			};
-		};
-	};
-
-	React.useEffect(() => {
-		apiClient<ProfileResponse>('/api/users/profile')
-			.then(profile => {
-				const user = (profile as any).user || profile;
-				if (!user) return;
-				setCvUrl(user.cvUrl || '');
-				if (user.candidateInfo) {
-					const logistics = user.candidateInfo.logistics || {};
-					setLogistics({
-						currentResidence: {
-							city: logistics.currentResidence?.city ?? '',
-							country: logistics.currentResidence?.country ?? '',
-							countryCode: logistics.currentResidence?.countryCode ?? '',
-							timezone: logistics.currentResidence?.timezone ?? '',
-						},
-						willingToRelocate: logistics.willingToRelocate || false,
-						workAuthorization: logistics.workAuthorization || [
-							{region: '', regionCode: '', status: ''},
-						],
-					});
-					setLanguages(
-						user.candidateInfo.languages || [{language: '', level: ''}],
-					);
-					setPreferences(
-						user.candidateInfo.preferences || {
-							careerGoals: [''],
-							jobTypes: [''],
-							workEnvironments: [''],
-							companySizes: [''],
-							exclusions: {
-								industries: [''],
-								technologies: [''],
-								roleTypes: [''],
-							},
-						},
-					);
-				}
-				const completeness = getProfileCompleteness({
-					cvUrl: user.cvUrl,
-					candidateInfo: user.candidateInfo,
+	// Sync local state with profile data
+	useEffect(() => {
+		if (profile) {
+			setCvUrl(profile.cvUrl || '');
+			if (profile.candidateInfo) {
+				const logisticsData = profile.candidateInfo.logistics || {};
+				setLogistics({
+					currentResidence: {
+						city: logisticsData.currentResidence?.city ?? '',
+						country: logisticsData.currentResidence?.country ?? '',
+						countryCode: logisticsData.currentResidence?.countryCode ?? '',
+						timezone: logisticsData.currentResidence?.timezone ?? '',
+					},
+					willingToRelocate: logisticsData.willingToRelocate || false,
+					workAuthorization: logisticsData.workAuthorization || [
+						{ region: '', regionCode: '', status: '' },
+					],
 				});
-				setMissingFields(completeness.missing);
-				setIsProfileComplete(completeness.isComplete);
-			})
-			.catch(() => {});
-	}, []);
+				setLanguages(
+					profile.candidateInfo.languages || [{ language: '', level: '' }]
+				);
+				setPreferences(
+					profile.candidateInfo.preferences || {
+						careerGoals: [''],
+						jobTypes: [''],
+						workEnvironments: [''],
+						companySizes: [''],
+						exclusions: { industries: [''], technologies: [''], roleTypes: [''] },
+					}
+				);
+			}
+		}
+	}, [profile]);
 
 	const handleSaveProfile = async () => {
-		setIsSaving(true);
-		setSaveMessage(null);
-
-		const completeness = getProfileCompleteness({
-			cvUrl,
-			candidateInfo: {
-				logistics,
-				languages,
-				preferences,
-			},
-		});
-		setMissingFields(completeness.missing);
-		setIsProfileComplete(completeness.isComplete);
-
-		if (!completeness.isComplete) {
-			setSaveMessage(
-				'Profile incomplete. Please fill all required fields: ' +
-					completeness.missing.join(', '),
-			);
-			setIsSaving(false);
-			return;
-		}
-
-		try {
-			const res = await fetch('/api/users/profile', {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				credentials: 'include',
-				body: JSON.stringify({
-					cvUrl,
-					candidateInfo: {
-						logistics,
-						languages,
-						preferences,
-					},
-				}),
-			});
-
-			if (!res.ok) {
-				const errorData = await res.json();
-				setSaveMessage(
-					'Failed to save profile: ' + (errorData.error || 'Unknown error'),
-				);
-				setTimeout(() => setSaveMessage(null), 3000);
-				setIsSaving(false);
-				return;
-			}
-
-			setSaveMessage('Profile saved successfully!');
-			setTimeout(() => setSaveMessage(null), 3000);
-		} catch (error) {
-			setSaveMessage('Failed to save profile. Please try again.');
-			setTimeout(() => setSaveMessage(null), 3000);
-		} finally {
-			setIsSaving(false);
-		}
+		await saveProfile(cvUrl, logistics, languages, preferences);
 	};
 
 	return (
@@ -219,7 +105,7 @@ export default function ProfilePage() {
 						<div>
 							Please fill all required fields:
 							<ul className="list-disc ml-6">
-								{missingFields.map(field => (
+								{missingFields.map((field: string) => (
 									<li key={field}>{field}</li>
 								))}
 							</ul>

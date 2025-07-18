@@ -1,9 +1,9 @@
 'use client';
 
 import {useAuth} from '@/contexts/AuthContext';
-import apiClient from '@/lib/apiClient';
+import {useDashboard} from '@/hooks/useDashboard';
 import {useRouter} from 'next/navigation';
-import {useEffect, useState, useMemo, useCallback} from 'react';
+import {useEffect, useState} from 'react';
 import StartScoutButton from '@/components/StartScoutButton';
 import {CompanySelector} from '@/components/form/CompanySelector';
 import SavedJobCard from '@/components/SavedJobCard';
@@ -32,9 +32,14 @@ import {ISavedJob} from '@/types/savedJob';
 export default function DashboardPage() {
 	const {user} = useAuth();
 	const router = useRouter();
-	const [savedJobs, setSavedJobs] = useState<ISavedJob[]>([]);
-	const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const {
+		savedJobs,
+		isLoadingJobs,
+		error,
+		fetchSavedJobs,
+		updateJobStatus,
+		setSavedJobs,
+	} = useDashboard();
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
 	const [searchComplete, setSearchComplete] = useState<{
 		success: boolean;
@@ -49,54 +54,10 @@ export default function DashboardPage() {
 		}
 	}, [user, router]);
 
-	const fetchSavedJobs = useCallback(async () => {
-		try {
-			dashLogger?.info('Starting to fetch saved jobs');
-			setIsLoadingJobs(true);
-
-			const url = `/api/jobs/saved`;
-			dashLogger?.info(`API Request: GET ${url}`);
-
-			const data = await apiClient<{jobs: ISavedJob[]}>(url);
-
-			dashLogger?.info(`API Response: ${url}`, data);
-
-			const sortedJobs = data.jobs.sort((a: ISavedJob, b: ISavedJob) => {
-				const statusDiff =
-					statusPriority[a.status as ApplicationStatus] -
-					statusPriority[b.status as ApplicationStatus];
-				if (statusDiff !== 0) return -statusDiff;
-				return b.suitabilityScore - a.suitabilityScore;
-			});
-
-			setSavedJobs(sortedJobs);
-			dashLogger?.info('Successfully fetched and sorted saved jobs', {
-				jobCount: sortedJobs.length,
-			});
-		} catch (err: any) {
-			const errorMessage =
-				err.message || 'Unknown error occurred while fetching saved jobs';
-			dashLogger?.error('Error fetching saved jobs', {
-				error: errorMessage,
-				stack: err.stack,
-			});
-			dashLogger?.error('Failed to fetch saved jobs', {error: err});
-		} finally {
-			setIsLoadingJobs(false);
-			dashLogger?.debug(
-				'Finished fetching saved jobs (loading state set to false)',
-			);
-		}
-	}, [dashLogger]);
-
 	useEffect(() => {
-		dashLogger.info('Component mounted: DashboardPage');
 		fetchSavedJobs();
-
-		return () => {
-			dashLogger.info('Component unmounted: DashboardPage');
-		};
-	}, [dashLogger, fetchSavedJobs]);
+		// Optionally add logger if needed
+	}, [fetchSavedJobs]);
 
 	if (!user) {
 		return <p>Redirecting to login...</p>;
@@ -106,58 +67,7 @@ export default function DashboardPage() {
 		jobId: string,
 		status: ApplicationStatus,
 	): Promise<void> => {
-		try {
-			dashLogger?.info('User Action: Changed job status', {
-				jobId,
-				newStatus: status,
-			});
-
-			const url = `/api/jobs/saved?id=${encodeURIComponent(jobId)}`;
-			const requestBody = {status};
-
-			dashLogger?.info(`API Request: PATCH ${url}`, requestBody);
-
-			const data = await apiClient<{job: ISavedJob}>(url, {
-				method: 'PATCH',
-				body: JSON.stringify(requestBody),
-			});
-
-			const updatedJob = data.job;
-
-			dashLogger?.info('Job status updated successfully', {
-				jobId,
-				newStatus: status,
-				updatedJob,
-			});
-
-			// Update jobs list with new status and resort
-			setSavedJobs((currentJobs: ISavedJob[]) => {
-				const updatedJobs = currentJobs.map((job: ISavedJob) =>
-					job._id === jobId ? {...job, ...updatedJob} : job,
-				);
-
-				// Sort by status priority and suitability score
-				return updatedJobs.sort((a: ISavedJob, b: ISavedJob) => {
-					// First compare by status priority
-					const statusDiff =
-						statusPriority[a.status as ApplicationStatus] -
-						statusPriority[b.status as ApplicationStatus];
-					if (statusDiff !== 0) return -statusDiff;
-
-					// If status is the same, sort by suitability score (highest first)
-					return b.suitabilityScore - a.suitabilityScore;
-				});
-			});
-		} catch (err: any) {
-			const errorMessage =
-				err instanceof Error ? err.message : 'Failed to update job status';
-			dashLogger?.error('Error updating job status', {
-				error: errorMessage,
-				stack: err?.stack,
-				jobId,
-				status,
-			});
-		}
+		await updateJobStatus(jobId, status);
 	};
 
 	const handleSearchComplete = (success: boolean, totalJobs: number) => {
