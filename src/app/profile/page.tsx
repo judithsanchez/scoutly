@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
 import {
 	PAGE_CONTENT_CONTAINER,
@@ -21,7 +21,7 @@ import {
 } from '@/components/profile/ProfileComponents';
 
 import {Language} from '@/components/form/types';
-import { useProfile } from '@/hooks/useProfile';
+import {useProfile} from '@/hooks/useProfile';
 
 export default function ProfilePage() {
 	const {
@@ -39,17 +39,19 @@ export default function ProfilePage() {
 	// Local state for form fields, initialized from profile
 	const [cvUrl, setCvUrl] = useState('');
 	const [logistics, setLogistics] = useState({
-		currentResidence: { city: '', country: '', countryCode: '', timezone: '' },
+		currentResidence: {city: '', country: '', countryCode: '', timezone: ''},
 		willingToRelocate: false,
-		workAuthorization: [{ region: '', regionCode: '', status: '' }],
+		workAuthorization: [{region: '', regionCode: '', status: ''}],
 	});
-	const [languages, setLanguages] = useState<Language[]>([{ language: '', level: '' }]);
+	const [languages, setLanguages] = useState<Language[]>([
+		{language: '', level: ''},
+	]);
 	const [preferences, setPreferences] = useState({
 		careerGoals: [''],
 		jobTypes: [''],
 		workEnvironments: [''],
 		companySizes: [''],
-		exclusions: { industries: [''], technologies: [''], roleTypes: [''] },
+		exclusions: {industries: [''], technologies: [''], roleTypes: ['']},
 	});
 
 	// Sync local state with profile data
@@ -67,11 +69,11 @@ export default function ProfilePage() {
 					},
 					willingToRelocate: logisticsData.willingToRelocate || false,
 					workAuthorization: logisticsData.workAuthorization || [
-						{ region: '', regionCode: '', status: '' },
+						{region: '', regionCode: '', status: ''},
 					],
 				});
 				setLanguages(
-					profile.candidateInfo.languages || [{ language: '', level: '' }]
+					profile.candidateInfo.languages || [{language: '', level: ''}],
 				);
 				setPreferences(
 					profile.candidateInfo.preferences || {
@@ -79,8 +81,8 @@ export default function ProfilePage() {
 						jobTypes: [''],
 						workEnvironments: [''],
 						companySizes: [''],
-						exclusions: { industries: [''], technologies: [''], roleTypes: [''] },
-					}
+						exclusions: {industries: [''], technologies: [''], roleTypes: ['']},
+					},
 				);
 			}
 		}

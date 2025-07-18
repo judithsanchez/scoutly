@@ -49,8 +49,9 @@ export function useProfile() {
 		setError(null);
 		try {
 			const data = await apiClient<ProfileResponse>(endpoint.users.profile);
-			setProfile(data);
+			// Always use the user object if present, otherwise fallback to data
 			const user = (data as any).user || data;
+			setProfile(user);
 			const completeness = getProfileCompleteness({
 				cvUrl: user.cvUrl,
 				candidateInfo: user.candidateInfo,
