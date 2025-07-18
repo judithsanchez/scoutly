@@ -1,13 +1,14 @@
-import { corsOptionsResponse } from '@/utils/cors';
+import {corsOptionsResponse} from '@/utils/cors';
 
 export async function OPTIONS() {
-  return corsOptionsResponse('jobs');
+	return corsOptionsResponse('jobs');
 }
 export const dynamic = 'force-dynamic';
 
 import {NextRequest, NextResponse} from 'next/server';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants';
+import {JobSearchRequestSchema} from '@/schemas/jobSearchSchemas';
 import {logger} from '@/utils/logger';
 
 let JobService: any;
@@ -22,6 +23,16 @@ export async function POST(request: NextRequest) {
 	});
 
 	const reqBody = await request.json();
+	const parseResult = JobSearchRequestSchema.safeParse(reqBody);
+	if (!parseResult.success) {
+		await logger.warn('[JOBS][POST] Invalid job search payload', {
+			issues: parseResult.error.issues,
+		});
+		return NextResponse.json(
+			{error: 'Invalid job search payload', details: parseResult.error.issues},
+			{status: 400},
+		);
+	}
 
 	if (env.isDev || (env.isProd && deployment.isPi)) {
 		if (!JobService) {
@@ -32,7 +43,7 @@ export async function POST(request: NextRequest) {
 			);
 		}
 		try {
-			const result = await JobService.searchJobs(reqBody);
+			const result = await JobService.searchJobs(parseResult.data);
 			return NextResponse.json(result);
 		} catch (error) {
 			await logger.error('Error searching jobs', error);

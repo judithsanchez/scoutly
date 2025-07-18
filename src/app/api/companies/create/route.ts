@@ -5,7 +5,10 @@ import {CompanyService} from '@/services/companyService';
 import {logger} from '@/utils/logger';
 import {requireAuth} from '@/utils/requireAuth';
 import {proxyToBackend} from '@/utils/proxyToBackend';
-import {CompanyZodSchema} from '@/schemas/companySchemas';
+import {
+	CompanyCreateZodSchema,
+	CompanyZodSchema,
+} from '@/schemas/companySchemas';
 import {WorkModel} from '@/types/company';
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +32,9 @@ export async function POST(request: NextRequest): Promise<Response> {
 
 	try {
 		const body = await request.json();
-		const parseResult = CompanyZodSchema.safeParse(body);
+
+		// Validate input using create schema (no id required)
+		const parseResult = CompanyCreateZodSchema.safeParse(body);
 		if (!parseResult.success) {
 			await logger.warn('[COMPANIES][CREATE][POST] Invalid company payload', {
 				issues: parseResult.error.issues,
@@ -45,11 +50,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 		}
 
 		const companyData = {
-			...parseResult.data,
+			...body,
 			work_model:
-				typeof parseResult.data.work_model === 'string'
-					? WorkModel[parseResult.data.work_model as keyof typeof WorkModel]
-					: parseResult.data.work_model,
+				typeof body.work_model === 'string'
+					? WorkModel[body.work_model as keyof typeof WorkModel]
+					: body.work_model,
 		};
 
 		const company = await CompanyService.createCompany(companyData);

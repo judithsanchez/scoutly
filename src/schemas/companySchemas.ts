@@ -1,8 +1,7 @@
 import {z} from 'zod';
 
-// Zod schema for Company
-export const CompanyZodSchema = z.object({
-	id: z.string(), // <-- Ensure id is included
+// Input schema for creating a company (no id)
+export const CompanyCreateZodSchema = z.object({
 	companyID: z.string(),
 	company: z.string(),
 	description: z.string().optional(),
@@ -17,11 +16,18 @@ export const CompanyZodSchema = z.object({
 	lastScraped: z.date().optional(),
 	createdAt: z.date().optional(),
 	updatedAt: z.date().optional(),
-	// Add any other fields as needed
+	fields: z.array(z.string()).optional(),
+	office_locations: z.array(z.string()).optional(),
+	openToApplication: z.boolean().optional(),
+	selector: z.string().optional(),
 });
 
-// TypeScript type generated from Zod schema
-export type Company = z.infer<typeof CompanyZodSchema>;
+// Output schema for company (with id)
+export const CompanyZodSchema = CompanyCreateZodSchema.extend({
+	id: z.string(),
+});
 
-// Example: array schema for validation of multiple companies
+export type Company = z.infer<typeof CompanyZodSchema>;
+export type CompanyCreate = z.infer<typeof CompanyCreateZodSchema>;
+
 export const CompaniesArrayZodSchema = z.array(CompanyZodSchema);
