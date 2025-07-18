@@ -99,10 +99,11 @@ export default function ProfilePage() {
 	React.useEffect(() => {
 		apiClient<ProfileResponse>('/api/users/profile')
 			.then(profile => {
-				if (!profile) return;
-				setCvUrl(profile.cvUrl || '');
-				if (profile.candidateInfo) {
-					const logistics = profile.candidateInfo.logistics || {};
+				const user = (profile as any).user || profile;
+				if (!user) return;
+				setCvUrl(user.cvUrl || '');
+				if (user.candidateInfo) {
+					const logistics = user.candidateInfo.logistics || {};
 					setLogistics({
 						currentResidence: {
 							city: logistics.currentResidence?.city ?? '',
@@ -116,10 +117,10 @@ export default function ProfilePage() {
 						],
 					});
 					setLanguages(
-						profile.candidateInfo.languages || [{language: '', level: ''}],
+						user.candidateInfo.languages || [{language: '', level: ''}],
 					);
 					setPreferences(
-						profile.candidateInfo.preferences || {
+						user.candidateInfo.preferences || {
 							careerGoals: [''],
 							jobTypes: [''],
 							workEnvironments: [''],
@@ -133,8 +134,8 @@ export default function ProfilePage() {
 					);
 				}
 				const completeness = getProfileCompleteness({
-					cvUrl: profile.cvUrl,
-					candidateInfo: profile.candidateInfo,
+					cvUrl: user.cvUrl,
+					candidateInfo: user.candidateInfo,
 				});
 				setMissingFields(completeness.missing);
 				setIsProfileComplete(completeness.isComplete);
