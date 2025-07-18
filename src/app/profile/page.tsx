@@ -168,7 +168,31 @@ export default function ProfilePage() {
 		}
 
 		try {
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			const res = await fetch('/api/users/profile', {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				credentials: 'include',
+				body: JSON.stringify({
+					cvUrl,
+					candidateInfo: {
+						logistics,
+						languages,
+						preferences,
+					},
+				}),
+			});
+
+			if (!res.ok) {
+				const errorData = await res.json();
+				setSaveMessage(
+					'Failed to save profile: ' + (errorData.error || 'Unknown error'),
+				);
+				setTimeout(() => setSaveMessage(null), 3000);
+				setIsSaving(false);
+				return;
+			}
 
 			setSaveMessage('Profile saved successfully!');
 			setTimeout(() => setSaveMessage(null), 3000);
