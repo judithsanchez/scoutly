@@ -4,8 +4,8 @@ import {CompanyService} from './companyService';
 
 export class JobService {
 	static async searchJobs(data: Record<string, any>) {
-		const {companyIds, cvUrl, candidateInfo} = data;
-		if (!Array.isArray(companyIds) || !cvUrl || !candidateInfo) {
+		const {companyIds, cvUrl, candidateInfo, userId} = data;
+		if (!Array.isArray(companyIds) || !cvUrl || !candidateInfo || !userId) {
 			throw new Error('Missing required job search input');
 		}
 
@@ -18,12 +18,11 @@ export class JobService {
 		);
 
 		const orchestrator = new JobMatchingOrchestrator();
-		const userEmail = data.userEmail || '';
 		const resultsMap = await orchestrator.orchestrateBatchJobMatching(
 			companies,
 			cvUrl,
 			candidateInfo,
-			userEmail,
+			userId,
 		);
 
 		const results = companyIds.map((id: string) => ({

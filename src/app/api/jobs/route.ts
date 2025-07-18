@@ -74,7 +74,14 @@ export async function POST(request: NextRequest) {
 			);
 		}
 		try {
-			const result = await JobService.searchJobs(parseResult.data);
+			// Pass both userId and userEmail to the service
+			const userId = (user as any).userId || (user as any)._id || '';
+			const userEmail = (user as any).email || '';
+			const result = await JobService.searchJobs({
+				...parseResult.data,
+				userId,
+				userEmail,
+			});
 			return NextResponse.json(result);
 		} catch (error) {
 			await logger.error('Error searching jobs', error);

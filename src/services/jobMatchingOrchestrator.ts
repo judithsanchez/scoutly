@@ -292,13 +292,13 @@ export class JobMatchingOrchestrator {
 		company: ICompany,
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
-		userEmail: string,
+		userId: string,
 	): Promise<JobAnalysisResult[]> {
 		const results = await this.orchestrateBatchJobMatching(
 			[company],
 			cvUrl,
 			candidateInfo,
-			userEmail,
+			userId,
 		);
 		return results.get(company.id) || [];
 	}
@@ -318,26 +318,21 @@ export class JobMatchingOrchestrator {
 		companies: ICompany[],
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
-		userEmail: string,
+		userId: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
 		this.validateBatchJobMatchingInput(companies);
 
 		logger.info(JOB_MATCHING.LOG_MESSAGES.BATCH_START(companies.length));
 		logger.debug(JOB_MATCHING.LOG_MESSAGES.VALIDATION_SUCCESS, {
 			companiesCount: companies.length,
-			userEmail,
+			userId,
 			cvProvided: !!cvUrl,
 			candidateInfoProvided: !!candidateInfo,
 		});
 
 		logger.debug(JOB_MATCHING.LOG_MESSAGES.PROCESSING_START);
 
-		return this.processBatchCompanies(
-			companies,
-			cvUrl,
-			candidateInfo,
-			userEmail,
-		);
+		return this.processBatchCompanies(companies, cvUrl, candidateInfo, userId);
 	}
 
 	/**
@@ -378,14 +373,14 @@ export class JobMatchingOrchestrator {
 		companies: ICompany[],
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
-		userEmail: string,
+		userId: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
 		// Pipeline-only architecture
 		return this.processBatchCompaniesWithPipeline(
 			companies,
 			cvUrl,
 			candidateInfo,
-			userEmail,
+			userId,
 		);
 	}
 
@@ -396,7 +391,7 @@ export class JobMatchingOrchestrator {
 		companies: ICompany[],
 		cvUrl: string,
 		candidateInfo: Record<string, any>,
-		userEmail: string,
+		userId: string,
 	): Promise<Map<string, JobAnalysisResult[]>> {
 		logger.info('🚀 Using pipeline-based architecture for job matching');
 
@@ -406,7 +401,7 @@ export class JobMatchingOrchestrator {
 				companies,
 				cvUrl,
 				candidateInfo,
-				userEmail,
+				userId,
 			);
 
 			logger.info(
