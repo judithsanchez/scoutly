@@ -20,31 +20,47 @@ const LoginSchema = z.object({
 });
 
 export async function POST(req: NextRequest): Promise<Response> {
-	if (deployment.isVercel && env.isProd) {
-		const apiUrlFull = `${apiBaseUrl.prod}${endpoint.users.login}`;
-		return proxyToBackend({
-			request: req,
-			backendUrl: apiUrlFull,
-			methodOverride: 'POST',
-			logPrefix: '[USERS][LOGIN][PROXY]',
-		});
+	   if (deployment.isVercel && env.isProd) {
+			   // Log environment variable presence for debugging
+			   console.log('[LOGIN][PROXY][Vercel] INTERNAL_API_SECRET present:', !!process.env.INTERNAL_API_SECRET);
+			   console.log('[LOGIN][PROXY][Vercel] JWT_SECRET present:', !!process.env.JWT_SECRET);
+			   const apiUrlFull = `${apiBaseUrl.prod}${endpoint.users.login}`;
+			   // Log headers before proxying
+			   console.log('[LOGIN][PROXY][Vercel] Request headers:', Object.fromEntries(req.headers.entries()));
+			   return proxyToBackend({
+					   request: req,
+					   backendUrl: apiUrlFull,
+					   methodOverride: 'POST',
+					   logPrefix: '[USERS][LOGIN][PROXY]',
+			   });
 	}
 
-	try {
-		await logger.debug('[USERS][LOGIN][POST] Login endpoint called');
+	   try {
+			   await logger.debug('[USERS][LOGIN][POST] Login endpoint called');
+			   // Log environment variable presence for debugging
+			   console.log('[LOGIN][LOCAL] INTERNAL_API_SECRET present:', !!process.env.INTERNAL_API_SECRET);
+			   console.log('[LOGIN][LOCAL] JWT_SECRET present:', !!process.env.JWT_SECRET);
+			   // Log headers received
+			   console.log('[LOGIN][LOCAL] Request headers:', Object.fromEntries(req.headers.entries()));
 		// Check both original and lowercase header for case-insensitivity
-		const apiSecret =
-			req.headers.get(header.INTERNAL_API_SECRET) ||
-			req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
+			   const apiSecret =
+					   req.headers.get(header.INTERNAL_API_SECRET) ||
+					   req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
+			   console.log('[LOGIN][LOCAL] Received INTERNAL_API_SECRET header:', apiSecret);
 
-		if (!apiSecret || apiSecret !== secret.internalApiSecret) {
-			await logger.error('[USERS][LOGIN][POST] Unauthorized login attempt', {
-				received: apiSecret,
-				expected: secret.internalApiSecret,
-				header: header.INTERNAL_API_SECRET,
-			});
-			return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-		}
+			   if (!apiSecret || apiSecret !== secret.internalApiSecret) {
+					   await logger.error('[USERS][LOGIN][POST] Unauthorized login attempt', {
+							   received: apiSecret,
+							   expected: secret.internalApiSecret,
+							   header: header.INTERNAL_API_SECRET,
+					   });
+					   console.log('[LOGIN][LOCAL] Unauthorized login attempt', {
+							   received: apiSecret,
+							   expected: secret.internalApiSecret,
+							   header: header.INTERNAL_API_SECRET,
+					   });
+					   return NextResponse.json({error: 'Unauthorized'}, {status: 401});
+			   }
 
 		const body = await req.json();
 		const parseResult = LoginSchema.safeParse(body);

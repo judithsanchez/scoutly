@@ -1,14 +1,3 @@
-  indexer:
-    build: .
-    command: npx tsx scripts/ensureIndexes.ts
-    env_file:
-      - .env
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      scoutly-net:
-        ipv4_address: 172.20.0.12
 services:
   mongodb:
     image: mongo:latest

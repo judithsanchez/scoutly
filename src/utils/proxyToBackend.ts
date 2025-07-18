@@ -13,22 +13,34 @@ export async function proxyToBackend({
 	methodOverride?: string;
 	logPrefix?: string;
 }) {
-	const method = methodOverride || request.method;
-	const headers: Record<string, string> = {};
+	   const method = methodOverride || request.method;
+	   const headers: Record<string, string> = {};
+
+	   // Log environment variable presence for debugging
+	   console.log('[PROXY][proxyToBackend] INTERNAL_API_SECRET present:', !!process.env.INTERNAL_API_SECRET);
+	   console.log('[PROXY][proxyToBackend] JWT_SECRET present:', !!process.env.JWT_SECRET);
+
+	   // Log incoming request headers
+	   console.log('[PROXY][proxyToBackend] Incoming request headers:', Object.fromEntries(request.headers.entries()));
 
 	   request.headers.forEach((value: string, key: string) => {
 			   if (!['host', 'content-length'].includes(key.toLowerCase())) {
-					   if (key === header.INTERNAL_API_SECRET) {
-							   headers[key] = secret.internalApiSecret ?? '';
+					   // Always set the internal API secret header to the value from config
+					   if (key.toLowerCase() === header.INTERNAL_API_SECRET.toLowerCase()) {
+							   headers[header.INTERNAL_API_SECRET] = secret.internalApiSecret ?? '';
 					   } else {
 							   headers[key] = value;
 					   }
 			   }
 	   });
 
-	   if (!(header.INTERNAL_API_SECRET in headers)) {
+	   // Ensure the internal API secret header is present (case-insensitive)
+	   if (!Object.keys(headers).some(k => k.toLowerCase() === header.INTERNAL_API_SECRET.toLowerCase())) {
 			   headers[header.INTERNAL_API_SECRET] = secret.internalApiSecret ?? '';
 	   }
+
+	   // Log headers that will be sent to backend
+	   console.log('[PROXY][proxyToBackend] Outgoing headers to backend:', headers);
 
 	let body: any = undefined;
 	if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
