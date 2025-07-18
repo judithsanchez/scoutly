@@ -46,22 +46,27 @@ const nextConfig = {
 			{
 				// Apply these headers to all routes
 				source: '/api/:path*',
-				headers: [
-					{key: 'Access-Control-Allow-Credentials', value: 'true'},
-					{
-						key: 'Access-Control-Allow-Origin',
-						value: allowedOrigin,
-					},
-					{
-						key: 'Access-Control-Allow-Methods',
-						value: 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
-					},
-					{
-						key: 'Access-Control-Allow-Headers',
-						value:
-							'Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date',
-					},
-				],
+			   headers: [
+				   {key: 'Access-Control-Allow-Credentials', value: 'true'},
+				   {
+					   key: 'Access-Control-Allow-Origin',
+					   value: allowedOrigin,
+				   },
+				   {
+					   key: 'Access-Control-Allow-Methods',
+					   value: 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+				   },
+				   {
+					   key: 'Access-Control-Allow-Headers',
+					   value:
+						   'Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, Authorization, X-Internal-API-Secret',
+				   },
+				   // Debug log header for CORS troubleshooting
+				   {
+					   key: 'X-CORS-Debug',
+					   value: 'CORS headers set by next.config.mjs',
+				   },
+			   ],
 			},
 		];
 	},
