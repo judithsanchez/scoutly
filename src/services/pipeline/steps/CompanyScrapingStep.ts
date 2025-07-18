@@ -44,7 +44,7 @@ export class CompanyScrapingStep implements PipelineStep {
 			// Process companies in parallel
 			const scrapingResults = await Promise.all(
 				context.companies.map(company =>
-				   this.scrapeCompanyJobs(company, context.userId, context).catch(
+					this.scrapeCompanyJobs(company, context.userId, context).catch(
 						error => {
 							logger.error(
 								`Failed to scrape company ${company.company}:`,
@@ -86,9 +86,10 @@ export class CompanyScrapingStep implements PipelineStep {
 				} companies. ${scrapingResults
 					.map(
 						r =>
-			   `${context.companies.find(c => c.companyID === r.companyId)?.company}: ${
-								r.newLinks.length
-							} new jobs`,
+							`${
+								context.companies.find(c => c.companyID === r.companyId)
+									?.company
+							}: ${r.newLinks.length} new jobs`,
 					)
 					.join(', ')}`,
 				{totalNewLinks, companiesScraped: context.companies.length},
@@ -142,11 +143,11 @@ export class CompanyScrapingStep implements PipelineStep {
 	/**
 	 * Scrape jobs for a single company
 	 */
-   private async scrapeCompanyJobs(
-	   company: any,
-	   userId: string,
-	   context: PipelineContext,
-   ): Promise<{
+	private async scrapeCompanyJobs(
+		company: any,
+		userId: string,
+		context: PipelineContext,
+	): Promise<{
 		companyId: string;
 		allScrapedLinks: ExtractedLink[];
 		newLinks: ExtractedLink[];
@@ -190,10 +191,10 @@ export class CompanyScrapingStep implements PipelineStep {
 		}
 
 		// Get historical URLs for filtering
-	   const history = await ScrapeHistoryService.getLastScrape(
-		   company.id,
-		   userId,
-	   );
+		const history = await ScrapeHistoryService.getLastScrape(
+			company.id,
+			userId,
+		);
 		const historicalUrls = history
 			? createUrlSet(
 					history.links.map(link => ({url: link.url, text: link.text})),
@@ -220,13 +221,13 @@ export class CompanyScrapingStep implements PipelineStep {
 		}
 
 		// Record scrape history for all links
-	   if (allScrapedLinks.length > 0) {
-		   await ScrapeHistoryService.recordScrape(
-			   company.id,
-			   userId,
-			   allScrapedLinks,
-		   );
-	   }
+		if (allScrapedLinks.length > 0) {
+			await ScrapeHistoryService.recordScrape(
+				company.id,
+				userId,
+				allScrapedLinks,
+			);
+		}
 
 		return {
 			companyId: company.id,

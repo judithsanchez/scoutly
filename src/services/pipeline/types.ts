@@ -52,8 +52,8 @@ export interface PipelineContext {
 	candidateInfo: Record<string, any>;
 	userEmail: string;
 	/**
- * Unique user identifier for all DB operations (required)
- */
+	 * Unique user identifier for all DB operations (required)
+	 */
 	userId: string;
 
 	// Shared logger - all steps should use this for unified logging

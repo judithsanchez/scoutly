@@ -117,10 +117,10 @@ export class JobMatchingOrchestrator {
 		logger.debug('Candidate Profile initialized');
 	}
 
-   private async scrapeCompanyJobs(
-	   company: ICompany,
-	   userId: string,
-   ): Promise<{
+	private async scrapeCompanyJobs(
+		company: ICompany,
+		userId: string,
+	): Promise<{
 		companyId: string;
 		allScrapedLinks: ExtractedLink[];
 		newLinks: ExtractedLink[];
@@ -137,17 +137,17 @@ export class JobMatchingOrchestrator {
 			sample: allScrapedLinks.slice(0, 2),
 		});
 
-	   const newLinkUrls = await ScrapeHistoryService.findNewLinks(
-		   company.companyID,
-		   userId,
-		   allScrapedLinks,
-	   );
+		const newLinkUrls = await ScrapeHistoryService.findNewLinks(
+			company.companyID,
+			userId,
+			allScrapedLinks,
+		);
 
-	   await ScrapeHistoryService.recordScrape(
-		   company.companyID,
-		   userId,
-		   allScrapedLinks,
-	   );
+		await ScrapeHistoryService.recordScrape(
+			company.companyID,
+			userId,
+			allScrapedLinks,
+		);
 
 		const newUrlsSet = createUrlSet(newLinkUrls);
 		const newLinks = filterLinksByUrlSet(allScrapedLinks, newUrlsSet);

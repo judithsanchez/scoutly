@@ -8,12 +8,12 @@ export interface ScrapeLink {
 }
 
 export interface ICompanyScrapeHistory extends Document {
-   companyId: mongoose.Schema.Types.ObjectId;
-   userId: string;
-   lastScrapeDate: Date;
-   links: ScrapeLink[];
-   createdAt: Date;
-   updatedAt: Date;
+	companyId: mongoose.Schema.Types.ObjectId;
+	userId: string;
+	lastScrapeDate: Date;
+	links: ScrapeLink[];
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 const ScrapedLinkSchema = new Schema(
@@ -33,11 +33,11 @@ const CompanyScrapeHistorySchema = new Schema<ICompanyScrapeHistory>(
 			ref: 'Company',
 			required: true,
 		},
-   userId: {
-	   type: String,
-	   required: true,
-	   trim: true,
-   },
+		userId: {
+			type: String,
+			required: true,
+			trim: true,
+		},
 		lastScrapeDate: {
 			type: Date,
 			required: true,
