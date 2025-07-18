@@ -20,7 +20,6 @@ function addCorsHeaders(response: NextResponse) {
   response.headers.set('X-CORS-Debug', 'addCorsHeaders for scrape');
   return response;
 }
-}
 
 export async function POST(request: NextRequest) {
 	logger.info('Received scrape request');

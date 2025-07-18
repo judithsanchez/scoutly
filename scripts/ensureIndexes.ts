@@ -3,7 +3,7 @@ import { User } from '../src/models/User';
 import { UserCredential } from '../src/models/UserCredential';
 import { apiBaseUrl } from '../src/config/environment';
 
-const MONGODB_URI = apiBaseUrl.mongoUri;
+const MONGODB_URI = apiBaseUrl.mongoUri || '';
 
 if (!MONGODB_URI) {
   console.error('MONGODB_URI is not set in environment variables or apiBaseUrl.');

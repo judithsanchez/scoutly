@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
 import {endpoint} from '@/constants';
 import {logger} from '@/utils/logger';
+import { NextResponse, NextRequest } from 'next/server';
 
 let SavedJobService: any;
 try {
