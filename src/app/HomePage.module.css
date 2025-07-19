@@ -1,0 +1,27 @@
+.container {
+	overflow-x: hidden;
+	position: relative;
+}
+
+.mainContent {
+	position: relative;
+	z-index: 10;
+}
+
+.footer {
+	text-align: center;
+	padding-top: 2.5rem;
+	padding-bottom: 2.5rem;
+	border-top: 1px solid #e2e8f0;
+	margin-top: 2.5rem;
+}
+
+@media (min-width: 768px) {
+	.footer {
+		margin-top: 5rem;
+	}
+}
+
+.footerDark {
+	border-top: 1px solid #1e293b;
+}
