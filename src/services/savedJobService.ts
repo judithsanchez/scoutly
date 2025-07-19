@@ -6,7 +6,6 @@ export class SavedJobService {
 			path: 'companyId',
 			select: 'company companyID careers_url',
 		});
-		// Map companyId to company for frontend compatibility
 		return jobs.map(job => {
 			const jobObj = job.toObject();
 			jobObj.company = jobObj.companyId;

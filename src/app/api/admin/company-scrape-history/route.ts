@@ -27,8 +27,6 @@ export async function GET(req: NextRequest) {
 		return response as Response;
 	}
 
-	// Check if user is admin by userId
-	// Check if user is admin by email (using AdminUser collection)
 	let email: string | undefined;
 	if (typeof user === 'object' && user !== null && 'email' in user) {
 		email = (user as any).email;
