@@ -11,6 +11,23 @@ export function RootLayoutContent({children}: {children: React.ReactNode}) {
 
 	const isHomepage = pathname === '/';
 
+	const internalLinks = [
+		{label: 'Dashboard', href: '/dashboard'},
+		{label: 'Saved Jobs', href: '/saved-jobs'},
+		{label: 'Companies', href: '/companies'},
+		{label: 'Admin', href: '/admin'},
+	];
+
+	const homepageLinks = [
+		{label: 'How It Works', href: '#how-it-works'},
+		{label: 'About this Project', href: '#about-project'},
+		{
+			label: 'GitHub',
+			href: 'https://github.com/judithsanchez/scoutly',
+			external: true,
+		},
+	];
+
 	return (
 		<>
 			{isHomepage && (
@@ -19,7 +36,11 @@ export function RootLayoutContent({children}: {children: React.ReactNode}) {
 					onClose={() => setIsDemoModalOpen(false)}
 				/>
 			)}
-			<Navbar />
+			<Navbar
+				onDemoClick={isHomepage ? () => setIsDemoModalOpen(true) : undefined}
+				internalLinks={internalLinks}
+				homepageLinks={homepageLinks}
+			/>
 			{children}
 		</>
 	);

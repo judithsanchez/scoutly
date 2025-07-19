@@ -7,11 +7,24 @@ import Link from 'next/link';
 import {BrandLogo} from './BrandLogo';
 import './Navbar.css';
 
-interface NavbarProps {
-	onDemoClick?: () => void;
+interface NavbarLink {
+	label: string;
+	href: string;
+	external?: boolean;
+	icon?: React.ReactNode;
 }
 
-export function Navbar({onDemoClick}: NavbarProps) {
+interface NavbarProps {
+	onDemoClick?: () => void;
+	internalLinks: NavbarLink[];
+	homepageLinks: NavbarLink[];
+}
+
+export function Navbar({
+	onDemoClick,
+	internalLinks,
+	homepageLinks,
+}: NavbarProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const pathname = usePathname();
 
@@ -38,85 +51,34 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						<BrandLogo />
 					</Link>
 					<div className="navbar-links md:flex items-center gap-6 text-sm font-medium">
-						{isInternalPage ? (
-							<>
-								<Link
-									href="/dashboard"
-									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
-										isActive('/dashboard') && pathname === '/dashboard'
-											? 'navbar-link-active font-semibold'
-											: ''
-									}`}
-								>
-									Dashboard
-								</Link>
-								<Link
-									href="/saved-jobs"
-									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
-										isActive('/saved-jobs')
-											? 'navbar-link-active font-semibold'
-											: ''
-									}`}
-								>
-									Saved Jobs
-								</Link>
-								<Link
-									href="/companies"
-									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
-										isActive('/companies')
-											? 'navbar-link-active font-semibold'
-											: ''
-									}`}
-								>
-									Companies
-								</Link>
-								<Link
-									href="/admin"
-									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
-										isActive('/admin') ? 'navbar-link-active font-semibold' : ''
-									}`}
-								>
-									Admin
-								</Link>
-							</>
-						) : (
-							<>
+						{(isInternalPage ? internalLinks : homepageLinks).map(link =>
+							link.external ? (
 								<a
-									href="#how-it-works"
-									className="navbar-link hover:text-[var(--text-color)] transition-colors"
-								>
-									How It Works
-								</a>
-								<a
-									href="#about-project"
-									className="navbar-link hover:text-[var(--text-color)] transition-colors"
-								>
-									About this Project
-								</a>
-								<a
-									href="https://github.com/judithsanchez/scoutly"
+									key={link.href}
+									href={link.href}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="navbar-link hover:text-[var(--text-color)] transition-colors flex items-center gap-2"
 								>
-									GitHub
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="16"
-										height="16"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="2"
-										strokeLinecap="round"
-										strokeLinejoin="round"
-									>
-										<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-										<polyline points="15 3 21 3 21 9"></polyline>
-										<line x1="10" y1="14" x2="21" y2="3"></line>
-									</svg>
+									{link.label}
+									{link.icon}
 								</a>
-							</>
+							) : (
+								<Link
+									key={link.href}
+									href={link.href}
+									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
+										isActive(link.href) &&
+										isInternalPage &&
+										pathname === link.href
+											? 'navbar-link-active font-semibold'
+											: ''
+									}`}
+								>
+									{link.label}
+									{link.icon}
+								</Link>
+							),
 						)}
 					</div>
 					<div className="flex items-center gap-2">
@@ -182,90 +144,45 @@ export function Navbar({onDemoClick}: NavbarProps) {
 					isMobileMenuOpen ? 'open' : ''
 				}`}
 			>
-				{isInternalPage ? (
-					<>
-						<Link
-							href="/dashboard"
-							className={`mobile-menu-link ${
-								isActive('/dashboard') && pathname === '/dashboard'
-									? 'mobile-menu-link-active font-semibold'
-									: ''
-							}`}
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							Dashboard
-						</Link>
-						<Link
-							href="/saved-jobs"
-							className={`mobile-menu-link ${
-								isActive('/saved-jobs')
-									? 'mobile-menu-link-active font-semibold'
-									: ''
-							}`}
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							Saved Jobs
-						</Link>
-						<Link
-							href="/companies"
-							className={`mobile-menu-link ${
-								isActive('/companies')
-									? 'mobile-menu-link-active font-semibold'
-									: ''
-							}`}
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							Companies
-						</Link>
-						<Link
-							href="/admin"
-							className={`mobile-menu-link ${
-								isActive('/admin')
-									? 'mobile-menu-link-active font-semibold'
-									: ''
-							}`}
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							Admin
-						</Link>
-					</>
-				) : (
-					<>
+				{(isInternalPage ? internalLinks : homepageLinks).map(link =>
+					link.external ? (
 						<a
-							href="#how-it-works"
-							className="mobile-menu-link"
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							How It Works
-						</a>
-						<a
-							href="#about-project"
-							className="mobile-menu-link"
-							onClick={() => setIsMobileMenuOpen(false)}
-						>
-							About this Project
-						</a>
-						<a
-							href="https://github.com/judithsanchez/scoutly"
+							key={link.href}
+							href={link.href}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="mobile-menu-link"
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
-							GitHub
+							{link.label}
+							{link.icon}
 						</a>
-						{onDemoClick && (
-							<button
-								onClick={() => {
-									onDemoClick();
-									setIsMobileMenuOpen(false);
-								}}
-								className="demo-btn w-full mt-4"
-							>
-								Launch Demo
-							</button>
-						)}
-					</>
+					) : (
+						<Link
+							key={link.href}
+							href={link.href}
+							className={`mobile-menu-link ${
+								isActive(link.href) && isInternalPage && pathname === link.href
+									? 'mobile-menu-link-active font-semibold'
+									: ''
+							}`}
+							onClick={() => setIsMobileMenuOpen(false)}
+						>
+							{link.label}
+							{link.icon}
+						</Link>
+					),
+				)}
+				{!isInternalPage && onDemoClick && (
+					<button
+						onClick={() => {
+							onDemoClick();
+							setIsMobileMenuOpen(false);
+						}}
+						className="demo-btn w-full mt-4"
+					>
+						Launch Demo
+					</button>
 				)}
 			</div>
 		</nav>
