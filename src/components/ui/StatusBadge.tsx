@@ -2,8 +2,7 @@
 
 import {ApplicationStatus} from '@/types/savedJob';
 import React from 'react';
-
-// Import all status icons
+import styles from './StatusBadge.module.css';
 import {
 	StarIcon,
 	CheckIcon,
@@ -23,93 +22,59 @@ interface StatusBadgeProps {
 	className?: string;
 }
 
+const statusClassMap: Record<ApplicationStatus | 'unknown', string> = {
+	[ApplicationStatus.WANT_TO_APPLY]: styles['status-want-to-apply'],
+	[ApplicationStatus.PENDING_APPLICATION]: styles['status-pending'],
+	[ApplicationStatus.APPLIED]: styles['status-applied'],
+	[ApplicationStatus.INTERVIEW_SCHEDULED]: styles['status-interview'],
+	[ApplicationStatus.TECHNICAL_ASSESSMENT]: styles['status-assessment'],
+	[ApplicationStatus.OFFER_RECEIVED]: styles['status-offer'],
+	[ApplicationStatus.OFFER_ACCEPTED]: styles['status-accepted'],
+	[ApplicationStatus.OFFER_DECLINED]: styles['status-declined'],
+	[ApplicationStatus.REJECTED]: styles['status-rejected'],
+	[ApplicationStatus.STALE]: styles['status-stale'],
+	[ApplicationStatus.DISCARDED]: styles['status-discarded'],
+	unknown: styles['status-unknown'],
+};
+
+const statusIconMap: Record<ApplicationStatus | 'unknown', React.ReactNode> = {
+	[ApplicationStatus.WANT_TO_APPLY]: <StarIcon filled={true} className="" />,
+	[ApplicationStatus.PENDING_APPLICATION]: <ClockIcon className="" />,
+	[ApplicationStatus.APPLIED]: <CheckIcon filled={true} className="" />,
+	[ApplicationStatus.INTERVIEW_SCHEDULED]: <CalendarIcon className="" />,
+	[ApplicationStatus.TECHNICAL_ASSESSMENT]: <CodeIcon className="" />,
+	[ApplicationStatus.OFFER_RECEIVED]: <MailIcon className="" />,
+	[ApplicationStatus.OFFER_ACCEPTED]: <ThumbsUpIcon className="" />,
+	[ApplicationStatus.OFFER_DECLINED]: <ThumbsDownIcon className="" />,
+	[ApplicationStatus.REJECTED]: <CloseIcon className="" />,
+	[ApplicationStatus.STALE]: <ClockIcon className="" />,
+	[ApplicationStatus.DISCARDED]: <XIcon className="" />,
+	unknown: null,
+};
+
+const statusLabelMap: Record<ApplicationStatus | 'unknown', string> = {
+	[ApplicationStatus.WANT_TO_APPLY]: 'Want to Apply',
+	[ApplicationStatus.PENDING_APPLICATION]: 'Pending',
+	[ApplicationStatus.APPLIED]: 'Applied',
+	[ApplicationStatus.INTERVIEW_SCHEDULED]: 'Interview',
+	[ApplicationStatus.TECHNICAL_ASSESSMENT]: 'Assessment',
+	[ApplicationStatus.OFFER_RECEIVED]: 'Offer',
+	[ApplicationStatus.OFFER_ACCEPTED]: 'Accepted',
+	[ApplicationStatus.OFFER_DECLINED]: 'Declined',
+	[ApplicationStatus.REJECTED]: 'Rejected',
+	[ApplicationStatus.STALE]: 'Stale',
+	[ApplicationStatus.DISCARDED]: 'Discarded',
+	unknown: 'Unknown',
+};
+
 export function StatusBadge({status, className = ''}: StatusBadgeProps) {
-	// Get status-specific attributes
-	const getStatusAttributes = () => {
-		switch (status) {
-			case ApplicationStatus.WANT_TO_APPLY:
-				return {
-					color: 'bg-yellow-400/20 text-yellow-400 border-yellow-400/50',
-					icon: <StarIcon filled={true} className="w-3.5 h-3.5" />,
-					label: 'Want to Apply',
-				};
-			case ApplicationStatus.PENDING_APPLICATION:
-				return {
-					color: 'bg-orange-400/20 text-orange-400 border-orange-400/50',
-					icon: <ClockIcon className="w-3.5 h-3.5" />,
-					label: 'Pending',
-				};
-			case ApplicationStatus.APPLIED:
-				return {
-					color: 'bg-blue-400/20 text-blue-400 border-blue-400/50',
-					icon: <CheckIcon filled={true} className="w-3.5 h-3.5" />,
-					label: 'Applied',
-				};
-			case ApplicationStatus.INTERVIEW_SCHEDULED:
-				return {
-					color: 'bg-purple-400/20 text-purple-400 border-purple-400/50',
-					icon: <CalendarIcon className="w-3.5 h-3.5" />,
-					label: 'Interview',
-				};
-			case ApplicationStatus.TECHNICAL_ASSESSMENT:
-				return {
-					color: 'bg-indigo-400/20 text-indigo-400 border-indigo-400/50',
-					icon: <CodeIcon className="w-3.5 h-3.5" />,
-					label: 'Assessment',
-				};
-			case ApplicationStatus.OFFER_RECEIVED:
-				return {
-					color: 'bg-green-500/20 text-green-500 border-green-500/50',
-					icon: <MailIcon className="w-3.5 h-3.5" />,
-					label: 'Offer',
-				};
-			case ApplicationStatus.OFFER_ACCEPTED:
-				return {
-					color: 'bg-emerald-500/20 text-emerald-500 border-emerald-500/50',
-					icon: <ThumbsUpIcon className="w-3.5 h-3.5" />,
-					label: 'Accepted',
-				};
-			case ApplicationStatus.OFFER_DECLINED:
-				return {
-					color: 'bg-rose-500/20 text-rose-500 border-rose-500/50',
-					icon: <ThumbsDownIcon className="w-3.5 h-3.5" />,
-					label: 'Declined',
-				};
-			case ApplicationStatus.REJECTED:
-				return {
-					color: 'bg-red-500/20 text-red-500 border-red-500/50',
-					icon: <CloseIcon className="w-3.5 h-3.5" />,
-					label: 'Rejected',
-				};
-			case ApplicationStatus.STALE:
-				return {
-					color: 'bg-gray-400/20 text-gray-400 border-gray-400/50',
-					icon: <ClockIcon className="w-3.5 h-3.5" />,
-					label: 'Stale',
-				};
-			case ApplicationStatus.DISCARDED:
-				return {
-					color: 'bg-slate-500/20 text-slate-500 border-slate-500/50',
-					icon: <XIcon className="w-3.5 h-3.5" />,
-					label: 'Discarded',
-				};
-			default:
-				return {
-					color: 'bg-slate-400/20 text-slate-400 border-slate-400/50',
-					icon: null,
-					label: 'Unknown',
-				};
-		}
-	};
-
-	const {color, icon, label} = getStatusAttributes();
-
+	const statusKey = status in statusClassMap ? status : 'unknown';
 	return (
 		<div
-			className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${color} ${className}`}
+			className={`${styles.badge} ${statusClassMap[statusKey]} ${className}`}
 		>
-			{icon}
-			{label}
+			{statusIconMap[statusKey]}
+			{statusLabelMap[statusKey]}
 		</div>
 	);
 }

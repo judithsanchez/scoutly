@@ -1,0 +1,76 @@
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.75rem;
+	font-size: 1rem;
+	font-weight: 500;
+	transition: all 0.2s ease-in-out;
+	outline: none;
+	border: none;
+}
+
+.button-default {
+	background: linear-gradient(90deg, #6366f1 0%, #a21caf 50%, #ec4899 100%);
+	color: #fff;
+	box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+}
+
+.button-default:hover {
+	transform: scale(1.05);
+	opacity: 0.9;
+	box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.15);
+}
+
+.button-outline {
+	border: 2px solid #6366f1;
+	background: transparent;
+	color: #6366f1;
+}
+
+.button-outline:hover {
+	background: #eef2ff;
+}
+
+.button-ghost {
+	background: transparent;
+	color: #6366f1;
+}
+
+.button-ghost:hover {
+	background: #eef2ff;
+}
+
+.button-default,
+.button-outline,
+.button-ghost {
+	cursor: pointer;
+}
+
+.button:disabled,
+.button-default:disabled,
+.button-outline:disabled,
+.button-ghost:disabled {
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+.button-default-size {
+	height: 3rem;
+	padding: 0 1.5rem;
+	font-size: 1rem;
+}
+
+.button-sm {
+	height: 2.25rem;
+	border-radius: 0.5rem;
+	padding: 0 1rem;
+	font-size: 0.875rem;
+}
+
+.button-lg {
+	height: 3.5rem;
+	border-radius: 0.75rem;
+	padding: 0 2rem;
+	font-size: 1.125rem;
+}
