@@ -1,7 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+
 import CompanyScrapeHistoryPanel from '@/components/admin/CompanyScrapeHistoryPanel';
+import AdminLogsPanel from '@/components/admin/AdminLogsPanel';
 
 const CompanyAdminPanel = dynamic(
 	() => import('@/components/admin/CompanyAdminPanel'),
@@ -44,6 +46,7 @@ export default function AdminDashboard() {
 		<div className="min-h-screen bg-gray-50">
 			<main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
 				<CompanyScrapeHistoryPanel />
+				<AdminLogsPanel />
 			</main>
 		</div>
 	);
