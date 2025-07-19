@@ -1,12 +1,29 @@
 import {SavedJob} from '@/models/SavedJob';
 
 export class SavedJobService {
-	static async getSavedJobsByEmail(email: string) {
-		return SavedJob.find({email});
+	static async getSavedJobsByUserId(userId: string) {
+		const jobs = await SavedJob.find({userId}).populate({
+			path: 'companyId',
+			select: 'company companyID careers_url',
+		});
+		// Map companyId to company for frontend compatibility
+		return jobs.map(job => {
+			const jobObj = job.toObject();
+			jobObj.company = jobObj.companyId;
+			return jobObj;
+		});
 	}
 
 	static async getAllSavedJobs() {
-		return SavedJob.find({});
+		const jobs = await SavedJob.find({}).populate({
+			path: 'companyId',
+			select: 'company companyID careers_url',
+		});
+		return jobs.map(job => {
+			const jobObj = job.toObject();
+			jobObj.company = jobObj.companyId;
+			return jobObj;
+		});
 	}
 
 	static async updateSavedJobStatus(id: string, status: string) {

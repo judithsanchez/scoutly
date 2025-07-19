@@ -89,7 +89,7 @@ export default function SavedJobCard({
 					{job.company &&
 					typeof job.company === 'object' &&
 					'company' in job.company
-						? (job.company as any).company
+						? job.company.company
 						: 'Company not specified'}
 				</p>
 
@@ -169,7 +169,7 @@ export default function SavedJobCard({
 						{job.company &&
 						typeof job.company === 'object' &&
 						'company' in job.company
-							? (job.company as any).company
+							? job.company.company
 							: 'Company not specified'}
 					</p>
 					{job.location && (
