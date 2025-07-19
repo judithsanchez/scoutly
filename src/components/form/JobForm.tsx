@@ -3,7 +3,6 @@
 import React from 'react';
 import {Button} from '@/components/ui/button';
 import {DynamicField} from './DynamicField';
-import {createLogger} from '@/utils/frontendLogger';
 
 interface FormState {
 	credentials: {
@@ -25,7 +24,6 @@ const INITIAL_STATE: FormState = {
 };
 
 export function JobForm() {
-	const logger = createLogger('JobForm');
 	const [formData, setFormData] = React.useState<FormState>(INITIAL_STATE);
 
 	React.useEffect(() => {
@@ -37,7 +35,6 @@ export function JobForm() {
 		}
 	}, []);
 
-	// Listen for form data updates
 	React.useEffect(() => {
 		const handleFormUpdate = () => {
 			const saved = localStorage.getItem('jobFormData');
@@ -64,12 +61,10 @@ export function JobForm() {
 		const newData = {...formData};
 		let current: Record<string, any> = newData;
 
-		// Navigate to the parent of the target field
 		for (let i = 0; i < path.length - 1; i++) {
 			current = current[path[i]] as Record<string, any>;
 		}
 
-		// Update the field
 		const lastKey = path[path.length - 1];
 		current[lastKey] = value;
 
@@ -80,12 +75,10 @@ export function JobForm() {
 		const newData = {...formData};
 		let current: Record<string, any> = newData;
 
-		// Navigate to the parent of the target field
 		for (let i = 0; i < path.length - 1; i++) {
 			current = current[path[i]] as Record<string, any>;
 		}
 
-		// Remove the field
 		const lastKey = path[path.length - 1];
 		if (Array.isArray(current)) {
 			current.splice(parseInt(lastKey), 1);
@@ -98,7 +91,6 @@ export function JobForm() {
 
 	return (
 		<form className="space-y-6" onSubmit={e => e.preventDefault()}>
-			{/* Basic Fields */}
 			<div className="space-y-4">
 				<div>
 					<input
@@ -122,7 +114,6 @@ export function JobForm() {
 				</div>
 			</div>
 
-			{/* Dynamic Candidate Info */}
 			<div className="space-y-4">
 				<h3 className="text-lg font-medium">Candidate Information</h3>
 				<DynamicField
@@ -145,9 +136,9 @@ export function JobForm() {
 								body: JSON.stringify(formData),
 							});
 							const data = await response.json();
-							logger.logApiResponse('/api/jobs', response.status, data);
+							console.log('/api/jobs', response.status, data);
 						} catch (error) {
-							logger.logApiError('/api/jobs', error);
+							console.log('/api/jobs', error);
 						}
 					}}
 				>

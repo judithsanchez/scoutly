@@ -3,7 +3,6 @@
 import React, {useState} from 'react';
 import {useCompanies} from '@/hooks/useCompanies';
 import config from '@/config/appConfig';
-import {createLogger} from '@/utils/frontendLogger';
 
 interface StartScoutButtonProps {
 	onScoutStart?: (selectedCompanyIds: string[]) => Promise<void>;
@@ -14,12 +13,10 @@ export default function StartScoutButton({
 	onScoutStart,
 	className = '',
 }: StartScoutButtonProps) {
-	const logger = createLogger('StartScoutButton');
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Get companies and tracked companies data
 	const {
 		companies,
 		trackedCompanies,
@@ -27,11 +24,9 @@ export default function StartScoutButton({
 		isRefetching: isLoadingTrackedCompanies,
 	} = useCompanies();
 
-	// Ensure companies is typed as ICompanyWithId[]
 	const companiesWithId =
 		companies as unknown as import('@/hooks/useCompanies').ICompanyWithId[];
 
-	// Calculate companies available for scouting (not recently scraped)
 	const availableCompanies = React.useMemo(() => {
 		if (
 			!companiesWithId ||
@@ -41,31 +36,24 @@ export default function StartScoutButton({
 		)
 			return [];
 
-		// Get current timestamp
 		const now = new Date();
 
-		// Filter companies that are tracked and not recently scraped
 		return companiesWithId.filter(
 			(company: import('@/hooks/useCompanies').ICompanyWithId) => {
-				// Find if the company is tracked
 				const trackedCompany = trackedCompanies.find(
 					(tc: import('@/hooks/useCompanies').TrackedCompany) =>
 						tc.id === company.id,
 				);
 
-				// If not tracked, it's not available for scouting
 				if (!trackedCompany) return false;
 
-				// If no scrape history, it's available
 				if (!company.lastSuccessfulScrape) return true;
 
-				// Check if the company was scraped recently
 				const scrapeDate = new Date(company.lastSuccessfulScrape);
 				const daysSinceScrape = Math.floor(
 					(now.getTime() - scrapeDate.getTime()) / (1000 * 60 * 60 * 24),
 				);
 
-				// If it was scraped more than the interval days ago, it's available
 				return daysSinceScrape >= config.app.companyScrapeIntervalDays;
 			},
 		);
@@ -80,7 +68,7 @@ export default function StartScoutButton({
 			setIsModalOpen(false);
 			setSelectedCompanies([]);
 		} catch (error) {
-			logger.error('Failed to start scout', {error, selectedCompanies});
+			console.log('Failed to start scout', {error, selectedCompanies});
 		} finally {
 			setIsLoading(false);
 		}

@@ -3,8 +3,7 @@
 import {useEffect, useState, useMemo} from 'react';
 import SavedJobCard from '@/components/SavedJobCard';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
-import apiClient from '@/lib/apiClient'; // Import the new apiClient
-import {createLogger} from '@/utils/frontendLogger';
+import apiClient from '@/lib/apiClient';
 import {
 	HEADING_LG,
 	FLEX_COL,
@@ -22,8 +21,6 @@ export default function SavedJobsPage() {
 	const [jobs, setJobs] = useState<ISavedJob[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-
-	const logger = useMemo(() => createLogger('SavedJobsPage', 'anonymous'), []);
 
 	const handleStatusChange = async (
 		jobId: string,
@@ -62,14 +59,14 @@ export default function SavedJobsPage() {
 			const errorMessage =
 				err instanceof Error ? err.message : 'Failed to update job status';
 			setError(errorMessage);
-			logger.error('Failed to update job status', {error: err, jobId, status});
+			console.log('Failed to update job status', {error: err, jobId, status});
 		}
 	};
 
 	useEffect(() => {
 		async function fetchSavedJobs() {
 			try {
-				logger.info('Fetching saved jobs');
+				console.log('Fetching saved jobs');
 				const data = await apiClient<SavedJobResponse>(`/api/jobs/saved`);
 				const sortedJobs = data.jobs.sort((a, b) => {
 					const statusDiff =
@@ -86,14 +83,14 @@ export default function SavedJobsPage() {
 				const errorMessage =
 					err instanceof Error ? err.message : 'An unknown error occurred';
 				setError(errorMessage);
-				logger.error('Failed to fetch saved jobs', {error: err});
+				console.log('Failed to fetch saved jobs', {error: err});
 			} finally {
 				setIsLoading(false);
 			}
 		}
 
 		fetchSavedJobs();
-	}, [logger]);
+	}, []);
 
 	if (isLoading) {
 		return (

@@ -5,7 +5,6 @@ import {useCompanies} from '@/hooks/useCompanies';
 import type {TrackedCompany, ICompanyWithId} from '@/hooks/useCompanies';
 import {useEffect, useState} from 'react';
 import {AddCompanyModal} from '@/components/AddCompanyModal';
-import {createLogger} from '@/utils/frontendLogger';
 import {
 	PAGE_BACKGROUND_CONTAINER,
 	PAGE_BACKGROUND_GLOW,
@@ -19,7 +18,6 @@ import {
 } from '@/constants/styles';
 
 const CompanyCard = ({company}: {company: ICompanyWithId}) => {
-	const logger = createLogger('CompanyCard', company.id);
 	const {
 		trackedCompanies,
 		trackCompany,
@@ -60,11 +58,11 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 				await trackCompany(company.id, optimisticRanking);
 			}
 		} catch (error) {
-			logger.error('Failed to update company tracking status', {
+			console.log('Failed to update company tracking status', {
 				error,
 				companyId: company.id,
 			});
-			setOptimisticIsTracked(optimisticIsTracked); // Revert on error
+			setOptimisticIsTracked(optimisticIsTracked);
 		} finally {
 			setIsToggleLoading(false);
 		}
@@ -79,12 +77,12 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 		try {
 			await updateRanking(company.id, optimisticRanking);
 		} catch (error) {
-			logger.error('Failed to update company ranking', {
+			console.log('Failed to update company ranking', {
 				error,
 				companyId: company.id,
 				newRanking: optimisticRanking,
 			});
-			setOptimisticRanking(companyRanking); // Revert on error
+			setOptimisticRanking(companyRanking);
 		} finally {
 			setIsRankingLoading(false);
 			setIsEditingRanking(false);
@@ -350,7 +348,6 @@ const CompanyFilters = ({
 };
 
 export default function CompaniesPage() {
-	const logger = createLogger('CompaniesPage');
 	const {
 		companies: allCompanies,
 		trackedCompanies,
@@ -373,8 +370,6 @@ export default function CompaniesPage() {
 	});
 
 	useEffect(() => {
-		// Only auto-disable the filter when user has no tracked companies
-		// Don't auto-enable it when they track companies
 		if (
 			!isLoading &&
 			trackedCompanies &&
@@ -518,7 +513,7 @@ export default function CompaniesPage() {
 
 						setIsAddCompanyModalOpen(false);
 					} catch (error) {
-						logger.error('Failed to create company', {error});
+						console.log('Failed to create company', {error});
 						throw error;
 					}
 				}}

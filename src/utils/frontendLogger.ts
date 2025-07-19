@@ -101,7 +101,8 @@ export class FrontendLogger {
 			console.warn('Failed to send log to backend:', error);
 		}
 	}
-
+	}
+	// Removed backend logging to /api/logs as endpoint is not used
 	public debug(message: string, data?: any): void {
 		const entry = this.createLogEntry('debug', message, data);
 		this.formatConsoleOutput(entry);
