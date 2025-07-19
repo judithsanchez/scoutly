@@ -4,6 +4,8 @@ import {useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {ThemeToggle} from './ThemeToggle';
 import Link from 'next/link';
+import {BrandLogo} from './BrandLogo';
+import './Navbar.css';
 
 interface NavbarProps {
 	onDemoClick?: () => void;
@@ -13,14 +15,10 @@ export function Navbar({onDemoClick}: NavbarProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const pathname = usePathname();
 
-	// Check if we're on the homepage vs internal pages
 	const isHomepage = pathname === '/';
-
-	// Check if we're on an internal page
 	const isInternalPage =
 		!isHomepage && pathname !== '/auth/signin' && pathname !== '/auth/signup';
 
-	// For internal navigation active state
 	const isActive = (path: string) => {
 		return pathname === path || pathname?.startsWith(path + '/');
 	};
@@ -30,43 +28,23 @@ export function Navbar({onDemoClick}: NavbarProps) {
 	};
 
 	return (
-		<nav className="fixed top-0 left-0 right-0 px-4 mt-4 z-40">
-			<div className="nav-card mx-auto p-3 rounded-2xl border shadow-lg backdrop-blur-xl max-w-7xl bg-[var(--nav-bg)] border-[var(--nav-border)]">
-				<div className="flex justify-between items-center">
+		<nav className="navbar">
+			<div className="nav-card">
+				<div className="navbar-content">
 					<Link
 						href={isInternalPage ? '/dashboard' : '/'}
 						className="flex items-center gap-2"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="28"
-							height="28"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							className="text-purple-600 dark:text-purple-400"
-						>
-							<circle cx="12" cy="12" r="2"></circle>
-							<path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
-						</svg>
-						<span className="text-2xl font-bold tracking-tighter text-[var(--text-color)]">
-							Scoutly
-						</span>
+						<BrandLogo />
 					</Link>
-
-					{/* Desktop Navigation */}
-					<div className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--text-muted)]">
+					<div className="navbar-links md:flex items-center gap-6 text-sm font-medium">
 						{isInternalPage ? (
-							// Internal pages navigation
 							<>
 								<Link
 									href="/dashboard"
-									className={`hover:text-[var(--text-color)] transition-colors ${
+									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
 										isActive('/dashboard') && pathname === '/dashboard'
-											? 'text-[var(--text-color)] font-semibold'
+											? 'navbar-link-active font-semibold'
 											: ''
 									}`}
 								>
@@ -74,9 +52,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								</Link>
 								<Link
 									href="/saved-jobs"
-									className={`hover:text-[var(--text-color)] transition-colors ${
+									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
 										isActive('/saved-jobs')
-											? 'text-[var(--text-color)] font-semibold'
+											? 'navbar-link-active font-semibold'
 											: ''
 									}`}
 								>
@@ -84,9 +62,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								</Link>
 								<Link
 									href="/companies"
-									className={`hover:text-[var(--text-color)] transition-colors ${
+									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
 										isActive('/companies')
-											? 'text-[var(--text-color)] font-semibold'
+											? 'navbar-link-active font-semibold'
 											: ''
 									}`}
 								>
@@ -94,27 +72,24 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								</Link>
 								<Link
 									href="/admin"
-									className={`hover:text-[var(--text-color)] transition-colors ${
-										isActive('/admin')
-											? 'text-[var(--text-color)] font-semibold'
-											: ''
+									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
+										isActive('/admin') ? 'navbar-link-active font-semibold' : ''
 									}`}
 								>
 									Admin
 								</Link>
 							</>
 						) : (
-							// Homepage navigation
 							<>
 								<a
 									href="#how-it-works"
-									className="hover:text-[var(--text-color)] transition-colors"
+									className="navbar-link hover:text-[var(--text-color)] transition-colors"
 								>
 									How It Works
 								</a>
 								<a
 									href="#about-project"
-									className="hover:text-[var(--text-color)] transition-colors"
+									className="navbar-link hover:text-[var(--text-color)] transition-colors"
 								>
 									About this Project
 								</a>
@@ -122,7 +97,7 @@ export function Navbar({onDemoClick}: NavbarProps) {
 									href="https://github.com/judithsanchez/scoutly"
 									target="_blank"
 									rel="noopener noreferrer"
-									className="hover:text-[var(--text-color)] transition-colors flex items-center gap-1.5"
+									className="navbar-link hover:text-[var(--text-color)] transition-colors flex items-center gap-2"
 								>
 									GitHub
 									<svg
@@ -144,15 +119,12 @@ export function Navbar({onDemoClick}: NavbarProps) {
 							</>
 						)}
 					</div>
-
 					<div className="flex items-center gap-2">
 						<ThemeToggle />
-
 						{isInternalPage ? (
-							// Profile icon on internal pages
 							<Link
 								href="/profile"
-								className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:hover:bg-white/20 transition-colors"
+								className="profile-btn"
 								aria-label="User profile"
 							>
 								<svg
@@ -172,20 +144,15 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								</svg>
 							</Link>
 						) : (
-							// Demo button on homepage
 							onDemoClick && (
-								<button
-									onClick={onDemoClick}
-									className="hidden sm:block px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] transition-colors shadow-md"
-								>
+								<button onClick={onDemoClick} className="demo-btn sm:block">
 									Launch Demo
 								</button>
 							)
 						)}
-
 						<button
 							onClick={toggleMobileMenu}
-							className="md:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:hover:bg-white/20 transition-colors"
+							className="menu-btn md:hidden"
 							aria-label="Open menu"
 						>
 							<svg
@@ -208,21 +175,18 @@ export function Navbar({onDemoClick}: NavbarProps) {
 					</div>
 				</div>
 			</div>
-
-			{/* Mobile Menu (slides in from top) */}
 			<div
-				className={`mobile-menu md:hidden mt-2 bg-[var(--nav-bg)] border-[var(--nav-border)] rounded-2xl border shadow-lg backdrop-blur-xl p-4 ${
+				className={`mobile-menu md:hidden mt-2 ${
 					isMobileMenuOpen ? 'open' : ''
 				}`}
 			>
 				{isInternalPage ? (
-					// Internal pages mobile navigation
 					<>
 						<Link
 							href="/dashboard"
-							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
+							className={`mobile-menu-link ${
 								isActive('/dashboard') && pathname === '/dashboard'
-									? 'text-[var(--text-color)] font-semibold'
+									? 'mobile-menu-link-active font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
@@ -231,9 +195,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						</Link>
 						<Link
 							href="/saved-jobs"
-							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
+							className={`mobile-menu-link ${
 								isActive('/saved-jobs')
-									? 'text-[var(--text-color)] font-semibold'
+									? 'mobile-menu-link-active font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
@@ -242,9 +206,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						</Link>
 						<Link
 							href="/companies"
-							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
+							className={`mobile-menu-link ${
 								isActive('/companies')
-									? 'text-[var(--text-color)] font-semibold'
+									? 'mobile-menu-link-active font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
@@ -253,9 +217,9 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						</Link>
 						<Link
 							href="/admin"
-							className={`block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors ${
+							className={`mobile-menu-link ${
 								isActive('/admin')
-									? 'text-[var(--text-color)] font-semibold'
+									? 'mobile-menu-link-active font-semibold'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
@@ -264,18 +228,17 @@ export function Navbar({onDemoClick}: NavbarProps) {
 						</Link>
 					</>
 				) : (
-					// Homepage mobile navigation
 					<>
 						<a
 							href="#how-it-works"
-							className="block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+							className="mobile-menu-link"
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							How It Works
 						</a>
 						<a
 							href="#about-project"
-							className="block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+							className="mobile-menu-link"
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							About this Project
@@ -284,7 +247,7 @@ export function Navbar({onDemoClick}: NavbarProps) {
 							href="https://github.com/judithsanchez/scoutly"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="block py-2 text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+							className="mobile-menu-link"
 							onClick={() => setIsMobileMenuOpen(false)}
 						>
 							GitHub
@@ -295,7 +258,7 @@ export function Navbar({onDemoClick}: NavbarProps) {
 									onDemoClick();
 									setIsMobileMenuOpen(false);
 								}}
-								className="w-full mt-4 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] transition-colors shadow-md"
+								className="demo-btn w-full mt-4"
 							>
 								Launch Demo
 							</button>
