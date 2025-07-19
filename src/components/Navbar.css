@@ -256,9 +256,24 @@
 .menu-btn:hover {
 	background-color: rgba(100, 116, 139, 0.2);
 }
-
 .menu-btn {
 	display: flex;
+}
+
+.navbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.profile-icon {
+	color: var(--toggle-icon-color);
+}
+
+.menu-icon {
+	height: 2.5rem;
+	width: 2.5rem;
+	color: var(--toggle-icon-color);
 }
 
 @media (min-width: 768px) {

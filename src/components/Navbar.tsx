@@ -46,7 +46,7 @@ export function Navbar({
 				<div className="navbar-content">
 					<Link
 						href={isInternalPage ? '/dashboard' : '/'}
-						className="flex items-center gap-2"
+						className="navbar-title"
 					>
 						<BrandLogo />
 					</Link>
@@ -58,7 +58,7 @@ export function Navbar({
 									href={link.href}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="navbar-link hover:text-[var(--text-color)] transition-colors flex items-center gap-2"
+									className="navbar-link"
 								>
 									{link.label}
 									{link.icon}
@@ -67,11 +67,11 @@ export function Navbar({
 								<Link
 									key={link.href}
 									href={link.href}
-									className={`navbar-link hover:text-[var(--text-color)] transition-colors ${
+									className={`navbar-link${
 										isActive(link.href) &&
 										isInternalPage &&
 										pathname === link.href
-											? 'navbar-link-active font-semibold'
+											? ' navbar-link-active'
 											: ''
 									}`}
 								>
@@ -81,7 +81,7 @@ export function Navbar({
 							),
 						)}
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="navbar-actions">
 						<ThemeToggle />
 						{isInternalPage ? (
 							<Link
@@ -99,7 +99,7 @@ export function Navbar({
 									strokeWidth="2"
 									strokeLinecap="round"
 									strokeLinejoin="round"
-									className="text-[var(--toggle-icon-color)]"
+									className="profile-icon"
 								>
 									<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
 									<circle cx="12" cy="7" r="4"></circle>
@@ -108,7 +108,7 @@ export function Navbar({
 						) : (
 							<>
 								{onDemoClick && (
-									<button onClick={onDemoClick} className="demo-btn sm:block">
+									<button onClick={onDemoClick} className="demo-btn">
 										Launch Demo
 									</button>
 								)}
@@ -116,7 +116,7 @@ export function Navbar({
 						)}
 						<button
 							onClick={toggleMobileMenu}
-							className="menu-btn md:hidden"
+							className="menu-btn"
 							aria-label="Open menu"
 						>
 							<svg
@@ -129,7 +129,7 @@ export function Navbar({
 								strokeWidth="2"
 								strokeLinecap="round"
 								strokeLinejoin="round"
-								className="h-5 w-5 text-[var(--toggle-icon-color)]"
+								className="menu-icon"
 							>
 								<line x1="4" x2="20" y1="12" y2="12" />
 								<line x1="4" x2="20" y1="6" y2="6" />
@@ -161,9 +161,9 @@ export function Navbar({
 						<Link
 							key={link.href}
 							href={link.href}
-							className={`mobile-menu-link ${
+							className={`mobile-menu-link${
 								isActive(link.href) && isInternalPage && pathname === link.href
-									? 'mobile-menu-link-active font-semibold'
+									? ' mobile-menu-link-active'
 									: ''
 							}`}
 							onClick={() => setIsMobileMenuOpen(false)}
