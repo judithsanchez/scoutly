@@ -22,7 +22,6 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 		<html lang="en" className={`${inter.variable}`}>
 			<body>
 				<Providers>
-					{/* Wrap inside the providers to ensure theme context is available */}
 					<RootLayoutContent>{children}</RootLayoutContent>
 				</Providers>
 			</body>

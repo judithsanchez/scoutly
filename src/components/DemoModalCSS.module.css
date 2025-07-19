@@ -1,0 +1,383 @@
+.modalRoot {
+	position: fixed;
+	inset: 0;
+	z-index: 40;
+}
+
+.modalOverlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.7);
+	backdrop-filter: blur(6px);
+	z-index: 40;
+	animation: modal-fade-in 0.2s ease-out forwards;
+}
+
+.modalContainer {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+
+.modalContent {
+	position: relative;
+	width: 100%;
+	max-width: 36rem; /* max-w-lg = 32rem, but Tailwind's modal is slightly larger due to padding */
+	border-radius: 1rem;
+	box-shadow: 0 20px 48px 0 rgba(30, 41, 59, 0.12),
+		0 4px 24px 0 rgba(30, 41, 59, 0.08);
+	padding: 2rem;
+	border: 1px solid var(--modal-border);
+	background: var(--modal-bg);
+	animation: modal-scale-up 0.2s ease-out forwards;
+}
+
+@media (min-width: 1024px) {
+	.modalContent {
+		max-width: 48rem; /* max-w-3xl */
+	}
+	.resultsContent {
+		max-width: 48rem;
+	}
+}
+
+.closeBtn {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	padding: 0.5rem;
+	border-radius: 9999px;
+	transition: background-color 0.2s;
+	background: none;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.closeBtn svg {
+	color: #64748b;
+	transition: color 0.2s;
+}
+
+.closeBtn:hover {
+	background: #f1f5f9;
+}
+
+.closeBtn:hover svg {
+	color: #334155;
+}
+
+.dark .closeBtn:hover {
+	background: #334155;
+}
+
+.dark .closeBtn svg {
+	color: #e0e7ef;
+}
+
+.center {
+	text-align: center;
+}
+
+.mb6 {
+	margin-bottom: 1.5rem;
+}
+
+.iconCircle {
+	margin-left: auto;
+	margin-right: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 3rem;
+	width: 3rem;
+	border-radius: 9999px;
+	background: var(--demo-modal-icon-bg) !important;
+	margin-bottom: 1rem;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.01); /* subtle shadow for pixel-perfect match */
+}
+
+.iconCircle svg {
+	color: var(--demo-modal-icon);
+	transition: color 0.2s;
+}
+
+.title {
+	font-size: 1.5rem;
+	font-weight: 700;
+	margin-bottom: 0.5rem;
+}
+
+.textMuted {
+	color: var(--text-muted);
+}
+
+.spaceY4 > * + * {
+	margin-top: 1rem;
+}
+
+.block {
+	display: block;
+}
+
+.inputLabel {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--text-muted);
+	margin-bottom: 0.5rem;
+}
+
+.inputField {
+	display: block;
+	width: 100%;
+	border: 1px solid var(--input-border);
+	border-radius: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--input-bg);
+	color: var(--text-color);
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inputField:focus {
+	border-color: #a855f7;
+	box-shadow: 0 0 0 2px #a855f7;
+}
+
+.textXs {
+	font-size: 0.75rem;
+	color: #64748b;
+}
+
+.pt2 {
+	padding-top: 0.5rem;
+}
+
+.mt8 {
+	margin-top: 2rem;
+}
+
+.demoBtn {
+	width: 100%;
+	padding: 0.75rem 1rem;
+	color: #fff;
+	background: #a855f7;
+	border-radius: 0.75rem;
+	font-weight: 600;
+	font-size: 1rem;
+	border: none;
+	box-shadow: 0 10px 15px -3px rgba(168, 85, 247, 0.15),
+		0 4px 6px -4px rgba(168, 85, 247, 0.1);
+	transition: background 0.2s;
+	cursor: pointer;
+}
+
+.demoBtn:hover {
+	background: #9333ea;
+}
+
+.processingTitle {
+	font-size: 1.5rem;
+	font-weight: 700;
+	margin-bottom: 1rem;
+}
+
+.spinner {
+	width: 4rem;
+	height: 4rem;
+	border: 4px solid #a78bfa;
+	border-top-color: transparent;
+	border-radius: 9999px;
+	animation: spin 1s linear infinite;
+	margin: 0 auto 1.5rem auto;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.progressText {
+	color: var(--text-muted);
+	text-align: center;
+	font-weight: 500;
+}
+
+.progressBarBg {
+	width: 100%;
+	background: #e2e8f0;
+	border-radius: 9999px;
+	height: 0.625rem;
+	margin-top: 0.5rem;
+}
+
+.dark .progressBarBg {
+	background: #334155;
+}
+
+.progressBar {
+	background: #a855f7;
+	height: 0.625rem;
+	border-radius: 9999px;
+	transition: width 0.5s ease-in-out;
+}
+
+.resultsContent {
+	position: relative;
+	width: 100%;
+	max-width: 48rem;
+	border-radius: 1rem;
+	box-shadow: 0 25px 50px -12px rgba(30, 41, 59, 0.25),
+		0 4px 6px -4px rgba(30, 41, 59, 0.1);
+	padding: 2rem;
+	border: 1px solid var(--modal-border);
+	background: var(--modal-bg);
+	animation: modal-scale-up 0.2s ease-out forwards;
+}
+
+.mb4 {
+	margin-bottom: 1rem;
+}
+
+.maxH60vh {
+	max-height: 60vh;
+	overflow-y: auto;
+	padding-right: 0.5rem;
+	margin-right: -1rem;
+}
+
+.resultCard {
+	border-radius: 0.5rem;
+	padding: 1rem;
+	border: 1px solid var(--card-border);
+	border-left: 4px solid #facc15;
+	background: var(--result-card-bg);
+	margin-bottom: 1rem;
+}
+
+.flexBetween {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 0.75rem;
+}
+
+.resultTitle {
+	font-size: 1.125rem;
+	font-weight: 700;
+}
+
+.resultCompany {
+	font-size: 0.875rem;
+	color: var(--text-muted);
+}
+
+.resultScore {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: #4ade80;
+}
+
+.techStack {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.techTag {
+	background: #e2e8f0;
+	color: #0f172a;
+	padding: 0.125rem 0.5rem;
+	border-radius: 9999px;
+	font-size: 0.75rem;
+}
+
+.dark .techTag {
+	background: #334155;
+	color: #f1f5f9;
+}
+
+.analysisSection {
+	margin-bottom: 0.75rem;
+}
+
+.analysisTitle {
+	font-weight: 600;
+	margin-bottom: 0.25rem;
+}
+
+.analysisList {
+	list-style: disc inside;
+	color: var(--text-muted);
+	font-size: 0.875rem;
+}
+
+.resultsFooter {
+	text-align: center;
+	margin-top: 1.5rem;
+}
+
+.resultsFooterText {
+	font-size: 0.75rem;
+	color: #64748b;
+	margin-bottom: 1rem;
+}
+
+.closeDemoBtn {
+	padding: 0.625rem 1.25rem;
+	border-radius: 0.75rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	box-shadow: 0 2px 8px 0 rgba(30, 41, 59, 0.08);
+	transition: background-color 0.2s;
+	border: none;
+	cursor: pointer;
+}
+
+.closeDemoBtn:hover {
+	background-color: var(--btn-primary-hover-bg);
+}
+
+@keyframes modal-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes modal-scale-up {
+	from {
+		transform: scale(0.95);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+/* Utility classes for pixel-perfect spacing */
+.flex {
+	display: flex;
+}
+.itemsCenter {
+	align-items: center;
+}
+.gap2 {
+	gap: 0.5rem;
+}
+.mt1 {
+	margin-top: 0.25rem;
+}

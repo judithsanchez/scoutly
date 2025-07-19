@@ -144,11 +144,26 @@ export function Navbar({onDemoClick}: NavbarProps) {
 								</svg>
 							</Link>
 						) : (
-							onDemoClick && (
-								<button onClick={onDemoClick} className="demo-btn sm:block">
-									Launch Demo
+							<>
+								{onDemoClick && (
+									<button onClick={onDemoClick} className="demo-btn sm:block">
+										Launch Demo
+									</button>
+								)}
+								{/* New CSS Modal Button */}
+								<button
+									type="button"
+									className="demo-btn sm:block"
+									onClick={() => {
+										if (typeof window !== 'undefined') {
+											const event = new CustomEvent('openDemoModalCSS');
+											window.dispatchEvent(event);
+										}
+									}}
+								>
+									Launch Demo (CSS Modal)
 								</button>
-							)
+							</>
 						)}
 						<button
 							onClick={toggleMobileMenu}
