@@ -47,12 +47,10 @@ import {
 	HEADING_LG,
 	TEXT_SECONDARY,
 } from '@/constants/styles';
-import {HomepageBackground} from '@/components/HomepageBackground';
 
 export default function AdminDashboard() {
 	return (
 		<>
-			<HomepageBackground />
 			<main
 				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
 			>

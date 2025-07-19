@@ -1,6 +1,5 @@
 'use client';
 
-import {Navbar} from '@/components/Navbar';
 import {useCompanies} from '@/hooks/useCompanies';
 import type {TrackedCompany, ICompanyWithId} from '@/hooks/useCompanies';
 import {useEffect, useState} from 'react';
@@ -460,7 +459,6 @@ export default function CompaniesPage() {
 	return (
 		<div className={PAGE_BACKGROUND_CONTAINER}>
 			<div className={PAGE_BACKGROUND_GLOW}></div>
-			<Navbar onDemoClick={() => {}} />
 			<main
 				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
 			>

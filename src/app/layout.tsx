@@ -21,6 +21,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 	return (
 		<html lang="en" className={`${inter.variable}`}>
 			<body>
+				<div className="background-glows" aria-hidden="true"></div>
 				<Providers>
 					<RootLayoutContent>{children}</RootLayoutContent>
 				</Providers>

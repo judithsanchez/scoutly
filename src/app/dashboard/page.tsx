@@ -20,8 +20,6 @@ import {
 	TEXT_ACCENT,
 } from '@/constants/styles';
 
-import {HomepageBackground} from '@/components/HomepageBackground';
-
 export default function DashboardPage() {
 	const {user} = useAuth();
 	const router = useRouter();
@@ -91,7 +89,6 @@ export default function DashboardPage() {
 
 	return (
 		<>
-			<HomepageBackground />
 			<main
 				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
 			>

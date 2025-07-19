@@ -1,10 +1,292 @@
 :root {
-	--demo-modal-icon: #9333ea; /* purple-600 */
-	--demo-modal-icon-bg: #ede9fe; /* purple-100 */
+	font-family: 'Inter', sans-serif;
+	box-sizing: border-box;
+	font-size: 62.5%;
+	margin: 0;
+	padding: 0;
+	--bg-color: #f8fafc;
+	--text-color: #0f172a;
+	--text-muted: #475569;
+	--nav-bg: rgba(255, 255, 255, 0.7);
+	--nav-border: #e2e8f0;
+	--card-bg: white;
+	--card-border: #e2e8f0;
+	--card-bg-secondary: #f8fafc;
+	--tech-card-bg: #f1f5f9;
+	--tech-card-border: #e2e8f0;
+	--btn-primary-bg: #1e293b;
+	--btn-primary-text: white;
+	--btn-primary-hover-bg: #334155;
+	--toggle-icon-color: #475569;
+	--modal-bg: white;
+	--modal-border: #e2e8f0;
+	--input-bg: #f8fafc;
+	--input-border: #cbd5e1;
+	--result-card-bg: #f1f5f9;
+	--radius: 0.5rem;
+	--background: 248 250 252;
+	--foreground: 15 23 42;
+	--card: 255 255 255;
+	--card-foreground: 15 23 42;
+	--popover: 255 255 255;
+	--popover-foreground: 15 23 42;
+	--primary: 30 41 59;
+	--primary-foreground: 248 250 252;
+	--secondary: 241 245 249;
+	--secondary-foreground: 30 41 59;
+	--muted: 241 245 249;
+	--muted-foreground: 100 116 139;
+	--accent: 241 245 249;
+	--accent-foreground: 30 41 59;
+	--destructive: 239 68 68;
+	--destructive-foreground: 248 250 252;
+	--border: 226 232 240;
+	--input: 226 232 240;
+	--ring: 148 163 184;
 }
 
-/* Add this to your dark mode root */
 .dark {
-	--demo-modal-icon: #c4b5fd; /* purple-300 */
-	--demo-modal-icon-bg: rgba(139, 92, 246, 0.2); /* purple-500/20 */
+	--bg-color: #020617;
+	--text-color: #f1f5f9;
+	--text-muted: #94a3b8;
+	--nav-bg: rgba(15, 23, 42, 0.7);
+	--nav-border: rgba(255, 255, 255, 0.2);
+	--card-bg: rgba(2, 6, 23, 0.5);
+	--card-border: rgba(255, 255, 255, 0.1);
+	--tech-card-bg: #0f172a;
+	--tech-card-border: #1e293b;
+	--btn-primary-bg: white;
+	--btn-primary-text: #0f172a;
+	--btn-primary-hover-bg: #e2e8f0;
+	--toggle-icon-color: #cbd5e1;
+	--modal-bg: #0f172a;
+	--modal-border: #1e293b;
+	--input-bg: #0f172a;
+	--input-border: #1e293b;
+	--result-card-bg: #0f172a;
+	--background: 2 6 23;
+	--foreground: 241 245 249;
+	--card: 30 41 59;
+	--card-foreground: 241 245 249;
+	--popover: 30 41 59;
+	--popover-foreground: 241 245 249;
+	--primary: 255 255 255;
+	--primary-foreground: 15 23 42;
+	--secondary: 51 65 85;
+	--secondary-foreground: 241 245 249;
+	--muted: 51 65 85;
+	--muted-foreground: 148 163 184;
+	--accent: 51 65 85;
+	--accent-foreground: 241 245 249;
+	--destructive: 239 68 68;
+	--destructive-foreground: 241 245 249;
+	--border: 51 65 85;
+	--input: 51 65 85;
+	--ring: 148 163 184;
+}
+
+* {
+	border-color: var(--border);
+}
+
+body {
+	position: relative;
+	min-height: 100vh;
+	background-color: var(--bg-color);
+	color: var(--text-color);
+}
+
+@keyframes move-glows {
+	0% {
+		transform: translate(0, 0) rotate(0deg) scale(1.2);
+	}
+	25% {
+		transform: translate(10vw, -10vh) rotate(15deg) scale(1.3);
+	}
+	50% {
+		transform: translate(5vw, 15vh) rotate(-10deg) scale(1.2);
+	}
+	75% {
+		transform: translate(-10vw, 5vh) rotate(10deg) scale(1.4);
+	}
+	100% {
+		transform: translate(0, 0) rotate(0deg) scale(1.2);
+	}
+}
+
+.background-glows {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: var(--bg-color);
+	transition: background-color 0.3s ease;
+	z-index: -1;
+	animation: move-glows 12s linear infinite;
+	pointer-events: none;
+}
+
+.light .background-glows,
+html:not(.dark) .background-glows {
+	background-image: radial-gradient(
+			circle at 10% 20%,
+			rgba(168, 85, 247, 0.2),
+			transparent 35%
+		),
+		radial-gradient(circle at 80% 90%, rgba(236, 72, 153, 0.2), transparent 40%),
+		radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.16), transparent 35%);
+}
+
+.dark .background-glows,
+html.dark .background-glows {
+	background-image: radial-gradient(
+			circle at 10% 20%,
+			rgba(168, 85, 247, 0.4),
+			transparent 28%
+		),
+		radial-gradient(circle at 80% 90%, rgba(236, 72, 153, 0.4), transparent 32%),
+		radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.3), transparent 28%);
+}
+
+.gradient-text {
+	background: linear-gradient(90deg, #a855f7, #ec4899);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes pulse-glow {
+	0%,
+	100% {
+		opacity: 0.95;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+.feature-card {
+	animation: fadeIn 0.5s ease-out forwards;
+	opacity: 0;
+}
+
+@keyframes modal-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes modal-scale-up {
+	from {
+		transform: scale(0.95);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.modal-enter {
+	animation: modal-fade-in 0.2s ease-out forwards;
+}
+
+.modal-content-enter {
+	animation: modal-scale-up 0.2s ease-out forwards;
+}
+
+.accordion-content {
+	overflow: hidden;
+	transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out;
+	max-height: 0;
+	opacity: 0;
+}
+
+.accordion-content.expanded {
+	max-height: 500px;
+	opacity: 1;
+}
+
+@keyframes mobileMenuOpen {
+	from {
+		max-height: 0;
+		opacity: 0;
+	}
+	to {
+		max-height: 500px;
+		opacity: 1;
+	}
+}
+
+@keyframes mobileMenuClose {
+	from {
+		max-height: 500px;
+		opacity: 1;
+	}
+	to {
+		max-height: 0;
+		opacity: 0;
+	}
+}
+
+.mobile-menu {
+	max-height: 0;
+	overflow: hidden;
+	opacity: 0;
+	transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+.mobile-menu.open {
+	max-height: 500px;
+	opacity: 1;
+	animation: mobileMenuOpen 0.3s ease-out forwards;
+}
+
+.card {
+	background-color: var(--card-bg);
+	border: 1px solid var(--card-border);
+	color: var(--text-color);
+}
+
+.btn-primary {
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+}
+
+.btn-primary:hover {
+	background-color: var(--btn-primary-hover-bg);
+}
+
+.input {
+	background-color: var(--input-bg);
+	border: 1px solid var(--input-border);
+	color: var(--text-color);
+}
+
+.modal {
+	background-color: var(--modal-bg);
+	border: 1px solid var(--modal-border);
+	color: var(--text-color);
+}
+
+.text-muted {
+	color: var(--text-muted);
 }

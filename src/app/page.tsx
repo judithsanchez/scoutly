@@ -3,7 +3,6 @@
 import {AboutProjectSection} from '@/components/AboutProjectSection';
 import {HeroSection} from '@/components/HeroSection';
 import {HowItWorksSection} from '@/components/HowItWorksSection';
-import {Navbar} from '@/components/Navbar';
 import {DemoModal} from '@/components/DemoModal';
 import {
 	PAGE_BACKGROUND_CONTAINER,
@@ -26,7 +25,6 @@ export default function Home() {
 	return (
 		<div className={`${PAGE_BACKGROUND_CONTAINER} ${styles.container}`}>
 			<div className={PAGE_BACKGROUND_GLOW}></div>
-			<Navbar onDemoClick={() => setIsDemoOpen(true)} />
 			<DemoModal isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
 			<main className={styles.mainContent}>
 				<HeroSection onDemoClick={() => setIsDemoOpen(true)} />
