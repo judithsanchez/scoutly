@@ -22,6 +22,7 @@ import {
 
 import {Language} from '@/components/form/types';
 import {useProfile} from '@/hooks/useProfile';
+import styles from './ProfilePage.module.css';
 
 export default function ProfilePage() {
 	const {
@@ -36,7 +37,6 @@ export default function ProfilePage() {
 		refetch,
 	} = useProfile();
 
-	// Local state for form fields, initialized from profile
 	const [cvUrl, setCvUrl] = useState('');
 	const [logistics, setLogistics] = useState({
 		currentResidence: {city: '', country: '', countryCode: '', timezone: ''},
@@ -54,7 +54,6 @@ export default function ProfilePage() {
 		exclusions: {industries: [''], technologies: [''], roleTypes: ['']},
 	});
 
-	// Sync local state with profile data
 	useEffect(() => {
 		if (profile) {
 			setCvUrl(profile.cvUrl || '');
@@ -102,11 +101,11 @@ export default function ProfilePage() {
 				/>
 
 				{!isProfileComplete && (
-					<div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded">
+					<div className={styles.alert}>
 						<strong>Profile incomplete!</strong>
 						<div>
 							Please fill all required fields:
-							<ul className="list-disc ml-6">
+							<ul className={styles.alertList}>
 								{missingFields.map((field: string) => (
 									<li key={field}>{field}</li>
 								))}
@@ -122,7 +121,7 @@ export default function ProfilePage() {
 					saveMessage={saveMessage}
 				/>
 
-				<div className="space-y-6">
+				<div className={styles.spaceY6}>
 					<ProfileCard>
 						<FormField
 							id="cvUrl"
@@ -136,10 +135,10 @@ export default function ProfilePage() {
 					</ProfileCard>
 
 					<ProfileCard title="Logistics">
-						<div className="space-y-6">
+						<div className={styles.spaceY6}>
 							<div>
 								<SectionHeading title="Current Residence" />
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className={styles.profileGrid}>
 									<FormField
 										placeholder="City"
 										value={logistics.currentResidence.city}
@@ -276,7 +275,7 @@ export default function ProfilePage() {
 					</ProfileCard>
 
 					<ProfileCard title="Languages">
-						<div className="space-y-3">
+						<div className={styles.spaceY3}>
 							{languages.map((lang, index) => (
 								<LanguageItem
 									key={index}
@@ -313,7 +312,7 @@ export default function ProfilePage() {
 					</ProfileCard>
 
 					<ProfileCard title="Preferences">
-						<div className="space-y-6">
+						<div className={styles.spaceY6}>
 							<ArrayInput
 								label="Career Goals"
 								items={preferences.careerGoals}
@@ -347,9 +346,11 @@ export default function ProfilePage() {
 								placeholder="e.g., Start-ups"
 							/>
 
-							<div className="md:col-span-2">
+							<div>
 								<SectionHeading title="Exclusions" />
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-[var(--card-bg-secondary)] rounded-lg">
+								<div
+									className={`${styles.profileGrid3} ${styles.gap6} ${styles.p4} ${styles.bgCardSecondary} ${styles.roundedLg}`}
+								>
 									<ArrayInput
 										label="Industries to Exclude"
 										items={preferences.exclusions.industries}
@@ -397,7 +398,7 @@ export default function ProfilePage() {
 						</div>
 					</ProfileCard>
 
-					<div className="flex justify-center pt-6">
+					<div className={`${styles.flexCenter} ${styles.pt6}`}>
 						<SaveButton
 							onClick={handleSaveProfile}
 							disabled={isSaving || !isProfileComplete}
