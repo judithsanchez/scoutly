@@ -63,22 +63,22 @@ export default function AdminDashboard() {
 						operations.
 					</p>
 				</div>
-			   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-				   <div className="space-y-6">
-					   <section
-						   className={`${CARD_CONTAINER} bg-slate-800 border border-slate-700 text-slate-100 shadow-md`}
-					   >
-						   <AdminLogsPanel />
-					   </section>
-				   </div>
-				   <div className="space-y-6">
-					   <section
-						   className={`${CARD_CONTAINER} bg-slate-800 border border-slate-700 text-slate-100 shadow-md`}
-					   >
-						   <CompanyScrapeHistoryPanel />
-					   </section>
-				   </div>
-			   </div>
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+					<div className="space-y-6">
+						<section
+							className={`${CARD_CONTAINER} bg-slate-800 border border-slate-700 text-slate-100 shadow-md`}
+						>
+							<AdminLogsPanel />
+						</section>
+					</div>
+					<div className="space-y-6">
+						<section
+							className={`${CARD_CONTAINER} bg-slate-800 border border-slate-700 text-slate-100 shadow-md`}
+						>
+							<CompanyScrapeHistoryPanel />
+						</section>
+					</div>
+				</div>
 			</main>
 		</>
 	);

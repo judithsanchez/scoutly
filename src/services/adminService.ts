@@ -8,6 +8,17 @@ import {CompanyService} from '@/services/companyService';
 import {z} from 'zod';
 
 export class AdminService {
+	static async deleteLogById(logId: string, user: any) {
+		await connectDB();
+		// Accept user as object or string (jwt)
+		let email = typeof user === 'string' ? user : user?.email;
+		if (!email) throw new Error('Unauthorized: Email missing from token');
+		const isAdmin = await AdminUserService.isAdmin(email);
+		if (!isAdmin) throw new Error('Unauthorized: Admin access required');
+		const deleted = await Log.findByIdAndDelete(logId);
+		if (!deleted) throw new Error('Log not found');
+		return true;
+	}
 	/**
 	 * Checks if a user is an admin by email (using AdminUser collection)
 	 */

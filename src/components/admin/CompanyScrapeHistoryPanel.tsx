@@ -60,20 +60,38 @@ export default function CompanyScrapeHistoryPanel() {
 						<table className="min-w-full border rounded-lg bg-slate-900 text-slate-100 border-slate-700">
 							<thead className="bg-slate-800 text-slate-200">
 								<tr>
-									<th className="border border-slate-700 px-3 py-2 text-left">Company ID</th>
-									<th className="border border-slate-700 px-3 py-2 text-left">User Email</th>
-									<th className="border border-slate-700 px-3 py-2 text-left">Created At</th>
-									<th className="border border-slate-700 px-3 py-2 text-left">Last Scrape</th>
-									<th className="border border-slate-700 px-3 py-2 text-left">Links</th>
-									<th className="border border-slate-700 px-3 py-2 text-left">Status</th>
-									<th className="border border-slate-700 px-3 py-2 text-left">Error</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Company ID
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										User Email
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Created At
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Last Scrape
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Links
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Status
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Error
+									</th>
 								</tr>
 							</thead>
 							<tbody>
 								{data.records.map(r => (
 									<tr key={r._id} className="hover:bg-slate-800">
-										<td className="border border-slate-700 px-3 py-2">{r.companyId}</td>
-										<td className="border border-slate-700 px-3 py-2">{r.userEmail || ''}</td>
+										<td className="border border-slate-700 px-3 py-2">
+											{r.companyId}
+										</td>
+										<td className="border border-slate-700 px-3 py-2">
+											{r.userEmail || ''}
+										</td>
 										<td className="border border-slate-700 px-3 py-2">
 											{r.createdAt
 												? new Date(r.createdAt).toLocaleString()
@@ -98,7 +116,7 @@ export default function CompanyScrapeHistoryPanel() {
 																{link.text || link.url}
 															</a>
 															{link.context && (
-															<span className="ml-2 text-xs text-slate-400">
+																<span className="ml-2 text-xs text-slate-400">
 																	({link.context})
 																</span>
 															)}
@@ -109,7 +127,9 @@ export default function CompanyScrapeHistoryPanel() {
 												<span className="text-slate-500">No links</span>
 											)}
 										</td>
-										<td className="border border-slate-700 px-3 py-2">{r.status || ''}</td>
+										<td className="border border-slate-700 px-3 py-2">
+											{r.status || ''}
+										</td>
 										<td className="border border-slate-700 px-3 py-2 text-xs text-red-500">
 											{r.error || ''}
 										</td>

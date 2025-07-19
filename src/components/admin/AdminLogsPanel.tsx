@@ -1,6 +1,7 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import apiClient from '@/lib/apiClient';
 import {Card, CardHeader, CardTitle, CardContent} from '@/components/ui/card';
 
@@ -28,12 +29,14 @@ interface LogsResponse {
 	pageSize: number;
 	records: LogRecord[];
 }
-
 export default function AdminLogsPanel() {
 	const [data, setData] = useState<LogsResponse | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [page, setPage] = useState(1);
+	const [deleteId, setDeleteId] = useState<string | null>(null);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [deleteError, setDeleteError] = useState<string | null>(null);
 	const pageSize = 10;
 
 	useEffect(() => {
@@ -44,6 +47,28 @@ export default function AdminLogsPanel() {
 			.catch(err => setError(err?.message || 'Failed to fetch logs'))
 			.finally(() => setLoading(false));
 	}, [page]);
+
+	const handleDelete = async () => {
+		if (!deleteId) return;
+		setDeleteLoading(true);
+		setDeleteError(null);
+		try {
+			await apiClient(`/api/admin/logs/${deleteId}`, {method: 'DELETE'});
+			setDeleteId(null);
+			// Refresh logs
+			setLoading(true);
+			apiClient<LogsResponse>(
+				`/api/admin/logs?page=${page}&pageSize=${pageSize}`,
+			)
+				.then(res => setData(res))
+				.catch(err => setError(err?.message || 'Failed to fetch logs'))
+				.finally(() => setLoading(false));
+		} catch (err: any) {
+			setDeleteError(err?.message || 'Failed to delete log');
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
 
 	return (
 		<Card className="mb-8">
@@ -58,11 +83,24 @@ export default function AdminLogsPanel() {
 						<table className="min-w-full border rounded-lg bg-slate-900 text-slate-100 border-slate-700 text-sm">
 							<thead className="bg-slate-800 text-slate-200">
 								<tr>
-									<th className="border border-slate-700 px-2 py-1 text-left">Process ID</th>
-									<th className="border border-slate-700 px-2 py-1 text-left">Context</th>
-									<th className="border border-slate-700 px-2 py-1 text-left">Start Time</th>
-									<th className="border border-slate-700 px-2 py-1 text-left">End Time</th>
-									<th className="border border-slate-700 px-2 py-1 text-left">Entries</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">
+										Process ID
+									</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">
+										Context
+									</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">
+										Start Time
+									</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">
+										End Time
+									</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">
+										Entries
+									</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">
+										Delete
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -71,7 +109,9 @@ export default function AdminLogsPanel() {
 										<td className="border border-slate-700 px-2 py-1 font-mono text-xs">
 											{log.processId}
 										</td>
-										<td className="border border-slate-700 px-2 py-1">{log.context}</td>
+										<td className="border border-slate-700 px-2 py-1">
+											{log.context}
+										</td>
 										<td className="border border-slate-700 px-2 py-1">
 											{new Date(log.startTime).toLocaleString()}
 										</td>
@@ -81,7 +121,7 @@ export default function AdminLogsPanel() {
 										<td className="border border-slate-700 px-2 py-1">
 											{log.entries.length} entries
 											<details className="ml-2">
-											<summary className="cursor-pointer text-blue-400 underline hover:text-blue-300 text-xs">
+												<summary className="cursor-pointer text-blue-400 underline hover:text-blue-300 text-xs">
 													View
 												</summary>
 												<ul className="list-disc pl-4">
@@ -103,6 +143,29 @@ export default function AdminLogsPanel() {
 													)}
 												</ul>
 											</details>
+										</td>
+										<td className="border border-slate-700 px-2 py-1 text-center">
+											<button
+												title="Delete log"
+												className="text-red-500 hover:text-red-700"
+												onClick={() => setDeleteId(log._id)}
+												aria-label="Delete log"
+											>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													className="h-5 w-5 inline"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+													/>
+												</svg>
+											</button>
 										</td>
 									</tr>
 								))}
@@ -128,6 +191,18 @@ export default function AdminLogsPanel() {
 								Next
 							</button>
 						</div>
+						<ConfirmDeleteModal
+							open={!!deleteId}
+							onClose={() => {
+								setDeleteId(null);
+								setDeleteError(null);
+							}}
+							onConfirm={handleDelete}
+							loading={deleteLoading}
+						/>
+						{deleteError && (
+							<div className="text-red-600 mt-2">{deleteError}</div>
+						)}
 					</div>
 				)}
 			</CardContent>
