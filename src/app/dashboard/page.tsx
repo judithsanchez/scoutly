@@ -13,21 +13,21 @@ import ApplicationPipeline from '@/components/ApplicationPipeline';
 import {logger} from '@/utils/logger';
 import {ApplicationStatus, statusPriority} from '@/types/savedJob';
 import {
-	PAGE_BACKGROUND_CONTAINER,
-	PAGE_BACKGROUND_GLOW,
-	PAGE_CONTENT_CONTAINER,
-	CARD_CONTAINER,
-	FLEX_BETWEEN,
-	BUTTON_SECONDARY,
-	HEADING_LG,
-	TEXT_SECONDARY,
-	STAT_CARD_CONTAINER,
-	STAT_CARD_NUMBER_PURPLE,
-	STAT_CARD_NUMBER_GREEN,
-	STAT_CARD_NUMBER_YELLOW,
-	STAT_CARD_NUMBER_BLUE,
-	TEXT_ACCENT,
+  PAGE_CONTENT_CONTAINER,
+  CARD_CONTAINER,
+  FLEX_BETWEEN,
+  BUTTON_SECONDARY,
+  HEADING_LG,
+  TEXT_SECONDARY,
+  STAT_CARD_CONTAINER,
+  STAT_CARD_NUMBER_PURPLE,
+  STAT_CARD_NUMBER_GREEN,
+  STAT_CARD_NUMBER_YELLOW,
+  STAT_CARD_NUMBER_BLUE,
+  TEXT_ACCENT,
 } from '@/constants/styles';
+
+import { HomepageBackground } from '@/components/HomepageBackground';
 import config from '@/config/appConfig';
 import {ISavedJob} from '@/types/savedJob';
 
@@ -94,289 +94,263 @@ export default function DashboardPage() {
 		}
 	};
 
-	return (
-		<div className={PAGE_BACKGROUND_CONTAINER}>
-			<div className={PAGE_BACKGROUND_GLOW}></div>
-			<main
-				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
+
+  return (
+	<>
+	  <HomepageBackground />
+	  <main className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}>
+		{/* ...existing dashboard content... */}
+		<div className="mb-8">
+		  <h1 className={HEADING_LG}>Dashboard</h1>
+		  <p className={TEXT_SECONDARY}>
+			Manage your job search and track your applications
+		  </p>
+		  {searchComplete && (
+			<div
+			  className={`mt-4 p-4 rounded-lg border flex justify-between items-center ${
+				searchComplete.success
+				  ? searchComplete.totalJobs > 0
+					? 'bg-green-900/20 border-green-600 text-green-400'
+					: 'bg-blue-900/20 border-blue-600 text-blue-400'
+				  : 'bg-red-900/20 border-red-600 text-red-400'
+			  }`}
 			>
-				<div className="mb-8">
-					<h1 className={HEADING_LG}>Dashboard</h1>
-					<p className={TEXT_SECONDARY}>
-						Manage your job search and track your applications
-					</p>
-
-					{searchComplete && (
-						<div
-							className={`mt-4 p-4 rounded-lg border flex justify-between items-center ${
-								searchComplete.success
-									? searchComplete.totalJobs > 0
-										? 'bg-green-900/20 border-green-600 text-green-400'
-										: 'bg-blue-900/20 border-blue-600 text-blue-400'
-									: 'bg-red-900/20 border-red-600 text-red-400'
-							}`}
-						>
-							<div>
-								{searchComplete.success
-									? searchComplete.totalJobs > 0
-										? `✓ Success! Found ${searchComplete.totalJobs} new positions that match your profile.`
-										: '✓ Search completed successfully, but no new matching positions were found.'
-									: '✗ There was a problem with the job search. Please try again.'}
-							</div>
-							<button
-								onClick={() => setSearchComplete(null)}
-								className="p-1 hover:bg-slate-700 rounded-full"
-							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								>
-									<line x1="18" y1="6" x2="6" y2="18"></line>
-									<line x1="6" y1="6" x2="18" y2="18"></line>
-								</svg>
-							</button>
-						</div>
-					)}
-				</div>
-
-				<div className={`${CARD_CONTAINER} mb-8`}>
-					<div className={FLEX_BETWEEN}>
-						<div>
-							<h2 className="text-lg font-medium text-[var(--text-color)]">
-								Current Session
-							</h2>
-							<p className="text-purple-400 font-medium mt-1">{user.email}</p>
-						</div>
-						<div className="flex gap-3">
-							<a href="/profile" className={BUTTON_SECONDARY}>
-								Edit Profile
-							</a>
-							<StartScoutButton
-								onScoutStart={async selectedCompanyIds => {
-									dashLogger?.info('User Action: Started job search', {
-										selectedCompanies: selectedCompanyIds,
-									});
-
-									setSearchComplete(null);
-									try {
-										// Use profile from useProfile hook
-										if (!profile) {
-											throw new Error(
-												'User profile not loaded. Please try again.',
-											);
-										}
-
-										const candidateInfo = profile.candidateInfo || {};
-										const cvUrl = profile.cvUrl || null;
-
-										if (!cvUrl) {
-											throw new Error(
-												'Please complete your profile first. Missing: CV/Resume URL. Visit your profile page to add this information.',
-											);
-										}
-
-										// Step 2: Prepare and send job search request
-										const requestBody = {
-											credentials: {
-												gmail: '',
-											},
-											companyIds: selectedCompanyIds,
-											cvUrl,
-											candidateInfo,
-										};
-
-										dashLogger?.info('Sending job search request', {
-											companyCount: selectedCompanyIds.length,
-											companies: selectedCompanyIds,
-										});
-
-										dashLogger?.info(
-											'API Request: POST /api/jobs',
-											requestBody,
-										);
-										let searchData;
-										try {
-											searchData = await searchJobs(requestBody);
-										} catch (err: any) {
-											dashLogger?.error('Job search request failed', {
-												error: err,
-												requestBody: {
-													...requestBody,
-													cvUrl: cvUrl ? '[PRESENT]' : '[MISSING]',
-													candidateInfo: candidateInfo
-														? '[PRESENT]'
-														: '[MISSING]',
-												},
-											});
-											let errorMessage =
-												err?.message ||
-												'An error occurred while searching for jobs';
-											throw new Error(errorMessage);
-										}
-										dashLogger?.info('Job search completed successfully', {
-											searchData,
-										});
-
-										const totalJobs = searchData.results.reduce(
-											(acc: number, company: any) => {
-												return (
-													acc + (company.processed ? company.results.length : 0)
-												);
-											},
-											0,
-										);
-
-										dashLogger?.info('Job search results processed', {
-											totalJobs,
-											processedCompanies: searchData.results.filter(
-												(r: any) => r.processed,
-											).length,
-											totalCompanies: searchData.results.length,
-										});
-
-										handleSearchComplete(true, totalJobs);
-									} catch (err: any) {
-										const catchErrorMessage =
-											err?.message ||
-											'An unexpected error occurred while searching for jobs';
-
-										dashLogger?.error('Job search failed', {
-											error: catchErrorMessage,
-											stack: err?.stack,
-											selectedCompanies: selectedCompanyIds,
-										});
-
-										dashLogger?.error('Failed to start scout', {error: err});
-
-										// Store the error message for user feedback
-										const errorMessage =
-											err?.message ||
-											'An unexpected error occurred while searching for jobs';
-
-										// You can enhance this by setting error state if you want to show specific error messages to users
-										// For now, we'll log the detailed error and show the search as incomplete
-										dashLogger?.error('Detailed scout error info', {
-											message: errorMessage,
-											stack: err?.stack,
-											timestamp: new Date().toISOString(),
-										});
-
-										handleSearchComplete(false, 0);
-									}
-								}}
-								className="ml-2"
-							/>
-						</div>
-					</div>
-				</div>
-
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					<div className="space-y-6">
-						<div className={CARD_CONTAINER}>
-							<h3 className="text-lg font-bold text-white mb-4">
-								Target Companies
-							</h3>
-							<CompanySelector
-								selectedCompanies={selectedCompanies}
-								onCompaniesChange={setSelectedCompanies}
-							/>
-						</div>
-
-						<div className={CARD_CONTAINER}>
-							<h3 className="text-lg font-bold text-white mb-4">Quick Stats</h3>
-							<div className="grid grid-cols-2 gap-4">
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_PURPLE}>
-										{savedJobs.length}
-									</div>
-									<div className={TEXT_SECONDARY}>Total Saved</div>
-								</div>
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_GREEN}>
-										{
-											savedJobs.filter(
-												job => job.status === ApplicationStatus.APPLIED,
-											).length
-										}
-									</div>
-									<div className={TEXT_SECONDARY}>Applied</div>
-								</div>
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_YELLOW}>
-										{
-											savedJobs.filter(
-												job => job.status === ApplicationStatus.WANT_TO_APPLY,
-											).length
-										}
-									</div>
-									<div className={TEXT_SECONDARY}>Want to Apply</div>
-								</div>
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_BLUE}>
-										{selectedCompanies.length}
-									</div>
-									<div className={TEXT_SECONDARY}>Target Companies</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div className="space-y-6">
-						<div className={CARD_CONTAINER}>
-							<div className={`${FLEX_BETWEEN} mb-4`}>
-								<h3 className="text-lg font-bold text-white">
-									Recent Saved Jobs
-								</h3>
-								<a href="/saved-jobs" className={`${TEXT_ACCENT} text-sm`}>
-									View All
-								</a>
-							</div>
-							<div className="min-h-[400px] max-h-[calc(100vh-20rem)] overflow-y-auto pr-2">
-								{isLoadingJobs ? (
-									<div
-										className={`flex items-center justify-center h-32 ${TEXT_SECONDARY}`}
-									>
-										<p>Loading saved jobs...</p>
-									</div>
-								) : savedJobs.length === 0 ? (
-									<div
-										className={`flex flex-col items-center justify-center h-32 ${TEXT_SECONDARY}`}
-									>
-										<p>No saved jobs yet</p>
-									</div>
-								) : (
-									<div className="space-y-3">
-										{savedJobs.map(job => (
-											<SavedJobCard
-												key={job._id}
-												job={job}
-												compact
-												onStatusChange={handleStatusChange}
-											/>
-										))}
-									</div>
-								)}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				{config.features.enableKanbanView && savedJobs.length > 0 && (
-					<div className={`mt-8 ${CARD_CONTAINER} p-6`}>
-						<ApplicationPipeline
-							jobs={savedJobs}
-							onStatusChange={handleStatusChange}
-						/>
-					</div>
-				)}
-			</main>
+			  <div>
+				{searchComplete.success
+				  ? searchComplete.totalJobs > 0
+					? `✓ Success! Found ${searchComplete.totalJobs} new positions that match your profile.`
+					: '✓ Search completed successfully, but no new matching positions were found.'
+				  : '✗ There was a problem with the job search. Please try again.'}
+			  </div>
+			  <button
+				onClick={() => setSearchComplete(null)}
+				className="p-1 hover:bg-slate-700 rounded-full"
+			  >
+				<svg
+				  xmlns="http://www.w3.org/2000/svg"
+				  width="16"
+				  height="16"
+				  viewBox="0 0 24 24"
+				  fill="none"
+				  stroke="currentColor"
+				  strokeWidth="2"
+				  strokeLinecap="round"
+				  strokeLinejoin="round"
+				>
+				  <line x1="18" y1="6" x2="6" y2="18"></line>
+				  <line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
+			  </button>
+			</div>
+		  )}
 		</div>
-	);
+		{/* ...rest of dashboard content remains unchanged... */}
+		<div className={`${CARD_CONTAINER} mb-8`}>
+		  <div className={FLEX_BETWEEN}>
+			<div>
+			  <h2 className="text-lg font-medium text-[var(--text-color)]">
+				Current Session
+			  </h2>
+			  <p className="text-purple-400 font-medium mt-1">{user.email}</p>
+			</div>
+			<div className="flex gap-3">
+			  <a href="/profile" className={BUTTON_SECONDARY}>
+				Edit Profile
+			  </a>
+			  <StartScoutButton
+				onScoutStart={async selectedCompanyIds => {
+				  dashLogger?.info('User Action: Started job search', {
+					selectedCompanies: selectedCompanyIds,
+				  });
+				  setSearchComplete(null);
+				  try {
+					if (!profile) {
+					  throw new Error(
+						'User profile not loaded. Please try again.',
+					  );
+					}
+					const candidateInfo = profile.candidateInfo || {};
+					const cvUrl = profile.cvUrl || null;
+					if (!cvUrl) {
+					  throw new Error(
+						'Please complete your profile first. Missing: CV/Resume URL. Visit your profile page to add this information.',
+					  );
+					}
+					const requestBody = {
+					  credentials: {gmail: ''},
+					  companyIds: selectedCompanyIds,
+					  cvUrl,
+					  candidateInfo,
+					};
+					dashLogger?.info('Sending job search request', {
+					  companyCount: selectedCompanyIds.length,
+					  companies: selectedCompanyIds,
+					});
+					dashLogger?.info(
+					  'API Request: POST /api/jobs',
+					  requestBody,
+					);
+					let searchData;
+					try {
+					  searchData = await searchJobs(requestBody);
+					} catch (err: any) {
+					  dashLogger?.error('Job search request failed', {
+						error: err,
+						requestBody: {
+						  ...requestBody,
+						  cvUrl: cvUrl ? '[PRESENT]' : '[MISSING]',
+						  candidateInfo: candidateInfo
+							? '[PRESENT]'
+							: '[MISSING]',
+						},
+					  });
+					  let errorMessage =
+						err?.message ||
+						'An error occurred while searching for jobs';
+					  throw new Error(errorMessage);
+					}
+					dashLogger?.info('Job search completed successfully', {
+					  searchData,
+					});
+					const totalJobs = searchData.results.reduce(
+					  (acc: number, company: any) => {
+						return (
+						  acc + (company.processed ? company.results.length : 0)
+						);
+					  },
+					  0,
+					);
+					dashLogger?.info('Job search results processed', {
+					  totalJobs,
+					  processedCompanies: searchData.results.filter(
+						(r: any) => r.processed,
+					  ).length,
+					  totalCompanies: searchData.results.length,
+					});
+					handleSearchComplete(true, totalJobs);
+				  } catch (err: any) {
+					const catchErrorMessage =
+					  err?.message ||
+					  'An unexpected error occurred while searching for jobs';
+					dashLogger?.error('Job search failed', {
+					  error: catchErrorMessage,
+					  stack: err?.stack,
+					  selectedCompanies: selectedCompanyIds,
+					});
+					dashLogger?.error('Failed to start scout', {error: err});
+					const errorMessage =
+					  err?.message ||
+					  'An unexpected error occurred while searching for jobs';
+					dashLogger?.error('Detailed scout error info', {
+					  message: errorMessage,
+					  stack: err?.stack,
+					  timestamp: new Date().toISOString(),
+					});
+					handleSearchComplete(false, 0);
+				  }
+				}}
+				className="ml-2"
+			  />
+			</div>
+		  </div>
+		</div>
+		<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+		  <div className="space-y-6">
+			<div className={CARD_CONTAINER}>
+			  <h3 className="text-lg font-bold text-white mb-4">
+				Target Companies
+			  </h3>
+			  <CompanySelector
+				selectedCompanies={selectedCompanies}
+				onCompaniesChange={setSelectedCompanies}
+			  />
+			</div>
+			<div className={CARD_CONTAINER}>
+			  <h3 className="text-lg font-bold text-white mb-4">Quick Stats</h3>
+			  <div className="grid grid-cols-2 gap-4">
+				<div className={STAT_CARD_CONTAINER}>
+				  <div className={STAT_CARD_NUMBER_PURPLE}>
+					{savedJobs.length}
+				  </div>
+				  <div className={TEXT_SECONDARY}>Total Saved</div>
+				</div>
+				<div className={STAT_CARD_CONTAINER}>
+				  <div className={STAT_CARD_NUMBER_GREEN}>
+					{
+					  savedJobs.filter(
+						job => job.status === ApplicationStatus.APPLIED,
+					  ).length
+					}
+				  </div>
+				  <div className={TEXT_SECONDARY}>Applied</div>
+				</div>
+				<div className={STAT_CARD_CONTAINER}>
+				  <div className={STAT_CARD_NUMBER_YELLOW}>
+					{
+					  savedJobs.filter(
+						job => job.status === ApplicationStatus.WANT_TO_APPLY,
+					  ).length
+					}
+				  </div>
+				  <div className={TEXT_SECONDARY}>Want to Apply</div>
+				</div>
+				<div className={STAT_CARD_CONTAINER}>
+				  <div className={STAT_CARD_NUMBER_BLUE}>
+					{selectedCompanies.length}
+				  </div>
+				  <div className={TEXT_SECONDARY}>Target Companies</div>
+				</div>
+			  </div>
+			</div>
+		  </div>
+		  <div className="space-y-6">
+			<div className={CARD_CONTAINER}>
+			  <div className={`${FLEX_BETWEEN} mb-4`}>
+				<h3 className="text-lg font-bold text-white">
+				  Recent Saved Jobs
+				</h3>
+				<a href="/saved-jobs" className={`${TEXT_ACCENT} text-sm`}>
+				  View All
+				</a>
+			  </div>
+			  <div className="min-h-[400px] max-h-[calc(100vh-20rem)] overflow-y-auto pr-2">
+				{isLoadingJobs ? (
+				  <div
+					className={`flex items-center justify-center h-32 ${TEXT_SECONDARY}`}
+				  >
+					<p>Loading saved jobs...</p>
+				  </div>
+				) : savedJobs.length === 0 ? (
+				  <div
+					className={`flex flex-col items-center justify-center h-32 ${TEXT_SECONDARY}`}
+				  >
+					<p>No saved jobs yet</p>
+				  </div>
+				) : (
+				  <div className="space-y-3">
+					{savedJobs.map(job => (
+					  <SavedJobCard
+						key={job._id}
+						job={job}
+						compact
+						onStatusChange={handleStatusChange}
+					  />
+					))}
+				  </div>
+				)}
+			  </div>
+			</div>
+		  </div>
+		</div>
+		{config.features.enableKanbanView && savedJobs.length > 0 && (
+		  <div className={`mt-8 ${CARD_CONTAINER} p-6`}>
+			<ApplicationPipeline
+			  jobs={savedJobs}
+			  onStatusChange={handleStatusChange}
+			/>
+		  </div>
+		)}
+	  </main>
+	</>
+  );
 }
