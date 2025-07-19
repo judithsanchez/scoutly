@@ -7,11 +7,9 @@ import React, {useEffect, useState} from 'react';
 import {useProfile} from '@/hooks/useProfile';
 import StartScoutButton from '@/components/StartScoutButton';
 import {useJobs} from '@/hooks/useJobs';
-import {CompanySelector} from '@/components/form/CompanySelector';
 import SavedJobCard from '@/components/SavedJobCard';
-import ApplicationPipeline from '@/components/ApplicationPipeline';
 import {logger} from '@/utils/logger';
-import {ApplicationStatus, statusPriority} from '@/types/savedJob';
+import {ApplicationStatus} from '@/types/savedJob';
 import {
 	PAGE_CONTENT_CONTAINER,
 	CARD_CONTAINER,
@@ -19,17 +17,10 @@ import {
 	BUTTON_SECONDARY,
 	HEADING_LG,
 	TEXT_SECONDARY,
-	STAT_CARD_CONTAINER,
-	STAT_CARD_NUMBER_PURPLE,
-	STAT_CARD_NUMBER_GREEN,
-	STAT_CARD_NUMBER_YELLOW,
-	STAT_CARD_NUMBER_BLUE,
 	TEXT_ACCENT,
 } from '@/constants/styles';
 
 import {HomepageBackground} from '@/components/HomepageBackground';
-import config from '@/config/appConfig';
-import {ISavedJob} from '@/types/savedJob';
 
 export default function DashboardPage() {
 	const {user} = useAuth();
@@ -104,7 +95,6 @@ export default function DashboardPage() {
 			<main
 				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
 			>
-				{/* ...existing dashboard content... */}
 				<div className="mb-8">
 					<h1 className={HEADING_LG}>Dashboard</h1>
 					<p className={TEXT_SECONDARY}>
@@ -262,54 +252,6 @@ export default function DashboardPage() {
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 					<div className="space-y-6">
 						<div className={CARD_CONTAINER}>
-							<h3 className="text-lg font-bold text-white mb-4">
-								Target Companies
-							</h3>
-							<CompanySelector
-								selectedCompanies={selectedCompanies}
-								onCompaniesChange={setSelectedCompanies}
-							/>
-						</div>
-						<div className={CARD_CONTAINER}>
-							<h3 className="text-lg font-bold text-white mb-4">Quick Stats</h3>
-							<div className="grid grid-cols-2 gap-4">
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_PURPLE}>
-										{savedJobs.length}
-									</div>
-									<div className={TEXT_SECONDARY}>Total Saved</div>
-								</div>
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_GREEN}>
-										{
-											savedJobs.filter(
-												job => job.status === ApplicationStatus.APPLIED,
-											).length
-										}
-									</div>
-									<div className={TEXT_SECONDARY}>Applied</div>
-								</div>
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_YELLOW}>
-										{
-											savedJobs.filter(
-												job => job.status === ApplicationStatus.WANT_TO_APPLY,
-											).length
-										}
-									</div>
-									<div className={TEXT_SECONDARY}>Want to Apply</div>
-								</div>
-								<div className={STAT_CARD_CONTAINER}>
-									<div className={STAT_CARD_NUMBER_BLUE}>
-										{selectedCompanies.length}
-									</div>
-									<div className={TEXT_SECONDARY}>Target Companies</div>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div className="space-y-6">
-						<div className={CARD_CONTAINER}>
 							<div className={`${FLEX_BETWEEN} mb-4`}>
 								<h3 className="text-lg font-bold text-white">
 									Recent Saved Jobs
@@ -348,14 +290,6 @@ export default function DashboardPage() {
 						</div>
 					</div>
 				</div>
-				{config.features.enableKanbanView && savedJobs.length > 0 && (
-					<div className={`mt-8 ${CARD_CONTAINER} p-6`}>
-						<ApplicationPipeline
-							jobs={savedJobs}
-							onStatusChange={handleStatusChange}
-						/>
-					</div>
-				)}
 			</main>
 		</>
 	);
