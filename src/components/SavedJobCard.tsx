@@ -1,26 +1,15 @@
 import {useState} from 'react';
+import ConfirmDeleteSavedJobModal from './ConfirmDeleteSavedJobModal';
 import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
-import {
-	StarIcon,
-	CheckIcon,
-	ArchiveIcon,
-	CalendarIcon,
-	CodeIcon,
-	CloseIcon,
-	MailIcon,
-	ThumbsUpIcon,
-	ThumbsDownIcon,
-	ClockIcon,
-	XIcon,
-} from '@/components/ui/icons';
 import {StatusBadge} from '@/components/ui/StatusBadge';
 import {StatusDropdown} from '@/components/ui/StatusDropdown';
 
 interface SavedJobCardProps {
 	job: ISavedJob;
-	compact?: boolean; // For dashboard view
-	kanban?: boolean; // For kanban view
+	compact?: boolean;
+	kanban?: boolean;
 	onStatusChange?: (jobId: string, status: ApplicationStatus) => Promise<void>;
+	onDelete?: (jobId: string) => Promise<void>;
 }
 
 export default function SavedJobCard({
@@ -28,8 +17,22 @@ export default function SavedJobCard({
 	compact = false,
 	kanban = false,
 	onStatusChange,
+	onDelete,
 }: SavedJobCardProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+
+	const handleDelete = async () => {
+		if (!onDelete) return;
+		setDeleteLoading(true);
+		try {
+			await onDelete(job._id);
+			setShowDeleteModal(false);
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
 
 	const handleStatusChange = async (newStatus: ApplicationStatus) => {
 		if (onStatusChange) {
@@ -37,7 +40,6 @@ export default function SavedJobCard({
 		}
 	};
 
-	// Get status-specific styles
 	const getStatusStyles = () => {
 		switch (job.status) {
 			case ApplicationStatus.WANT_TO_APPLY:
@@ -67,14 +69,13 @@ export default function SavedJobCard({
 		}
 	};
 
-	// For Kanban view, render a simplified version
+	// Kanban view
 	if (kanban) {
 		return (
 			<div
-				className={`bg-slate-800 rounded-lg p-3 shadow-md border-l-4 ${getStatusStyles()} 
-				 hover:bg-slate-700/80 transition-all ${
-						job.status === ApplicationStatus.DISCARDED ? 'opacity-60' : ''
-					}`}
+				className={`bg-slate-800 rounded-lg p-3 shadow-md border-l-4 ${getStatusStyles()} hover:bg-slate-700/80 transition-all ${
+					job.status === ApplicationStatus.DISCARDED ? 'opacity-60' : ''
+				}`}
 			>
 				<div className="flex items-start justify-between mb-2">
 					<h3 className="font-semibold text-white text-sm line-clamp-2">
@@ -84,7 +85,6 @@ export default function SavedJobCard({
 						{job.suitabilityScore}%
 					</div>
 				</div>
-
 				<p className="text-slate-400 text-xs font-medium mb-2 line-clamp-1">
 					{job.company &&
 					typeof job.company === 'object' &&
@@ -92,14 +92,11 @@ export default function SavedJobCard({
 						? job.company.company
 						: 'Company not specified'}
 				</p>
-
 				{job.location && (
 					<p className="text-slate-500 text-xs mb-2 line-clamp-1">
 						{job.location}
 					</p>
 				)}
-
-				{/* Tech Stack Tags - limited in kanban view */}
 				{job.techStack && job.techStack.length > 0 && (
 					<div className="flex flex-wrap gap-1 mb-2">
 						{job.techStack.slice(0, 3).map((tech, index) => (
@@ -117,7 +114,6 @@ export default function SavedJobCard({
 						)}
 					</div>
 				)}
-
 				<div className="flex items-center justify-between border-t border-slate-700 pt-2 mt-1">
 					<a
 						href={job.url}
@@ -135,7 +131,36 @@ export default function SavedJobCard({
 							compact={true}
 						/>
 					)}
+					{onDelete && (
+						<button
+							title="Delete saved job"
+							className="text-red-500 hover:text-red-700 ml-2"
+							onClick={() => setShowDeleteModal(true)}
+							aria-label="Delete saved job"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								className="h-5 w-5 inline"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+								/>
+							</svg>
+						</button>
+					)}
 				</div>
+				<ConfirmDeleteSavedJobModal
+					open={showDeleteModal}
+					onClose={() => setShowDeleteModal(false)}
+					onConfirm={handleDelete}
+					loading={deleteLoading}
+				/>
 			</div>
 		);
 	}
@@ -157,13 +182,36 @@ export default function SavedJobCard({
 				<div className="flex-grow">
 					<div className="flex items-center gap-2 mb-1">
 						<h3
-							className={`${
+							className={`$${
 								compact ? 'text-base' : 'text-xl'
 							} font-bold text-white`}
 						>
 							{job.title}
 						</h3>
 						<StatusBadge status={job.status} />
+						{onDelete && (
+							<button
+								title="Delete saved job"
+								className="text-red-500 hover:text-red-700 ml-2"
+								onClick={() => setShowDeleteModal(true)}
+								aria-label="Delete saved job"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									className="h-5 w-5 inline"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+									/>
+								</svg>
+							</button>
+						)}
 					</div>
 					<p className="text-slate-400 font-medium">
 						{job.company &&
@@ -187,8 +235,6 @@ export default function SavedJobCard({
 					/>
 				</div>
 			</div>
-
-			{/* Tech Stack Tags */}
 			{job.techStack && job.techStack.length > 0 && (
 				<div className={`flex flex-wrap gap-2 ${compact ? 'mb-2' : 'mb-4'}`}>
 					{job.techStack.map((tech, index) => (
@@ -201,7 +247,6 @@ export default function SavedJobCard({
 					))}
 				</div>
 			)}
-
 			<div className="border-t border-slate-700 pt-4">
 				<button
 					onClick={() => setIsExpanded(!isExpanded)}
@@ -226,7 +271,6 @@ export default function SavedJobCard({
 						/>
 					</svg>
 				</button>
-
 				<div
 					className={`accordion-content mt-4 space-y-4 text-sm ${
 						isExpanded ? 'expanded' : ''
@@ -244,7 +288,6 @@ export default function SavedJobCard({
 							</ul>
 						</div>
 					)}
-
 					{job.considerationPoints && job.considerationPoints.length > 0 && (
 						<div>
 							<h4 className="font-semibold text-yellow-400 mb-2">
@@ -257,7 +300,6 @@ export default function SavedJobCard({
 							</ul>
 						</div>
 					)}
-
 					{job.stretchGoals && job.stretchGoals.length > 0 && (
 						<div>
 							<h4 className="font-semibold text-blue-400 mb-2">
@@ -270,8 +312,6 @@ export default function SavedJobCard({
 							</ul>
 						</div>
 					)}
-
-					{/* Fallback: Show notes if detailed analysis fields are missing */}
 					{(!job.goodFitReasons || job.goodFitReasons.length === 0) &&
 						(!job.considerationPoints ||
 							job.considerationPoints.length === 0) &&
@@ -284,7 +324,6 @@ export default function SavedJobCard({
 								<p className="text-slate-300 text-sm">{job.notes}</p>
 							</div>
 						)}
-
 					<div className="pt-2">
 						<a
 							href={job.url || job.jobId}
@@ -309,6 +348,12 @@ export default function SavedJobCard({
 						</a>
 					</div>
 				</div>
+				<ConfirmDeleteSavedJobModal
+					open={showDeleteModal}
+					onClose={() => setShowDeleteModal(false)}
+					onConfirm={handleDelete}
+					loading={deleteLoading}
+				/>
 			</div>
 		</div>
 	);

@@ -1,6 +1,11 @@
 import {SavedJob} from '@/models/SavedJob';
 
 export class SavedJobService {
+	static async deleteSavedJobById(id: string) {
+		const deleted = await SavedJob.findByIdAndDelete(id);
+		if (!deleted) throw new Error('Saved job not found');
+		return true;
+	}
 	static async getSavedJobsByUserId(userId: string) {
 		const jobs = await SavedJob.find({userId}).populate({
 			path: 'companyId',
