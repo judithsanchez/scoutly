@@ -10,15 +10,7 @@ import {useJobs} from '@/hooks/useJobs';
 import SavedJobCard from '@/components/SavedJobCard';
 import {logger} from '@/utils/logger';
 import {ApplicationStatus} from '@/types/savedJob';
-import {
-	PAGE_CONTENT_CONTAINER,
-	CARD_CONTAINER,
-	FLEX_BETWEEN,
-	BUTTON_SECONDARY,
-	HEADING_LG,
-	TEXT_SECONDARY,
-	TEXT_ACCENT,
-} from '@/constants/styles';
+import styles from './DashboardPage.module.css';
 
 export default function DashboardPage() {
 	const {user} = useAuth();
@@ -89,64 +81,58 @@ export default function DashboardPage() {
 
 	return (
 		<>
-			<main
-				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
-			>
-				<div className="mb-8">
-					<h1 className={HEADING_LG}>Dashboard</h1>
-					<p className={TEXT_SECONDARY}>
-						Manage your job search and track your applications
-					</p>
-					{searchComplete && (
-						<div
-							className={`mt-4 p-4 rounded-lg border flex justify-between items-center ${
-								searchComplete.success
-									? searchComplete.totalJobs > 0
-										? 'bg-green-900/20 border-green-600 text-green-400'
-										: 'bg-blue-900/20 border-blue-600 text-blue-400'
-									: 'bg-red-900/20 border-red-600 text-red-400'
-							}`}
-						>
-							<div>
-								{searchComplete.success
-									? searchComplete.totalJobs > 0
-										? `✓ Success! Found ${searchComplete.totalJobs} new positions that match your profile.`
-										: '✓ Search completed successfully, but no new matching positions were found.'
-									: '✗ There was a problem with the job search. Please try again.'}
-							</div>
-							<button
-								onClick={() => setSearchComplete(null)}
-								className="p-1 hover:bg-slate-700 rounded-full"
-							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								>
-									<line x1="18" y1="6" x2="6" y2="18"></line>
-									<line x1="6" y1="6" x2="18" y2="18"></line>
-								</svg>
-							</button>
+			<main className={styles.dashboardContainer}>
+				<h1>Dashboard</h1>
+				<p>Manage your job search and track your applications</p>
+				{searchComplete && (
+					<div
+						className={[
+							styles.banner,
+							searchComplete.success
+								? searchComplete.totalJobs > 0
+									? styles.bannerSuccess
+									: styles.bannerInfo
+								: styles.bannerError,
+						].join(' ')}
+					>
+						<div>
+							{searchComplete.success
+								? searchComplete.totalJobs > 0
+									? `✓ Success! Found ${searchComplete.totalJobs} new positions that match your profile.`
+									: '✓ Search completed successfully, but no new matching positions were found.'
+								: '✗ There was a problem with the job search. Please try again.'}
 						</div>
-					)}
-				</div>
-				{/* ...rest of dashboard content remains unchanged... */}
-				<div className={`${CARD_CONTAINER} mb-8`}>
-					<div className={FLEX_BETWEEN}>
+						<button
+							onClick={() => setSearchComplete(null)}
+							className={styles.closeButton}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<line x1="18" y1="6" x2="6" y2="18"></line>
+								<line x1="6" y1="6" x2="18" y2="18"></line>
+							</svg>
+						</button>
+					</div>
+				)}
+				<div className={styles.cardContainer}>
+					<div className={styles.flexBetween}>
 						<div>
 							<h2 className="text-lg font-medium text-[var(--text-color)]">
 								Current Session
 							</h2>
 							<p className="text-purple-400 font-medium mt-1">{user.email}</p>
 						</div>
-						<div className="flex gap-3">
-							<a href="/profile" className={BUTTON_SECONDARY}>
+						<div className={styles.buttonGroup}>
+							<a href="/profile" className={styles.cardLink}>
 								Edit Profile
 							</a>
 							<StartScoutButton
@@ -241,37 +227,31 @@ export default function DashboardPage() {
 										handleSearchComplete(false, 0);
 									}
 								}}
-								className="ml-2"
+								className={styles.ml2}
 							/>
 						</div>
 					</div>
 				</div>
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-					<div className="space-y-6">
-						<div className={CARD_CONTAINER}>
-							<div className={`${FLEX_BETWEEN} mb-4`}>
-								<h3 className="text-lg font-bold text-white">
-									Recent Saved Jobs
-								</h3>
-								<a href="/saved-jobs" className={`${TEXT_ACCENT} text-sm`}>
+				<div className={styles.gridLayout}>
+					<div className={styles.spaceY6}>
+						<div className={styles.cardContainer}>
+							<div className={styles.cardHeader}>
+								<h3 className={styles.cardTitle}>Recent Saved Jobs</h3>
+								<a href="/saved-jobs" className={styles.cardLink}>
 									View All
 								</a>
 							</div>
-							<div className="min-h-[400px] max-h-[calc(100vh-20rem)] overflow-y-auto pr-2">
+							<div className={styles.jobsList}>
 								{isLoadingJobs ? (
-									<div
-										className={`flex items-center justify-center h-32 ${TEXT_SECONDARY}`}
-									>
+									<div className={styles.loading}>
 										<p>Loading saved jobs...</p>
 									</div>
 								) : savedJobs.length === 0 ? (
-									<div
-										className={`flex flex-col items-center justify-center h-32 ${TEXT_SECONDARY}`}
-									>
+									<div className={styles.empty}>
 										<p>No saved jobs yet</p>
 									</div>
 								) : (
-									<div className="space-y-3">
+									<div className={styles.jobsSpaceY3}>
 										{savedJobs.map(job => (
 											<SavedJobCard
 												key={job._id}
