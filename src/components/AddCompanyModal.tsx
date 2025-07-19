@@ -2,6 +2,7 @@
 
 import React, {useState} from 'react';
 import {WorkModel, CreateCompanyInput} from '@/types/company';
+import styles from './AddCompanyModal.module.css';
 
 interface AddCompanyModalProps {
 	isOpen: boolean;
@@ -67,25 +68,16 @@ export function AddCompanyModal({
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-			<div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-				<h2 className="text-2xl font-bold mb-4 text-[var(--text-color)]">
-					Add New Company
-				</h2>
+		<div className={styles.modalOverlay}>
+			<div className={styles.modalContainer}>
+				<h2 className={styles.modalTitle}>Add New Company</h2>
 
-				{error && (
-					<div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg">
-						{error}
-					</div>
-				)}
+				{error && <div className={styles.errorBox}>{error}</div>}
 
 				<form onSubmit={handleSubmit}>
-					<div className="space-y-4">
-						<div>
-							<label
-								htmlFor="companyID"
-								className="block text-sm font-medium text-[var(--text-muted)] mb-1"
-							>
+					<div>
+						<div className={styles.formGroup}>
+							<label htmlFor="companyID" className={styles.label}>
 								Company ID*
 							</label>
 							<input
@@ -95,19 +87,16 @@ export function AddCompanyModal({
 								value={companyData.companyID}
 								onChange={handleChange}
 								required
-								className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+								className={styles.input}
 								placeholder="e.g. acme_corp (no spaces, use underscore)"
 							/>
-							<p className="text-xs text-[var(--text-muted)] mt-1">
+							<p className={styles.helperText}>
 								Unique identifier, no spaces (use underscores instead)
 							</p>
 						</div>
 
-						<div>
-							<label
-								htmlFor="company"
-								className="block text-sm font-medium text-[var(--text-muted)] mb-1"
-							>
+						<div className={styles.formGroup}>
+							<label htmlFor="company" className={styles.label}>
 								Company Name*
 							</label>
 							<input
@@ -117,16 +106,13 @@ export function AddCompanyModal({
 								value={companyData.company}
 								onChange={handleChange}
 								required
-								className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+								className={styles.input}
 								placeholder="e.g. Acme Corporation"
 							/>
 						</div>
 
-						<div>
-							<label
-								htmlFor="careers_url"
-								className="block text-sm font-medium text-[var(--text-muted)] mb-1"
-							>
+						<div className={styles.formGroup}>
+							<label htmlFor="careers_url" className={styles.label}>
 								Careers URL*
 							</label>
 							<input
@@ -136,16 +122,13 @@ export function AddCompanyModal({
 								value={companyData.careers_url}
 								onChange={handleChange}
 								required
-								className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+								className={styles.input}
 								placeholder="https://example.com/careers"
 							/>
 						</div>
 
-						<div>
-							<label
-								htmlFor="work_model"
-								className="block text-sm font-medium text-[var(--text-muted)] mb-1"
-							>
+						<div className={styles.formGroup}>
+							<label htmlFor="work_model" className={styles.label}>
 								Work Model*
 							</label>
 							<select
@@ -154,7 +137,7 @@ export function AddCompanyModal({
 								value={companyData.work_model}
 								onChange={handleChange}
 								required
-								className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+								className={styles.select}
 							>
 								<option value={WorkModel.FULLY_REMOTE}>Fully Remote</option>
 								<option value={WorkModel.HYBRID}>Hybrid</option>
@@ -162,11 +145,8 @@ export function AddCompanyModal({
 							</select>
 						</div>
 
-						<div>
-							<label
-								htmlFor="headquarters"
-								className="block text-sm font-medium text-[var(--text-muted)] mb-1"
-							>
+						<div className={styles.formGroup}>
+							<label htmlFor="headquarters" className={styles.label}>
 								Headquarters*
 							</label>
 							<input
@@ -176,16 +156,13 @@ export function AddCompanyModal({
 								value={companyData.headquarters}
 								onChange={handleChange}
 								required
-								className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+								className={styles.input}
 								placeholder="e.g. San Francisco, USA"
 							/>
 						</div>
 
-						<div>
-							<label
-								htmlFor="fields"
-								className="block text-sm font-medium text-[var(--text-muted)] mb-1"
-							>
+						<div className={styles.formGroup}>
+							<label htmlFor="fields" className={styles.label}>
 								Fields/Industries*
 							</label>
 							<textarea
@@ -194,35 +171,32 @@ export function AddCompanyModal({
 								value={companyData.fields}
 								onChange={handleChange}
 								required
-								className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+								className={styles.textarea}
 								placeholder="e.g. software development, cloud services, AI"
 								rows={3}
 							/>
-							<p className="text-xs text-[var(--text-muted)] mt-1">
+							<p className={styles.helperText}>
 								Comma-separated list of fields or industries
 							</p>
 						</div>
 
-						<div className="border-t border-[var(--card-border)] pt-4 mt-4">
-							<div className="flex items-center mb-4">
+						<div className={styles.divider}>
+							<div className={styles.checkboxRow}>
 								<input
 									type="checkbox"
 									id="trackCompany"
 									checked={trackCompany}
 									onChange={() => setTrackCompany(!trackCompany)}
-									className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+									className={styles.checkboxInput}
 								/>
-								<label
-									htmlFor="trackCompany"
-									className="ml-2 block text-sm text-[var(--text-color)]"
-								>
+								<label htmlFor="trackCompany" className={styles.checkboxLabel}>
 									Track this company
 								</label>
 							</div>
 
 							{trackCompany && (
 								<div>
-									<label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+									<label className={styles.sliderLabel}>
 										Company Ranking: {ranking}
 									</label>
 									<input
@@ -231,9 +205,9 @@ export function AddCompanyModal({
 										max="100"
 										value={ranking}
 										onChange={e => setRanking(parseInt(e.target.value))}
-										className="w-full"
+										className={styles.slider}
 									/>
-									<div className="flex justify-between mt-1 text-xs text-[var(--text-muted)]">
+									<div className={styles.sliderMarks}>
 										<span>0</span>
 										<span>50</span>
 										<span>100</span>
@@ -243,18 +217,18 @@ export function AddCompanyModal({
 						</div>
 					</div>
 
-					<div className="mt-6 flex items-center justify-end space-x-3">
+					<div className={styles.actions}>
 						<button
 							type="button"
 							onClick={onClose}
-							className="px-4 py-2 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-color)] transition-colors"
+							className={`${styles.button} ${styles.buttonSecondary}`}
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
 							disabled={isSubmitting}
-							className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+							className={`${styles.button} ${styles.buttonPrimary}`}
 						>
 							{isSubmitting ? 'Adding...' : 'Add Company'}
 						</button>

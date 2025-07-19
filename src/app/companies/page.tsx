@@ -16,6 +16,7 @@ import {
 	BUTTON_PRIMARY,
 	FLEX_BETWEEN,
 } from '@/constants/styles';
+import styles from './CompaniesPage.module.css';
 
 const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 	const {
@@ -91,14 +92,14 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 
 	return (
 		<div
-			className={`${CARD_CONTAINER} flex flex-col justify-between`}
+			className={`${styles.card} ${CARD_CONTAINER}`}
 			data-name={company.company.toLowerCase()}
 			data-work-model={company.work_model}
 			data-ranking={optimisticRanking}
 		>
 			<div>
 				<h3 className={HEADING_MD}>{company.company}</h3>
-				<p className={`${TEXT_SECONDARY} text-sm mt-1`}>
+				<p className={`${TEXT_SECONDARY} ${styles.centerText}`}>
 					{Array.isArray(company.fields) && company.fields.length > 0
 						? company.fields.join(', ')
 						: typeof company.fields === 'string'
@@ -107,15 +108,21 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 				</p>
 
 				{optimisticIsTracked && (
-					<div className="mt-3">
-						<div className={FLEX_BETWEEN}>
-							<span className="text-sm font-medium text-[var(--text-color)]">
+					<div style={{marginTop: '0.75rem'}}>
+						<div className={styles.flexBetween}>
+							<span
+								style={{
+									fontSize: '0.875rem',
+									fontWeight: 500,
+									color: 'var(--text-color)',
+								}}
+							>
 								Ranking: {optimisticRanking}/100
 							</span>
 							{!isEditingRanking ? (
 								<button
 									onClick={() => setIsEditingRanking(true)}
-									className="text-purple-500 hover:text-purple-600 focus:outline-none"
+									style={{color: '#a78bfa'}}
 								>
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -131,7 +138,7 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 								<button
 									onClick={handleRankingSave}
 									disabled={isRankingLoading}
-									className="text-green-500 hover:text-green-600 focus:outline-none"
+									style={{color: '#22c55e'}}
 								>
 									{isRankingLoading ? 'Saving...' : 'Save'}
 								</button>
@@ -139,7 +146,7 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 						</div>
 
 						{isEditingRanking && (
-							<div className="mt-2">
+							<div style={{marginTop: '0.5rem'}}>
 								<input
 									type="range"
 									min="1"
@@ -148,9 +155,9 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 									onChange={e =>
 										handleRankingChange(Math.max(1, parseInt(e.target.value)))
 									}
-									className="w-full"
+									className={styles.rankingSlider}
 								/>
-								<div className="flex justify-between mt-1 text-xs text-[var(--text-muted)]">
+								<div className={styles.rankingLabels}>
 									<span>1</span>
 									<span>50</span>
 									<span>100</span>
@@ -161,11 +168,13 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 				)}
 			</div>
 
-			<div className="mt-4 flex items-center justify-between">
+			<div style={{marginTop: '1rem'}} className={styles.flexBetween}>
 				<span
-					className={`text-sm font-medium ${
-						optimisticIsTracked ? 'text-green-500' : 'text-[var(--text-muted)]'
-					}`}
+					style={{
+						fontSize: '0.875rem',
+						fontWeight: 500,
+						color: optimisticIsTracked ? '#22c55e' : 'var(--text-muted)',
+					}}
 				>
 					{isToggleLoading
 						? 'Updating...'
@@ -173,20 +182,30 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 						? 'Tracking'
 						: 'Not Tracking'}
 				</span>
-				<label className="inline-flex items-center cursor-pointer">
+				<label
+					style={{
+						display: 'inline-flex',
+						alignItems: 'center',
+						cursor: 'pointer',
+					}}
+				>
 					<input
 						type="checkbox"
-						className="sr-only peer"
+						className="sr-only"
 						checked={optimisticIsTracked}
 						onChange={handleTrackingToggle}
 						disabled={isToggleLoading}
 					/>
-					<div className="relative w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 peer transition-colors duration-200 ease-in-out peer-checked:bg-purple-600">
+					<div
+						className={`${styles.toggleSwitch} ${
+							optimisticIsTracked ? styles.toggleSwitchChecked : ''
+						}`}
+					>
 						<div
-							className={`absolute top-0.5 left-[2px] bg-white h-5 w-5 rounded-full transition-transform duration-200 ease-in-out ${
-								optimisticIsTracked ? 'translate-x-5' : 'translate-x-0'
+							className={`${styles.toggleThumb} ${
+								optimisticIsTracked ? styles.toggleThumbChecked : ''
 							}`}
-						></div>
+						/>
 					</div>
 				</label>
 			</div>
@@ -216,12 +235,18 @@ const CompanyFilters = ({
 	currentFilters: FiltersState;
 }) => {
 	return (
-		<div className={`${CARD_CONTAINER} mb-8`}>
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+		<div className={`${CARD_CONTAINER} ${styles.filterBar}`}>
+			<div className={styles.gridFilters}>
 				<div>
 					<label
 						htmlFor="search-input"
-						className="block text-sm font-medium text-[var(--text-muted)] mb-2"
+						style={{
+							display: 'block',
+							fontSize: '0.875rem',
+							fontWeight: 500,
+							color: 'var(--text-muted)',
+							marginBottom: '0.5rem',
+						}}
 					>
 						Search
 					</label>
@@ -229,44 +254,68 @@ const CompanyFilters = ({
 						type="text"
 						id="search-input"
 						placeholder="Company name..."
-						className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+						className={styles.input}
 						value={currentFilters.search}
 						onChange={e => onSearchChange(e.target.value)}
 					/>
 				</div>
 
 				<div
-					className={`${
+					style={
 						currentFilters.showTrackedOnly
-							? 'bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg'
-							: ''
-					}`}
+							? {
+									background: 'var(--purple-50, #f5f3ff)',
+									borderRadius: '0.5rem',
+									padding: '0.75rem',
+							  }
+							: {}
+					}
 				>
-					<label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+					<label
+						style={{
+							display: 'block',
+							fontSize: '0.875rem',
+							fontWeight: 500,
+							color: 'var(--text-muted)',
+							marginBottom: '0.5rem',
+						}}
+					>
 						Show Tracked Only
 					</label>
-					<label className="inline-flex items-center cursor-pointer">
+					<label
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							cursor: 'pointer',
+						}}
+					>
 						<input
 							type="checkbox"
-							className="sr-only peer"
+							className="sr-only"
 							checked={currentFilters.showTrackedOnly}
 							onChange={e => onShowTrackedOnlyChange(e.target.checked)}
 						/>
-						<div className="relative w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 peer transition-colors duration-200 ease-in-out peer-checked:bg-purple-600">
+						<div
+							className={`${styles.toggleSwitch} ${
+								currentFilters.showTrackedOnly ? styles.toggleSwitchChecked : ''
+							}`}
+						>
 							<div
-								className={`absolute top-0.5 left-[2px] bg-white h-5 w-5 rounded-full transition-transform duration-200 ease-in-out ${
+								className={`${styles.toggleThumb} ${
 									currentFilters.showTrackedOnly
-										? 'translate-x-5'
-										: 'translate-x-0'
+										? styles.toggleThumbChecked
+										: ''
 								}`}
-							></div>
+							/>
 						</div>
 						<span
-							className={`ml-2 ${
-								currentFilters.showTrackedOnly
-									? 'text-purple-700 dark:text-purple-300 font-semibold'
-									: 'text-[var(--text-color)]'
-							}`}
+							style={{
+								marginLeft: '0.5rem',
+								color: currentFilters.showTrackedOnly
+									? '#a78bfa'
+									: 'var(--text-color)',
+								fontWeight: currentFilters.showTrackedOnly ? 600 : 400,
+							}}
 						>
 							{currentFilters.showTrackedOnly
 								? 'Showing Tracked Only'
@@ -276,63 +325,54 @@ const CompanyFilters = ({
 				</div>
 
 				<div>
-					<label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+					<label
+						style={{
+							display: 'block',
+							fontSize: '0.875rem',
+							fontWeight: 500,
+							color: 'var(--text-muted)',
+							marginBottom: '0.5rem',
+						}}
+					>
 						Work Model
 					</label>
-					<div className="flex flex-wrap gap-2">
-						<button
-							onClick={() => onWorkModelChange('all')}
-							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-								currentFilters.workModel === 'all'
-									? 'active bg-purple-600 text-white'
-									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
-							}`}
-						>
-							All
-						</button>
-						<button
-							onClick={() => onWorkModelChange('FULLY_REMOTE')}
-							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-								currentFilters.workModel === 'FULLY_REMOTE'
-									? 'active bg-purple-600 text-white'
-									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
-							}`}
-						>
-							Remote
-						</button>
-						<button
-							onClick={() => onWorkModelChange('HYBRID')}
-							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-								currentFilters.workModel === 'HYBRID'
-									? 'active bg-purple-600 text-white'
-									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
-							}`}
-						>
-							Hybrid
-						</button>
-						<button
-							onClick={() => onWorkModelChange('IN_OFFICE')}
-							className={`btn-filter flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-								currentFilters.workModel === 'IN_OFFICE'
-									? 'active bg-purple-600 text-white'
-									: 'bg-[var(--btn-filter-bg)] text-[var(--btn-filter-text)] hover:bg-[var(--btn-filter-hover-bg)]'
-							}`}
-						>
-							On-Site
-						</button>
+					<div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
+						{['all', 'FULLY_REMOTE', 'HYBRID', 'IN_OFFICE'].map(model => (
+							<button
+								key={model}
+								onClick={() => onWorkModelChange(model)}
+								className={`${styles.btnFilter} ${
+									currentFilters.workModel === model ? 'active' : ''
+								}`}
+							>
+								{model === 'all'
+									? 'All'
+									: model === 'FULLY_REMOTE'
+									? 'Remote'
+									: model === 'HYBRID'
+									? 'Hybrid'
+									: 'On-Site'}
+							</button>
+						))}
 					</div>
 				</div>
 
 				<div>
 					<label
 						htmlFor="sort-select"
-						className="block text-sm font-medium text-[var(--text-muted)] mb-2"
+						style={{
+							display: 'block',
+							fontSize: '0.875rem',
+							fontWeight: 500,
+							color: 'var(--text-muted)',
+							marginBottom: '0.5rem',
+						}}
 					>
 						Sort By
 					</label>
 					<select
 						id="sort-select"
-						className="input w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[var(--input-bg)] border-[var(--input-border)] text-[var(--text-color)]"
+						className={styles.input}
 						value={currentFilters.sort}
 						onChange={e => onSortChange(e.target.value)}
 					>
@@ -424,8 +464,8 @@ export default function CompaniesPage() {
 			<main
 				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
 			>
-				<div className="max-w-7xl mx-auto">
-					<div className="flex flex-wrap justify-between items-center mb-8">
+				<div style={{maxWidth: '80rem', margin: '0 auto'}}>
+					<div className={styles.flexBetween}>
 						<div>
 							<h1 className={HEADING_LG}>Track Companies</h1>
 							<p className={TEXT_SECONDARY}>
@@ -435,7 +475,7 @@ export default function CompaniesPage() {
 						</div>
 						<button
 							onClick={() => setIsAddCompanyModalOpen(true)}
-							className={`${BUTTON_PRIMARY} mt-4 md:mt-0`}
+							className={styles.addCompanyBtn}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -443,7 +483,7 @@ export default function CompaniesPage() {
 								height="16"
 								fill="currentColor"
 								viewBox="0 0 16 16"
-								className="mr-2"
+								className={styles.mr2}
 							>
 								<path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 1 1 0-2h6V1a1 1 0 0 1 1-1z" />
 							</svg>
@@ -464,26 +504,21 @@ export default function CompaniesPage() {
 					/>
 
 					{isLoading && (
-						<div className={`text-center py-10 ${TEXT_SECONDARY}`}>
-							Loading companies...
-						</div>
+						<div className={styles.centerText}>Loading companies...</div>
 					)}
 					{isError && (
-						<div className="text-center py-10 text-red-500">
+						<div className={styles.errorText}>
 							<p>Error loading companies.</p>
-							{error && <p className="text-sm">{error.message}</p>}
+							{error && <p style={{fontSize: '0.875rem'}}>{error.message}</p>}
 						</div>
 					)}
 					{!isLoading && !isError && filteredCompanies.length === 0 && (
-						<div className={`text-center py-10 ${TEXT_SECONDARY}`}>
+						<div className={styles.centerText}>
 							No companies match your current filters.
 						</div>
 					)}
 					{!isLoading && !isError && filteredCompanies.length > 0 && (
-						<div
-							id="company-grid"
-							className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-						>
+						<div id="company-grid" className={styles.companyGrid}>
 							{filteredCompanies.map(company => (
 								<CompanyCard key={company.id} company={company} />
 							))}

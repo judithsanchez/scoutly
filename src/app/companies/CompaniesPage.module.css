@@ -1,0 +1,180 @@
+.card {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.companyGrid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+	.companyGrid {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+@media (min-width: 768px) {
+	.companyGrid {
+		grid-template-columns: 1fr 1fr 1fr;
+	}
+}
+@media (min-width: 1024px) {
+	.companyGrid {
+		grid-template-columns: 1fr 1fr 1fr 1fr;
+	}
+}
+
+.filterBar {
+	margin-bottom: 2rem;
+}
+
+.gridFilters {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1.5rem;
+	align-items: end;
+}
+
+@media (min-width: 768px) {
+	.gridFilters {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+@media (min-width: 1024px) {
+	.gridFilters {
+		grid-template-columns: 1fr 1fr 1fr 1fr;
+	}
+}
+
+.input {
+	width: 100%;
+	padding: 0.5rem;
+	border: 1px solid var(--input-border, #e5e7eb);
+	border-radius: 0.5rem;
+	background: var(--input-bg, #fff);
+	color: var(--text-color, #1e293b);
+	outline: none;
+	transition: box-shadow 0.2s;
+}
+
+.input:focus {
+	box-shadow: 0 0 0 2px #a78bfa;
+}
+
+.btnFilter {
+	flex: 1;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	border-radius: 0.5rem;
+	transition: background 0.2s, color 0.2s;
+	background: var(--btn-filter-bg, #f3f4f6);
+	color: var(--btn-filter-text, #1e293b);
+	border: none;
+	cursor: pointer;
+}
+
+.btnFilter:hover {
+	background: var(--btn-filter-hover-bg, #e5e7eb);
+}
+
+.btnFilter.active {
+	background: #a78bfa;
+	color: #fff;
+}
+
+.toggleSwitch {
+	position: relative;
+	width: 2.75rem;
+	height: 1.5rem;
+	background: #e5e7eb;
+	border-radius: 9999px;
+	transition: background 0.2s;
+}
+
+.toggleSwitch.dark {
+	background: #334155;
+}
+
+.toggleSwitchChecked {
+	background: #a78bfa;
+}
+
+.toggleThumb {
+	position: absolute;
+	top: 0.125rem;
+	left: 0.125rem;
+	width: 1.25rem;
+	height: 1.25rem;
+	background: #fff;
+	border-radius: 9999px;
+	transition: transform 0.2s;
+}
+
+.toggleThumbChecked {
+	transform: translateX(1.25rem);
+}
+
+.rankingSlider {
+	width: 100%;
+}
+
+.rankingLabels {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 0.25rem;
+	font-size: 0.75rem;
+	color: var(--text-muted, #64748b);
+}
+
+.errorText {
+	color: #ef4444;
+	text-align: center;
+	padding: 2.5rem 0;
+}
+
+.centerText {
+	text-align: center;
+	padding: 2.5rem 0;
+	color: var(--text-muted, #64748b);
+}
+
+.addCompanyBtn {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	background: #a78bfa;
+	color: #fff;
+	padding: 0.5rem 1rem;
+	border-radius: 0.5rem;
+	font-weight: 600;
+	border: none;
+	cursor: pointer;
+	margin-top: 1rem;
+	margin-bottom: 0;
+	transition: background 0.2s;
+}
+
+.addCompanyBtn:hover {
+	background: #7c3aed;
+}
+
+@media (min-width: 768px) {
+	.addCompanyBtn {
+		margin-top: 0;
+	}
+}
+
+.flexBetween {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	margin-bottom: 2rem;
+}
+
+.mr2 {
+	margin-right: 0.5rem;
+}
