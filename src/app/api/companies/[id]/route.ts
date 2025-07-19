@@ -1,7 +1,7 @@
-import { corsOptionsResponse } from '@/utils/cors';
+import {corsOptionsResponse} from '@/utils/cors';
 
 export async function OPTIONS() {
-  return corsOptionsResponse('companies/[id]');
+	return corsOptionsResponse('companies/[id]');
 }
 import {NextRequest, NextResponse} from 'next/server';
 import {env, deployment, apiBaseUrl} from '@/config/environment';
@@ -42,10 +42,8 @@ export async function GET(
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
-		// Serialize _id and any Date fields
 		const obj = company.toObject ? company.toObject() : company;
 		const {_id, ...companyData} = obj;
-		// Convert all Date fields to ISO strings
 		const companyWithId = {
 			...companyData,
 			id: _id?.toString(),
@@ -116,7 +114,6 @@ export async function PATCH(
 		if (!company) {
 			return NextResponse.json({error: 'Company not found'}, {status: 404});
 		}
-		// Serialize _id and any Date fields
 		const obj = company.toObject ? company.toObject() : company;
 		const {_id, ...companyData} = obj;
 		const companyWithId = {

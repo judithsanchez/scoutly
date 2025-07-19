@@ -3,7 +3,6 @@ import {verifyJwt} from '@/utils/jwt';
 import {header} from '@/config/environment';
 
 export async function requireAuth(request: NextRequest) {
-	// Debug: Log all incoming headers and Authorization header
 	console.log(
 		'[requireAuth] Incoming headers:',
 		Object.fromEntries(request.headers.entries()),

@@ -1,7 +1,7 @@
-import { corsOptionsResponse } from '@/utils/cors';
+import {corsOptionsResponse} from '@/utils/cors';
 
 export async function OPTIONS() {
-  return corsOptionsResponse('users/register');
+	return corsOptionsResponse('users/register');
 }
 import {NextRequest, NextResponse} from 'next/server';
 import bcrypt from 'bcryptjs';
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 	try {
 		await logger.debug('[USERS][REGISTER][POST] Registration endpoint called');
 		const apiSecret =
-  req.headers.get(header.INTERNAL_API_SECRET) ||
-  req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
+			req.headers.get(header.INTERNAL_API_SECRET) ||
+			req.headers.get(header.INTERNAL_API_SECRET.toLowerCase());
 
 		if (!apiSecret || apiSecret !== secret.internalApiSecret) {
 			await logger.error(
@@ -94,7 +94,6 @@ export async function POST(req: NextRequest): Promise<Response> {
 			});
 			return NextResponse.json({success: true, userId: user.userId});
 		} catch (err: any) {
-			// Handle duplicate key error from MongoDB
 			if (err && err.code === 11000 && err.keyPattern && err.keyPattern.email) {
 				await logger.info(
 					'[USERS][REGISTER][POST] Duplicate email registration attempt',

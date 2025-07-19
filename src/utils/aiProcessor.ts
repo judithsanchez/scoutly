@@ -1,8 +1,4 @@
-/**
- * AI processing utilities for job matching and analysis using Gemini
- */
-
-import {GoogleGenerativeAI, GenerationConfig} from '@google/generative-ai';
+import {GenerationConfig} from '@google/generative-ai';
 import {Logger} from './logger';
 import {initialMatchingSchema, deepDiveSchema} from './geminiSchemas';
 import {objectToXML} from './dataTransform';
@@ -15,7 +11,6 @@ import {type ExtractedLink} from './scraper';
 const logger = new Logger('AIProcessor');
 
 export interface JobAnalysisResult {
-	// Required fields (from Gemini deepDiveSchema)
 	title: string;
 	url: string;
 	goodFitReasons: string[];
@@ -23,7 +18,6 @@ export interface JobAnalysisResult {
 	stretchGoals: string[];
 	suitabilityScore: number;
 
-	// Optional fields (from Gemini deepDiveSchema)
 	location?: string;
 	timezone?: string;
 	salary?: {
@@ -49,21 +43,12 @@ export interface AnalysisResultWithUsage {
 }
 
 export interface AIProcessorConfig {
-	model: any; // Gemini model instance
+	model: any;
 	modelLimits: IGeminiRateLimit;
 	templates: PromptTemplates;
 	usageStats: UsageStats;
 }
 
-/**
- * Performs initial job matching using AI to filter relevant positions
- *
- * @param links - Job links to analyze
- * @param cvContent - CV content as text
- * @param candidateInfo - Candidate information object
- * @param config - AI processor configuration
- * @returns Array of matched job positions
- */
 export async function performInitialMatching(
 	links: ExtractedLink[],
 	cvContent: string,
@@ -104,15 +89,6 @@ ${links
 	return JSON.parse(responseText).recommendedPositions || [];
 }
 
-/**
- * Performs deep dive analysis on a batch of job positions
- *
- * @param batch - Array of job positions with content
- * @param cvContent - CV content as text
- * @param candidateInfo - Candidate information object
- * @param config - AI processor configuration
- * @returns Analysis results with token usage metadata
- */
 export async function analyzeJobBatch(
 	batch: Array<{title: string; url: string; content: string}>,
 	cvContent: string,
@@ -154,7 +130,6 @@ ${batch
 		generationConfig,
 	});
 
-	// Extract token usage metadata from Gemini response
 	const tokenUsage = {
 		promptTokenCount: result.response.usageMetadata?.promptTokenCount || 0,
 		candidatesTokenCount:
@@ -168,7 +143,6 @@ ${batch
 
 	const analysis = JSON.parse(result.response.text());
 
-	// Log all results for debugging (including rejected ones)
 	const allResults = analysis.analysisResults || [];
 	const rejectedResults = allResults.filter(
 		(result: any) => result.suitabilityScore === 0,
@@ -197,11 +171,9 @@ ${batch
 			})),
 		});
 
-		// Log deal-breaker patterns for rejected jobs
 		const dealBreakerAnalysis = rejectedResults.map((job: any) => {
 			const rejectionReasons = [];
 
-			// Check for location/visa issues
 			if (
 				job.location &&
 				job.location.toLowerCase().includes('us') &&
@@ -217,7 +189,6 @@ ${batch
 				rejectionReasons.push('UK location without visa sponsorship');
 			}
 
-			// Check for language issues
 			if (job.languageRequirements && job.languageRequirements.length > 0) {
 				const candidateLanguages = ['spanish', 'english', 'dutch'];
 				const missingLanguages = job.languageRequirements.filter(
@@ -235,7 +206,6 @@ ${batch
 				}
 			}
 
-			// Check for experience level mismatches
 			if (
 				job.experienceLevel &&
 				job.experienceLevel.toLowerCase().includes('senior') &&
@@ -294,15 +264,6 @@ ${batch
 	};
 }
 
-/**
- * Creates an AI processor configuration object
- *
- * @param model - Gemini model instance
- * @param modelLimits - Rate limits for the model
- * @param templates - Prompt templates
- * @param usageStats - Usage statistics object
- * @returns AI processor configuration
- */
 export function createAIProcessorConfig(
 	model: any,
 	modelLimits: IGeminiRateLimit,
