@@ -4,13 +4,22 @@ import React, {useEffect, useState} from 'react';
 import apiClient from '@/lib/apiClient';
 import {Card, CardHeader, CardTitle, CardContent} from '@/components/ui/card';
 
+interface ScrapeHistoryLink {
+	url: string;
+	text: string;
+	context?: string;
+}
+
 interface ScrapeHistoryRecord {
 	_id: string;
-	companyID: string;
-	company: string;
+	companyId: string;
+	userEmail?: string;
+	createdAt: string;
 	lastScrapeDate: string;
-	status: string;
+	links?: ScrapeHistoryLink[];
+	status?: string;
 	error?: string;
+	updatedAt?: string;
 }
 
 interface ScrapeHistoryResponse {
@@ -28,21 +37,14 @@ export default function CompanyScrapeHistoryPanel() {
 	const pageSize = 20;
 
 	useEffect(() => {
-		const fetchData = async () => {
-			setLoading(true);
-			setError(null);
-			try {
-				const json = await apiClient<ScrapeHistoryResponse>(
-					`/api/admin/company-scrape-history?page=${page}&pageSize=${pageSize}`,
-				);
-				setData(json);
-			} catch (err) {
-				setError(err instanceof Error ? err.message : 'An error occurred');
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchData();
+		setLoading(true);
+		setError(null);
+		apiClient<ScrapeHistoryResponse>(
+			`/api/admin/company-scrape-history?page=${page}&pageSize=${pageSize}`,
+		)
+			.then(res => setData(res))
+			.catch(err => setError(err?.message || 'Failed to fetch'))
+			.finally(() => setLoading(false));
 	}, [page]);
 
 	return (
@@ -58,9 +60,11 @@ export default function CompanyScrapeHistoryPanel() {
 						<table className="min-w-full border rounded-lg bg-white">
 							<thead>
 								<tr>
-									<th className="border px-3 py-2 text-left">Company</th>
 									<th className="border px-3 py-2 text-left">Company ID</th>
+									<th className="border px-3 py-2 text-left">User Email</th>
+									<th className="border px-3 py-2 text-left">Created At</th>
 									<th className="border px-3 py-2 text-left">Last Scrape</th>
+									<th className="border px-3 py-2 text-left">Links</th>
 									<th className="border px-3 py-2 text-left">Status</th>
 									<th className="border px-3 py-2 text-left">Error</th>
 								</tr>
@@ -68,24 +72,55 @@ export default function CompanyScrapeHistoryPanel() {
 							<tbody>
 								{data.records.map(r => (
 									<tr key={r._id} className="hover:bg-gray-50">
-										<td className="border px-3 py-2">{r.company}</td>
-										<td className="border px-3 py-2">{r.companyID}</td>
+										<td className="border px-3 py-2">{r.companyId}</td>
+										<td className="border px-3 py-2">{r.userEmail || ''}</td>
+										<td className="border px-3 py-2">
+											{r.createdAt
+												? new Date(r.createdAt).toLocaleString()
+												: ''}
+										</td>
 										<td className="border px-3 py-2">
 											{r.lastScrapeDate
 												? new Date(r.lastScrapeDate).toLocaleString()
-												: '-'}
+												: ''}
 										</td>
-										<td className="border px-3 py-2">{r.status}</td>
-										<td className="border px-3 py-2">{r.error || '-'}</td>
+										<td className="border px-3 py-2">
+											{r.links && r.links.length > 0 ? (
+												<ul className="list-disc pl-4">
+													{r.links.map((link, idx) => (
+														<li key={idx}>
+															<a
+																href={link.url}
+																target="_blank"
+																rel="noopener noreferrer"
+																className="text-blue-600 underline"
+															>
+																{link.text || link.url}
+															</a>
+															{link.context && (
+																<span className="ml-2 text-xs text-gray-500">
+																	({link.context})
+																</span>
+															)}
+														</li>
+													))}
+												</ul>
+											) : (
+												<span className="text-gray-400">No links</span>
+											)}
+										</td>
+										<td className="border px-3 py-2">{r.status || ''}</td>
+										<td className="border px-3 py-2 text-xs text-red-600">
+											{r.error || ''}
+										</td>
 									</tr>
 								))}
 							</tbody>
 						</table>
-						{/* Pagination */}
 						<div className="flex justify-between items-center mt-4">
 							<button
 								className="px-3 py-1 border rounded disabled:opacity-50"
-								onClick={() => setPage(p => Math.max(1, p - 1))}
+								onClick={() => setPage((p: number) => Math.max(1, p - 1))}
 								disabled={page === 1}
 							>
 								Previous
@@ -96,7 +131,7 @@ export default function CompanyScrapeHistoryPanel() {
 							</span>
 							<button
 								className="px-3 py-1 border rounded disabled:opacity-50"
-								onClick={() => setPage(p => p + 1)}
+								onClick={() => setPage((p: number) => p + 1)}
 								disabled={data && page >= Math.ceil(data.total / data.pageSize)}
 							>
 								Next
