@@ -4,27 +4,15 @@ import {AboutProjectSection} from '@/components/AboutProjectSection';
 import {HeroSection} from '@/components/HeroSection';
 import {HowItWorksSection} from '@/components/HowItWorksSection';
 import {DemoModal} from '@/components/DemoModal';
-import {
-	PAGE_BACKGROUND_CONTAINER,
-	PAGE_BACKGROUND_GLOW,
-	TEXT_SECONDARY,
-} from '@/constants/styles';
-import {useState, useEffect} from 'react';
+import {TEXT_SECONDARY} from '@/constants/styles';
+import {useState} from 'react';
 import styles from './HomePage.module.css';
 
 export default function Home() {
 	const [isDemoOpen, setIsDemoOpen] = useState(false);
-	const [isDemoCSSOpen, setIsDemoCSSOpen] = useState(false);
-
-	useEffect(() => {
-		if (typeof window !== 'undefined') {
-			(window as any).__setDemoModalCSSOpen?.(setIsDemoCSSOpen);
-		}
-	}, []);
 
 	return (
-		<div className={`${PAGE_BACKGROUND_CONTAINER} ${styles.container}`}>
-			<div className={PAGE_BACKGROUND_GLOW}></div>
+		<>
 			<DemoModal isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
 			<main className={styles.mainContent}>
 				<HeroSection onDemoClick={() => setIsDemoOpen(true)} />
@@ -36,6 +24,6 @@ export default function Home() {
 					</p>
 				</footer>
 			</main>
-		</div>
+		</>
 	);
 }
