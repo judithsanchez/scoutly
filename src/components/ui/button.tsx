@@ -1,26 +1,14 @@
 import * as React from 'react';
-import {Slot} from '@radix-ui/react-slot';
 import styles from './button.module.css';
 
 export interface ButtonProps
 	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	variant?: 'default' | 'outline' | 'ghost';
 	size?: 'default' | 'sm' | 'lg';
-	asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-	(
-		{
-			className = '',
-			variant = 'default',
-			size = 'default',
-			asChild = false,
-			...props
-		},
-		ref,
-	) => {
-		const Comp = asChild ? Slot : 'button';
+	({className = '', variant = 'default', size = 'default', ...props}, ref) => {
 		const variantClass =
 			variant === 'outline'
 				? styles['button-outline']
@@ -34,7 +22,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 				? styles['button-lg']
 				: styles['button-default-size'];
 		return (
-			<Comp
+			<button
 				className={`${styles.button} ${variantClass} ${sizeClass} ${className}`}
 				ref={ref}
 				{...props}
