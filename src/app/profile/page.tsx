@@ -3,11 +3,6 @@
 import React, {useState, useEffect} from 'react';
 import {ArrayInput} from '@/components/form/ArrayInput';
 import {
-	PAGE_CONTENT_CONTAINER,
-	PAGE_BACKGROUND_CONTAINER,
-	PAGE_BACKGROUND_GLOW,
-} from '@/constants/styles';
-import {
 	ProfileCard,
 	PageHeader,
 	AuthInfoSection,
@@ -92,9 +87,9 @@ export default function ProfilePage() {
 	};
 
 	return (
-		<div className={PAGE_BACKGROUND_CONTAINER}>
-			<div className={PAGE_BACKGROUND_GLOW} />
-			<main className={PAGE_CONTENT_CONTAINER}>
+		<div className="page-background-container">
+			<div className="page-background-glow" />
+			<main className="page-content-container">
 				<PageHeader
 					title="Profile Settings"
 					description="Manage your profile information and job preferences"

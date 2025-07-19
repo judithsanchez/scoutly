@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import {FLEX_BETWEEN, TEXT_PRIMARY, TEXT_SECONDARY} from '@/constants/styles';
 
 /**
  * Card UI component for profile sections
@@ -71,7 +70,7 @@ export function AuthInfoSection({
 
 	return (
 		<div className="mb-8 p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)]">
-			<div className={FLEX_BETWEEN}>
+			<div className="flex-between">
 				<div>
 					<h2 className="text-lg font-medium text-[var(--text-color)]">
 						Current Session

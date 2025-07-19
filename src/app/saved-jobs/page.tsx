@@ -4,13 +4,6 @@ import {useEffect, useState, useMemo} from 'react';
 import SavedJobCard from '@/components/SavedJobCard';
 import {ISavedJob, ApplicationStatus, statusPriority} from '@/types/savedJob';
 import apiClient from '@/lib/apiClient';
-import {
-	HEADING_LG,
-	FLEX_COL,
-	PAGE_BACKGROUND_CONTAINER,
-	PAGE_BACKGROUND_GLOW,
-	PAGE_CONTENT_CONTAINER,
-} from '@/constants/styles';
 import styles from './SavedJobsPage.module.css';
 
 export default function SavedJobsPage() {
@@ -99,9 +92,8 @@ export default function SavedJobsPage() {
 
 	if (isLoading) {
 		return (
-			<div className={PAGE_BACKGROUND_CONTAINER}>
-				<div className={PAGE_BACKGROUND_GLOW}></div>
-				<main className={PAGE_CONTENT_CONTAINER}>
+			<div className="page-background-container">
+				<main className="page-content-container">
 					<div className={styles.loadingText}>Loading saved jobs...</div>
 				</main>
 			</div>
@@ -109,10 +101,9 @@ export default function SavedJobsPage() {
 	}
 
 	return (
-		<div className={PAGE_BACKGROUND_CONTAINER}>
-			<div className={PAGE_BACKGROUND_GLOW}></div>
-			<main className={PAGE_CONTENT_CONTAINER}>
-				<h1 className={HEADING_LG}>Saved Jobs</h1>
+		<div className="page-background-container">
+			<main className="page-content-container">
+				<h1 className="heading-lg">Saved Jobs</h1>
 
 				{isLoading ? (
 					<div className={styles.loadingText}>Loading saved jobs...</div>

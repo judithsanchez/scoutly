@@ -4,7 +4,6 @@ import {AboutProjectSection} from '@/components/AboutProjectSection';
 import {HeroSection} from '@/components/HeroSection';
 import {HowItWorksSection} from '@/components/HowItWorksSection';
 import {DemoModal} from '@/components/DemoModal';
-import {TEXT_SECONDARY} from '@/constants/styles';
 import {useState} from 'react';
 import styles from './HomePage.module.css';
 
@@ -19,7 +18,7 @@ export default function Home() {
 				<HowItWorksSection />
 				<AboutProjectSection />
 				<footer className={styles.footer}>
-					<p className={TEXT_SECONDARY}>
+					<p className="text-secondary">
 						A Portfolio Project by Judith Sanchez
 					</p>
 				</footer>

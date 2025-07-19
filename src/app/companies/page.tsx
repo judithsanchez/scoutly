@@ -4,17 +4,6 @@ import {useCompanies} from '@/hooks/useCompanies';
 import type {TrackedCompany, ICompanyWithId} from '@/hooks/useCompanies';
 import {useEffect, useState} from 'react';
 import {AddCompanyModal} from '@/components/AddCompanyModal';
-import {
-	PAGE_BACKGROUND_CONTAINER,
-	PAGE_BACKGROUND_GLOW,
-	PAGE_CONTENT_CONTAINER,
-	CARD_CONTAINER,
-	HEADING_LG,
-	HEADING_MD,
-	TEXT_SECONDARY,
-	BUTTON_PRIMARY,
-	FLEX_BETWEEN,
-} from '@/constants/styles';
 import styles from './CompaniesPage.module.css';
 
 const CompanyCard = ({company}: {company: ICompanyWithId}) => {
@@ -91,14 +80,14 @@ const CompanyCard = ({company}: {company: ICompanyWithId}) => {
 
 	return (
 		<div
-			className={`${styles.card} ${CARD_CONTAINER}`}
+			className={`${styles.card} card-container`}
 			data-name={company.company.toLowerCase()}
 			data-work-model={company.work_model}
 			data-ranking={optimisticRanking}
 		>
 			<div>
-				<h3 className={HEADING_MD}>{company.company}</h3>
-				<p className={`${TEXT_SECONDARY} ${styles.centerText}`}>
+				<h3 className="heading-md">{company.company}</h3>
+				<p className={`text-secondary ${styles.centerText}`}>
 					{Array.isArray(company.fields) && company.fields.length > 0
 						? company.fields.join(', ')
 						: typeof company.fields === 'string'
@@ -234,7 +223,7 @@ const CompanyFilters = ({
 	currentFilters: FiltersState;
 }) => {
 	return (
-		<div className={`${CARD_CONTAINER} ${styles.filterBar}`}>
+		<div className={`card-container ${styles.filterBar}`}>
 			<div className={styles.gridFilters}>
 				<div>
 					<label
@@ -457,16 +446,14 @@ export default function CompaniesPage() {
 		});
 
 	return (
-		<div className={PAGE_BACKGROUND_CONTAINER}>
-			<div className={PAGE_BACKGROUND_GLOW}></div>
-			<main
-				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
-			>
+		<div className="page-background-container">
+			<div className="page-background-glow"></div>
+			<main className="page-content-container">
 				<div style={{maxWidth: '80rem', margin: '0 auto'}}>
 					<div className={styles.flexBetween}>
 						<div>
-							<h1 className={HEADING_LG}>Track Companies</h1>
-							<p className={TEXT_SECONDARY}>
+							<h1 className="heading-lg">Track Companies</h1>
+							<p className="text-secondary">
 								Select the companies you want Scoutly to monitor for new job
 								openings.
 							</p>
