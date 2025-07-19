@@ -1,7 +1,3 @@
-/**
- * Template loading utilities for AI prompts and configuration
- */
-
 import fs from 'fs/promises';
 import path from 'path';
 import {Logger} from './logger';
@@ -14,21 +10,12 @@ export interface PromptTemplates {
 	jobPostDeepDive: string;
 }
 
-/**
- * Template file paths configuration
- */
 export const TEMPLATE_PATHS = {
 	systemRole: 'src/config/systemRole.md',
 	firstSelectionTask: 'src/config/firstSelectionTask.md',
 	jobPostDeepDive: 'src/config/jobPostDeepDive.md',
 } as const;
 
-/**
- * Loads a single template file
- *
- * @param templatePath - Path to the template file relative to project root
- * @returns Template content as string
- */
 export async function loadTemplate(templatePath: string): Promise<string> {
 	try {
 		const fullPath = path.join(process.cwd(), templatePath);
@@ -42,12 +29,6 @@ export async function loadTemplate(templatePath: string): Promise<string> {
 		throw new Error(`Failed to load template: ${templatePath}`);
 	}
 }
-
-/**
- * Loads all prompt templates required for job matching
- *
- * @returns Object containing all loaded templates
- */
 export async function loadPromptTemplates(): Promise<PromptTemplates> {
 	try {
 		logger.info('Loading prompt templates...');
@@ -73,12 +54,6 @@ export async function loadPromptTemplates(): Promise<PromptTemplates> {
 	}
 }
 
-/**
- * Validates that all required templates are loaded and not empty
- *
- * @param templates - Template object to validate
- * @throws Error if any template is missing or empty
- */
 export function validateTemplates(templates: PromptTemplates): void {
 	const requiredTemplates = Object.keys(TEMPLATE_PATHS) as Array<
 		keyof PromptTemplates

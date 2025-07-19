@@ -1,7 +1,3 @@
-/**
- * Rate limiting utilities for API usage management
- */
-
 import {Logger} from './logger';
 import {IGeminiRateLimit} from '@/config/rateLimits';
 
@@ -17,11 +13,6 @@ export interface UsageStats {
 	lastReset: Date;
 }
 
-/**
- * Creates initial usage stats object
- *
- * @returns Fresh usage stats object
- */
 export function createUsageStats(): UsageStats {
 	return {
 		minuteTokens: 0,
@@ -34,12 +25,6 @@ export function createUsageStats(): UsageStats {
 	};
 }
 
-/**
- * Checks if daily reset is needed and resets counters
- *
- * @param usageStats - Current usage statistics
- * @returns Updated usage stats
- */
 export function checkDailyReset(usageStats: UsageStats): UsageStats {
 	const now = new Date();
 	if (now.getTime() - usageStats.lastReset.getTime() > 86400000) {
@@ -50,19 +35,12 @@ export function checkDailyReset(usageStats: UsageStats): UsageStats {
 	return usageStats;
 }
 
-/**
- * Checks rate limits and waits if necessary
- *
- * @param modelLimits - The model's rate limits
- * @param usageStats - Current usage statistics
- */
 export async function checkRateLimits(
 	modelLimits: IGeminiRateLimit,
 	usageStats: UsageStats,
 ): Promise<void> {
 	const {tpm, rpm, rpd} = modelLimits;
 
-	// Check daily limits
 	if (rpd && usageStats.lastDayCalls >= rpd) {
 		const msUntilTomorrow =
 			86400000 - (new Date().getTime() - usageStats.lastReset.getTime());
@@ -75,7 +53,6 @@ export async function checkRateLimits(
 		usageStats.lastDayCalls = 0;
 	}
 
-	// Check per-minute request limits
 	if (rpm && usageStats.lastMinuteCalls >= rpm) {
 		logger.warn(
 			`Minute request limit (${rpm}) reached, waiting for next minute`,
@@ -84,7 +61,6 @@ export async function checkRateLimits(
 		usageStats.lastMinuteCalls = 0;
 	}
 
-	// Check per-minute token limits
 	if (tpm && usageStats.minuteTokens >= tpm) {
 		logger.warn(`Minute token limit (${tpm}) reached, waiting for next minute`);
 		await new Promise(resolve => setTimeout(resolve, 60000));
@@ -92,13 +68,6 @@ export async function checkRateLimits(
 	}
 }
 
-/**
- * Generates a usage summary string
- *
- * @param modelLimits - The model's rate limits
- * @param usageStats - Current usage statistics
- * @returns Formatted usage summary
- */
 export function getUsageSummary(
 	modelLimits: IGeminiRateLimit,
 	usageStats: UsageStats,
@@ -117,14 +86,6 @@ export function getUsageSummary(
 		} tokens`,
 	].join('\n');
 }
-
-/**
- * Updates usage stats with new token usage
- *
- * @param usageStats - Current usage statistics
- * @param tokenCount - Number of tokens used
- * @returns Updated usage stats
- */
 export function updateUsageStats(
 	usageStats: UsageStats,
 	tokenCount: number,

@@ -36,7 +36,6 @@ export function getProfileCompleteness(user: Profile): {
 } {
 	const missing: string[] = [];
 
-	// CV URL
 	if (
 		!user.cvUrl ||
 		typeof user.cvUrl !== 'string' ||
@@ -45,12 +44,10 @@ export function getProfileCompleteness(user: Profile): {
 		missing.push('CV URL');
 	}
 
-	// Candidate Info
 	const info = user.candidateInfo;
 	if (!info) {
 		missing.push('Candidate Info');
 	} else {
-		// Logistics
 		const logistics = info.logistics;
 		if (!logistics) {
 			missing.push('Logistics');
@@ -80,7 +77,6 @@ export function getProfileCompleteness(user: Profile): {
 			}
 		}
 
-		// Languages
 		if (!Array.isArray(info.languages) || info.languages.length === 0) {
 			missing.push('Languages');
 		} else {
@@ -89,7 +85,6 @@ export function getProfileCompleteness(user: Profile): {
 			if (!lang.level) missing.push('Language Level');
 		}
 
-		// Preferences
 		const prefs = info.preferences;
 		if (
 			!prefs ||

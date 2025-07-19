@@ -6,14 +6,13 @@ import type {ICompany} from '../models/Company';
 
 const logger = new Logger('Scraper');
 
-// Semaphore for limiting concurrent browser instances
 let activeBrowsers = 0;
 const MAX_BROWSERS = 3;
 const activeInstances = new Set<playwright.Browser>();
 
 const getBrowserOptions = () => ({
 	headless: true,
-	executablePath: '/usr/bin/chromium-browser', // Use system Chromium
+	executablePath: '/usr/bin/chromium-browser',
 	args: [
 		'--no-sandbox',
 		'--disable-setuid-sandbox',
@@ -26,7 +25,6 @@ const getBrowserOptions = () => ({
 	],
 });
 
-// Ensure cleanup on process exit
 async function cleanupBrowsers(signal: string) {
 	await logger.info(`Received ${signal}, cleaning up browsers...`);
 	await Promise.all(
@@ -77,7 +75,6 @@ const EXTENDED_TIMEOUT = 120000; // 120s
 const MAX_LOAD_TIME = 300000; // 5m absolute maximum
 const WAIT_STRATEGIES = ['networkidle', 'load', 'domcontentloaded'] as const;
 
-// Retry configuration
 const MAX_RETRIES = 5;
 const MIN_RETRY_DELAY = 2000; // Start with 2s delay
 const MAX_RETRY_DELAY = 30000; // Max 30s delay
@@ -207,7 +204,6 @@ async function autoScroll(page: playwright.Page) {
 				totalHeight += distance;
 				scrolls++;
 				if (totalHeight >= scrollHeight || scrolls >= 30) {
-					// Add max scrolls
 					clearInterval(timer);
 					resolve();
 				}
@@ -234,7 +230,6 @@ export async function scrapeWebsite(
 		],
 	};
 
-	// Try to reuse browser for batch operations
 	await acquireBrowser();
 	let browser;
 	let retries = 0;
@@ -277,7 +272,6 @@ export async function scrapeWebsite(
 				  ]
 				: WAIT_STRATEGIES;
 
-			// Try each strategy with increasing timeouts
 			for (const strategy of strategies) {
 				const startTime = Date.now();
 				try {
@@ -289,7 +283,6 @@ export async function scrapeWebsite(
 						{strategy, timeout: `${currentTimeout / 1000}s`},
 					);
 
-					// Set a hard timeout limit
 					const loadPromise = page.goto(url, {
 						waitUntil: strategy,
 						timeout: currentTimeout,
@@ -303,7 +296,6 @@ export async function scrapeWebsite(
 
 					await Promise.race([loadPromise, timeoutPromise]);
 
-					// Additional validation - check if content is actually present
 					const hasContent = await page.evaluate(() => {
 						const body = document.body;
 						return body && body.innerHTML.length > 0;
@@ -313,7 +305,6 @@ export async function scrapeWebsite(
 						throw new Error('Page loaded but no content found');
 					}
 
-					// Wait a bit more for dynamic content
 					await page.waitForTimeout(1000);
 
 					loaded = true;
@@ -336,7 +327,6 @@ export async function scrapeWebsite(
 							elapsed: `${elapsed.toFixed(1)}s`,
 						},
 					);
-					// Wait before trying next strategy
 					await page.waitForTimeout(2000);
 				}
 			}
@@ -350,7 +340,7 @@ export async function scrapeWebsite(
 
 			await logger.info('Scrolling page to load lazy content...');
 			await autoScroll(page);
-			await page.waitForTimeout(1000); // Wait a final moment for anything to settle
+			await page.waitForTimeout(1000);
 			await logger.success('Scrolling complete.');
 
 			const pageContent = await page.content();
@@ -384,11 +374,6 @@ export async function scrapeWebsite(
 				attempt: retries + 1,
 			});
 
-			// Record error if company is provided
-			if (company) {
-				// Error handling would go here - removed ScrapeErrorService reference
-			}
-
 			retries++;
 			if (retries < MAX_RETRIES) {
 				const delay = Math.min(
@@ -420,9 +405,7 @@ export async function scrapeWebsite(
 		} finally {
 			if (company) {
 				try {
-					// Record successful scrape if no error occurred
 					if (!lastError) {
-						// Success handling would go here - removed ScrapeErrorService reference
 					}
 				} catch (err) {
 					await logger
@@ -444,10 +427,9 @@ export async function scrapeWebsite(
 				}
 			}
 		}
-		break; // Exit retry loop on success
+		break;
 	}
 
-	// If all retries failed, return error
 	return {
 		content: '',
 		links: [],
