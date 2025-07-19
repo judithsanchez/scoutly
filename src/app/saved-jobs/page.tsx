@@ -11,6 +11,7 @@ import {
 	PAGE_BACKGROUND_GLOW,
 	PAGE_CONTENT_CONTAINER,
 } from '@/constants/styles';
+import styles from './SavedJobsPage.module.css';
 
 export default function SavedJobsPage() {
 	interface SavedJobResponse {
@@ -101,7 +102,7 @@ export default function SavedJobsPage() {
 			<div className={PAGE_BACKGROUND_CONTAINER}>
 				<div className={PAGE_BACKGROUND_GLOW}></div>
 				<main className={PAGE_CONTENT_CONTAINER}>
-					<div className="text-slate-400">Loading saved jobs...</div>
+					<div className={styles.loadingText}>Loading saved jobs...</div>
 				</main>
 			</div>
 		);
@@ -114,16 +115,16 @@ export default function SavedJobsPage() {
 				<h1 className={HEADING_LG}>Saved Jobs</h1>
 
 				{isLoading ? (
-					<div className="text-slate-400">Loading saved jobs...</div>
+					<div className={styles.loadingText}>Loading saved jobs...</div>
 				) : error ? (
-					<div className="text-red-400">{error}</div>
+					<div className={styles.errorText}>{error}</div>
 				) : jobs.length === 0 ? (
-					<div className="text-slate-400">
-						You haven&apos;t saved any jobs yet. When you find interesting
+					<div className={styles.emptyText}>
+						You haven't saved any jobs yet. When you find interesting
 						opportunities, save them here to keep track of them.
 					</div>
 				) : (
-					<div className={`space-y-6 ${FLEX_COL}`}>
+					<div className={styles.jobsList}>
 						{jobs.map(job => (
 							<SavedJobCard
 								key={job._id}
