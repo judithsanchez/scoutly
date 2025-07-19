@@ -4,6 +4,8 @@ export const endpoint = {
 		promote_user: '/api/admin/promote',
 		seed_companies: '/api/admin/seed-companies',
 		users: '/api/admin/users',
+		company_scrape_history: '/api/admin/company-scrape-history',
+		logs: '/api/admin/logs',
 	},
 
 	auth: {
@@ -44,4 +46,5 @@ export const endpoint = {
 		forgot_password: '/api/users/forgot-password',
 		update_password: '/api/users/update-password',
 	},
+	company_scrape_history: '/api/admin/company-scrape-history',
 };
