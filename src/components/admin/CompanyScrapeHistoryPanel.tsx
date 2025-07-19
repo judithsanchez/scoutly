@@ -1,6 +1,7 @@
 'use client';
 
 import React, {useEffect, useState} from 'react';
+import ConfirmDeleteScrapeHistoryModal from './ConfirmDeleteScrapeHistoryModal';
 import apiClient from '@/lib/apiClient';
 import {Card, CardHeader, CardTitle, CardContent} from '@/components/ui/card';
 
@@ -34,6 +35,9 @@ export default function CompanyScrapeHistoryPanel() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [page, setPage] = useState(1);
+	const [deleteId, setDeleteId] = useState<string | null>(null);
+	const [deleteLoading, setDeleteLoading] = useState(false);
+	const [deleteError, setDeleteError] = useState<string | null>(null);
 	const pageSize = 20;
 
 	useEffect(() => {
@@ -46,6 +50,29 @@ export default function CompanyScrapeHistoryPanel() {
 			.catch(err => setError(err?.message || 'Failed to fetch'))
 			.finally(() => setLoading(false));
 	}, [page]);
+
+	const handleDelete = async () => {
+		if (!deleteId) return;
+		setDeleteLoading(true);
+		setDeleteError(null);
+		try {
+			await apiClient(`/api/admin/company-scrape-history/${deleteId}`, {
+				method: 'DELETE',
+			});
+			setDeleteId(null);
+			setLoading(true);
+			apiClient<ScrapeHistoryResponse>(
+				`/api/admin/company-scrape-history?page=${page}&pageSize=${pageSize}`,
+			)
+				.then(res => setData(res))
+				.catch(err => setError(err?.message || 'Failed to fetch'))
+				.finally(() => setLoading(false));
+		} catch (err: any) {
+			setDeleteError(err?.message || 'Failed to delete scrape history');
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
 
 	return (
 		<Card>
@@ -80,6 +107,9 @@ export default function CompanyScrapeHistoryPanel() {
 									</th>
 									<th className="border border-slate-700 px-3 py-2 text-left">
 										Error
+									</th>
+									<th className="border border-slate-700 px-3 py-2 text-left">
+										Delete
 									</th>
 								</tr>
 							</thead>
@@ -133,6 +163,29 @@ export default function CompanyScrapeHistoryPanel() {
 										<td className="border border-slate-700 px-3 py-2 text-xs text-red-500">
 											{r.error || ''}
 										</td>
+										<td className="border border-slate-700 px-3 py-2 text-center">
+											<button
+												title="Delete scrape history"
+												className="text-red-500 hover:text-red-700"
+												onClick={() => setDeleteId(r._id)}
+												aria-label="Delete scrape history"
+											>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													className="h-5 w-5 inline"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+													/>
+												</svg>
+											</button>
+										</td>
 									</tr>
 								))}
 							</tbody>
@@ -157,6 +210,18 @@ export default function CompanyScrapeHistoryPanel() {
 								Next
 							</button>
 						</div>
+						<ConfirmDeleteScrapeHistoryModal
+							open={!!deleteId}
+							onClose={() => {
+								setDeleteId(null);
+								setDeleteError(null);
+							}}
+							onConfirm={handleDelete}
+							loading={deleteLoading}
+						/>
+						{deleteError && (
+							<div className="text-red-600 mt-2">{deleteError}</div>
+						)}
 					</div>
 				)}
 			</CardContent>
