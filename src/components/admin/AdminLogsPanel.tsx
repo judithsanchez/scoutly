@@ -55,49 +55,49 @@ export default function AdminLogsPanel() {
 				{error && <div className="text-red-600">{error}</div>}
 				{data && (
 					<div className="overflow-x-auto">
-						<table className="min-w-full border rounded-lg bg-white text-sm">
-							<thead>
+						<table className="min-w-full border rounded-lg bg-slate-900 text-slate-100 border-slate-700 text-sm">
+							<thead className="bg-slate-800 text-slate-200">
 								<tr>
-									<th className="border px-2 py-1 text-left">Process ID</th>
-									<th className="border px-2 py-1 text-left">Context</th>
-									<th className="border px-2 py-1 text-left">Start Time</th>
-									<th className="border px-2 py-1 text-left">End Time</th>
-									<th className="border px-2 py-1 text-left">Entries</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">Process ID</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">Context</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">Start Time</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">End Time</th>
+									<th className="border border-slate-700 px-2 py-1 text-left">Entries</th>
 								</tr>
 							</thead>
 							<tbody>
 								{data.records.map(log => (
-									<tr key={log._id} className="hover:bg-gray-50">
-										<td className="border px-2 py-1 font-mono text-xs">
+									<tr key={log._id} className="hover:bg-slate-800">
+										<td className="border border-slate-700 px-2 py-1 font-mono text-xs">
 											{log.processId}
 										</td>
-										<td className="border px-2 py-1">{log.context}</td>
-										<td className="border px-2 py-1">
+										<td className="border border-slate-700 px-2 py-1">{log.context}</td>
+										<td className="border border-slate-700 px-2 py-1">
 											{new Date(log.startTime).toLocaleString()}
 										</td>
-										<td className="border px-2 py-1">
+										<td className="border border-slate-700 px-2 py-1">
 											{new Date(log.endTime).toLocaleString()}
 										</td>
-										<td className="border px-2 py-1">
+										<td className="border border-slate-700 px-2 py-1">
 											{log.entries.length} entries
 											<details className="ml-2">
-												<summary className="cursor-pointer text-blue-600 underline text-xs">
+											<summary className="cursor-pointer text-blue-400 underline hover:text-blue-300 text-xs">
 													View
 												</summary>
 												<ul className="list-disc pl-4">
 													{log.entries.slice(0, 5).map((entry, idx) => (
 														<li key={idx} className="mb-1">
-															<span className="font-mono text-xs">
+															<span className="font-mono text-xs text-slate-300">
 																[{entry.level}]
 															</span>{' '}
 															{entry.message}
-															<span className="ml-2 text-gray-400 text-xs">
+															<span className="ml-2 text-slate-400 text-xs">
 																{new Date(entry.timestamp).toLocaleString()}
 															</span>
 														</li>
 													))}
 													{log.entries.length > 5 && (
-														<li className="text-xs text-gray-500">
+														<li className="text-xs text-slate-500">
 															...and {log.entries.length - 5} more
 														</li>
 													)}
@@ -110,7 +110,7 @@ export default function AdminLogsPanel() {
 						</table>
 						<div className="flex justify-between items-center mt-4">
 							<button
-								className="px-3 py-1 border rounded disabled:opacity-50"
+								className="px-3 py-1 border border-slate-700 rounded bg-slate-700 text-slate-100 hover:bg-slate-600 disabled:opacity-50"
 								onClick={() => setPage(p => Math.max(1, p - 1))}
 								disabled={page === 1}
 							>
@@ -121,7 +121,7 @@ export default function AdminLogsPanel() {
 								{data ? Math.ceil(data.total / data.pageSize) : 1}
 							</span>
 							<button
-								className="px-3 py-1 border rounded disabled:opacity-50"
+								className="px-3 py-1 border border-slate-700 rounded bg-slate-700 text-slate-100 hover:bg-slate-600 disabled:opacity-50"
 								onClick={() => setPage(p => p + 1)}
 								disabled={data && page >= Math.ceil(data.total / data.pageSize)}
 							>

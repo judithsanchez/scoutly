@@ -41,13 +41,45 @@ interface DashboardData {
 	tokenUsage: TokenUsage;
 	companyStats: CompanyStats;
 }
+import {
+	PAGE_CONTENT_CONTAINER,
+	CARD_CONTAINER,
+	HEADING_LG,
+	TEXT_SECONDARY,
+} from '@/constants/styles';
+import {HomepageBackground} from '@/components/HomepageBackground';
+
 export default function AdminDashboard() {
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-				<CompanyScrapeHistoryPanel />
-				<AdminLogsPanel />
+		<>
+			<HomepageBackground />
+			<main
+				className={PAGE_CONTENT_CONTAINER.replace('max-w-4xl', 'max-w-7xl')}
+			>
+				<div className="mb-8">
+					<h1 className={HEADING_LG}>Admin Dashboard</h1>
+					<p className={TEXT_SECONDARY}>
+						View system logs, company scrape history, and manage admin
+						operations.
+					</p>
+				</div>
+			   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+				   <div className="space-y-6">
+					   <section
+						   className={`${CARD_CONTAINER} bg-slate-800 border border-slate-700 text-slate-100 shadow-md`}
+					   >
+						   <AdminLogsPanel />
+					   </section>
+				   </div>
+				   <div className="space-y-6">
+					   <section
+						   className={`${CARD_CONTAINER} bg-slate-800 border border-slate-700 text-slate-100 shadow-md`}
+					   >
+						   <CompanyScrapeHistoryPanel />
+					   </section>
+				   </div>
+			   </div>
 			</main>
-		</div>
+		</>
 	);
 }
