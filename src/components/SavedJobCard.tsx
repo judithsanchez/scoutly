@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {useAuth} from '@/contexts/AuthContext';
 import ConfirmDeleteSavedJobModal from './ConfirmDeleteSavedJobModal';
 import {ISavedJob, ApplicationStatus} from '@/types/savedJob';
 import {StatusBadge} from '@/components/ui/StatusBadge';
@@ -9,7 +10,7 @@ interface SavedJobCardProps {
 	compact?: boolean;
 	kanban?: boolean;
 	onStatusChange?: (jobId: string, status: ApplicationStatus) => Promise<void>;
-	onDelete?: (jobId: string) => Promise<void>;
+	onDeleted?: (jobId: string) => void;
 }
 
 export default function SavedJobCard({
@@ -17,18 +18,33 @@ export default function SavedJobCard({
 	compact = false,
 	kanban = false,
 	onStatusChange,
-	onDelete,
+	onDeleted,
 }: SavedJobCardProps) {
+	const {token} = useAuth();
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	const handleDelete = async () => {
-		if (!onDelete) return;
 		setDeleteLoading(true);
 		try {
-			await onDelete(job._id);
+			const headers: Record<string, string> = {};
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+			const res = await fetch(`/api/jobs/saved/${job._id}`, {
+				method: 'DELETE',
+				headers,
+			});
+			if (!res.ok) {
+				throw new Error('Failed to delete saved job');
+			}
 			setShowDeleteModal(false);
+			if (onDeleted) onDeleted(job._id);
+		} catch (err) {
+			// Optionally show error to user
+			// eslint-disable-next-line no-console
+			console.error(err);
 		} finally {
 			setDeleteLoading(false);
 		}
@@ -131,29 +147,27 @@ export default function SavedJobCard({
 							compact={true}
 						/>
 					)}
-					{onDelete && (
-						<button
-							title="Delete saved job"
-							className="text-red-500 hover:text-red-700 ml-2"
-							onClick={() => setShowDeleteModal(true)}
-							aria-label="Delete saved job"
+					<button
+						title="Delete saved job"
+						className="ml-2 text-red-500 hover:text-red-700 cursor-pointer"
+						onClick={() => setShowDeleteModal(true)}
+						aria-label="Delete saved job"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							className="h-5 w-5 inline"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
 						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								className="h-5 w-5 inline"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-								/>
-							</svg>
-						</button>
-					)}
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+							/>
+						</svg>
+					</button>
 				</div>
 				<ConfirmDeleteSavedJobModal
 					open={showDeleteModal}
@@ -189,29 +203,27 @@ export default function SavedJobCard({
 							{job.title}
 						</h3>
 						<StatusBadge status={job.status} />
-						{onDelete && (
-							<button
-								title="Delete saved job"
-								className="text-red-500 hover:text-red-700 ml-2"
-								onClick={() => setShowDeleteModal(true)}
-								aria-label="Delete saved job"
+						<button
+							title="Delete saved job"
+							className="text-red-500 hover:text-red-700 ml-2"
+							onClick={() => setShowDeleteModal(true)}
+							aria-label="Delete saved job"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								className="h-5 w-5 inline"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									className="h-5 w-5 inline"
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-									/>
-								</svg>
-							</button>
-						)}
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+								/>
+							</svg>
+						</button>
 					</div>
 					<p className="text-slate-400 font-medium">
 						{job.company &&

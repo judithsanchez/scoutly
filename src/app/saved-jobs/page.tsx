@@ -63,6 +63,10 @@ export default function SavedJobsPage() {
 		}
 	};
 
+	const handleDeleted = (jobId: string) => {
+		setJobs(currentJobs => currentJobs.filter(job => job._id !== jobId));
+	};
+
 	useEffect(() => {
 		async function fetchSavedJobs() {
 			try {
@@ -125,6 +129,7 @@ export default function SavedJobsPage() {
 								key={job._id}
 								job={job}
 								onStatusChange={handleStatusChange}
+								onDeleted={handleDeleted}
 							/>
 						))}
 					</div>
