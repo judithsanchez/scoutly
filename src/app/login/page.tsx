@@ -7,9 +7,39 @@ export default function LoginPage() {
 	return (
 		<>
 			<Navbar />
-			<main className="flex flex-col items-center justify-center min-h-[80vh] bg-background">
-				<div className="w-full max-w-md p-8 mt-8 bg-white rounded-lg shadow-md border border-gray-200">
-					<h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+			<main
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					justifyContent: 'center',
+					minHeight: '80vh',
+					background: 'var(--demo-modal-icon-bg)',
+				}}
+			>
+				<div
+					style={{
+						width: '100%',
+						maxWidth: '28rem',
+						padding: '2rem',
+						marginTop: '2rem',
+						background: '#fff',
+						borderRadius: '0.75rem',
+						boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)',
+						border: '1px solid #e5e7eb',
+					}}
+				>
+					<h1
+						style={{
+							fontSize: '1.5rem',
+							fontWeight: 700,
+							marginBottom: '1.5rem',
+							textAlign: 'center',
+							color: 'var(--demo-modal-icon)',
+						}}
+					>
+						Login
+					</h1>
 					<LoginForm />
 				</div>
 			</main>
