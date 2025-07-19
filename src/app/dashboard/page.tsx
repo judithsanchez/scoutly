@@ -5,12 +5,12 @@ import {useDashboard} from '@/hooks/useDashboard';
 import {useRouter} from 'next/navigation';
 import React, {useEffect, useState} from 'react';
 import {useProfile} from '@/hooks/useProfile';
-import StartScoutButton from '@/components/StartScoutButton';
 import {useJobs} from '@/hooks/useJobs';
 import SavedJobCard from '@/components/SavedJobCard';
 import {logger} from '@/utils/logger';
 import {ApplicationStatus} from '@/types/savedJob';
 import styles from './DashboardPage.module.css';
+import DashboardSessionPanel from './components/DashboardSessionPanel';
 
 export default function DashboardPage() {
 	const {user} = useAuth();
@@ -46,7 +46,6 @@ export default function DashboardPage() {
 
 	useEffect(() => {
 		fetchSavedJobs();
-		// Optionally add logger if needed
 	}, [fetchSavedJobs]);
 
 	if (!user) {
@@ -123,115 +122,14 @@ export default function DashboardPage() {
 						</button>
 					</div>
 				)}
-				<div className={styles.cardContainer}>
-					<div className={styles.flexBetween}>
-						<div>
-							<h2 className="text-lg font-medium text-[var(--text-color)]">
-								Current Session
-							</h2>
-							<p className="text-purple-400 font-medium mt-1">{user.email}</p>
-						</div>
-						<div className={styles.buttonGroup}>
-							<a href="/profile" className={styles.cardLink}>
-								Edit Profile
-							</a>
-							<StartScoutButton
-								onScoutStart={async selectedCompanyIds => {
-									dashLogger?.info('User Action: Started job search', {
-										selectedCompanies: selectedCompanyIds,
-									});
-									setSearchComplete(null);
-									try {
-										if (!profile) {
-											throw new Error(
-												'User profile not loaded. Please try again.',
-											);
-										}
-										const candidateInfo = profile.candidateInfo || {};
-										const cvUrl = profile.cvUrl || null;
-										if (!cvUrl) {
-											throw new Error(
-												'Please complete your profile first. Missing: CV/Resume URL. Visit your profile page to add this information.',
-											);
-										}
-										const requestBody = {
-											credentials: {gmail: ''},
-											companyIds: selectedCompanyIds,
-											cvUrl,
-											candidateInfo,
-										};
-										dashLogger?.info('Sending job search request', {
-											companyCount: selectedCompanyIds.length,
-											companies: selectedCompanyIds,
-										});
-										dashLogger?.info(
-											'API Request: POST /api/jobs',
-											requestBody,
-										);
-										let searchData;
-										try {
-											searchData = await searchJobs(requestBody);
-										} catch (err: any) {
-											dashLogger?.error('Job search request failed', {
-												error: err,
-												requestBody: {
-													...requestBody,
-													cvUrl: cvUrl ? '[PRESENT]' : '[MISSING]',
-													candidateInfo: candidateInfo
-														? '[PRESENT]'
-														: '[MISSING]',
-												},
-											});
-											let errorMessage =
-												err?.message ||
-												'An error occurred while searching for jobs';
-											throw new Error(errorMessage);
-										}
-										dashLogger?.info('Job search completed successfully', {
-											searchData,
-										});
-										const totalJobs = searchData.results.reduce(
-											(acc: number, company: any) => {
-												return (
-													acc + (company.processed ? company.results.length : 0)
-												);
-											},
-											0,
-										);
-										dashLogger?.info('Job search results processed', {
-											totalJobs,
-											processedCompanies: searchData.results.filter(
-												(r: any) => r.processed,
-											).length,
-											totalCompanies: searchData.results.length,
-										});
-										handleSearchComplete(true, totalJobs);
-									} catch (err: any) {
-										const catchErrorMessage =
-											err?.message ||
-											'An unexpected error occurred while searching for jobs';
-										dashLogger?.error('Job search failed', {
-											error: catchErrorMessage,
-											stack: err?.stack,
-											selectedCompanies: selectedCompanyIds,
-										});
-										dashLogger?.error('Failed to start scout', {error: err});
-										const errorMessage =
-											err?.message ||
-											'An unexpected error occurred while searching for jobs';
-										dashLogger?.error('Detailed scout error info', {
-											message: errorMessage,
-											stack: err?.stack,
-											timestamp: new Date().toISOString(),
-										});
-										handleSearchComplete(false, 0);
-									}
-								}}
-								className={styles.ml2}
-							/>
-						</div>
-					</div>
-				</div>
+				<DashboardSessionPanel
+					userEmail={user.email}
+					profile={profile}
+					dashLogger={dashLogger}
+					searchJobs={searchJobs}
+					handleSearchComplete={handleSearchComplete}
+					setSearchComplete={setSearchComplete}
+				/>
 				<div className={styles.gridLayout}>
 					<div className={styles.spaceY6}>
 						<div className={styles.cardContainer}>
