@@ -12,16 +12,11 @@ interface CardProps {
 }
 
 export function ProfileCard({title, className, children}: CardProps) {
-	const cardClasses =
-		'bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 shadow-lg';
+	const cardClasses = 'profile-card';
 
 	return (
-		<div className={`${cardClasses} ${className || ''}`}>
-			{title && (
-				<h3 className="text-lg font-bold text-[var(--text-color)] mb-4">
-					{title}
-				</h3>
-			)}
+		<div className={cardClasses + (className ? ` ${className}` : '')}>
+			{title && <h3 className="profile-card-title">{title}</h3>}
 			{children}
 		</div>
 	);
@@ -38,10 +33,8 @@ interface HeaderProps {
 export function PageHeader({title, description}: HeaderProps) {
 	return (
 		<div className="mb-8">
-			<h1 className="text-3xl font-bold text-[var(--text-color)] mb-2">
-				{title}
-			</h1>
-			{description && <p className="text-[var(--text-muted)]">{description}</p>}
+			<h1 className="profile-card-header">{title}</h1>
+			{description && <p className="text-muted">{description}</p>}
 		</div>
 	);
 }
@@ -113,9 +106,7 @@ interface SectionHeadingProps {
 }
 
 export function SectionHeading({title}: SectionHeadingProps) {
-	return (
-		<h4 className="font-semibold text-[var(--text-color)] mb-2">{title}</h4>
-	);
+	return <h4 className="profile-card-section-heading">{title}</h4>;
 }
 
 /**

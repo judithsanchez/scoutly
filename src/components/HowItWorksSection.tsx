@@ -31,7 +31,7 @@ export function HowItWorksSection() {
 					<h3 className={styles.cardTitle}>1. Provide Your CV</h3>
 					<p className={styles.cardText}>
 						Give our AI scout your resume. It analyzes your unique skills,
-						experience, and career goals to understand exactly what you're
+						experience, and career goals to understand exactly what you&#39;re
 						looking for.
 					</p>
 				</div>

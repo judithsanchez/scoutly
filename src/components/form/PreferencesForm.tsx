@@ -1,12 +1,8 @@
 'use client';
 
 import React from 'react';
-import {
-	PreferencesFormProps,
-	Preferences,
-	Exclusions,
-	cardClasses,
-} from './types';
+import {PreferencesFormProps, Preferences, Exclusions} from './types';
+import styles from './FormStyles.module.css';
 import {ArrayInput} from './ArrayInput';
 
 export function PreferencesForm({
@@ -28,7 +24,7 @@ export function PreferencesForm({
 	};
 
 	return (
-		<div className={cardClasses}>
+		<div className={styles.card}>
 			<h3 className="text-xl font-bold mb-4 text-white">Preferences</h3>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
 				<ArrayInput

@@ -141,9 +141,9 @@ export function DemoModal({isOpen, onClose}: DemoModalProps) {
 											<line x1="12" y1="8" x2="12.01" y2="8"></line>
 										</svg>
 										<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-900 text-slate-300 text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-											Your CV file on Google Drive must be public ("Anyone with
-											the link can view"). Scoutly reads the text content to
-											perform its analysis.
+											Your CV file on Google Drive must be public (&#34;Anyone
+											with the link can view&#34;). Scoutly reads the text
+											content to perform its analysis.
 										</div>
 									</div>
 								</label>
@@ -278,8 +278,8 @@ export function DemoModal({isOpen, onClose}: DemoModalProps) {
 										</h4>
 										<ul className={styles.listDisc + ' ' + styles.subtitle}>
 											<li>
-												The candidate's profile and job description show an
-												alignment of skills and expertise.
+												The candidate&rsquo;s profile and job description show
+												an alignment of skills and expertise.
 											</li>
 										</ul>
 									</div>
@@ -291,11 +291,12 @@ export function DemoModal({isOpen, onClose}: DemoModalProps) {
 										<ul className={styles.listDisc + ' ' + styles.subtitle}>
 											<li>
 												Job is located in Amsterdam, Netherlands, which is
-												within the candidate's work authorization area.
+												within the candidate&rsquo;s work authorization area.
 											</li>
 											<li>
-												Candidate's domain experience is in Web Development.
-												This role requires a full stack software engineer.
+												Candidate&rsquo;s domain experience is in Web
+												Development. This role requires a full stack software
+												engineer.
 											</li>
 										</ul>
 									</div>

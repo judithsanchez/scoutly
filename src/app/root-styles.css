@@ -410,3 +410,84 @@ html.dark .background-glows {
 .mb-6 {
 	margin-bottom: 2.4rem;
 }
+
+/* CSS for .profile-card and related classes */
+.profile-card {
+	background-color: var(--card-bg);
+	border: 1px solid var(--card-border);
+	border-radius: 1rem;
+	padding: 1.6rem;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.profile-card-title {
+	font-size: 1.125rem;
+	font-weight: bold;
+	color: var(--text-color);
+	margin-bottom: 1.6rem;
+}
+.profile-card-header {
+	font-size: 2rem;
+	font-weight: bold;
+	color: var(--text-color);
+	margin-bottom: 0.8rem;
+}
+.profile-card-section-heading {
+	font-weight: 600;
+	color: var(--text-color);
+	margin-bottom: 0.8rem;
+}
+.profile-card-input {
+	display: block;
+	width: 100%;
+	background-color: var(--input-bg);
+	border: 1px solid var(--input-border);
+	border-radius: 0.5rem;
+	padding: 0.8rem 1.2rem;
+	color: var(--text-color);
+	transition: box-shadow 0.2s;
+}
+.profile-card-btn-primary {
+	padding: 0.8rem 1.6rem;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	transition: background 0.2s;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.profile-card-btn-primary:hover {
+	background-color: var(--btn-primary-hover-bg);
+}
+.profile-card-btn-secondary {
+	padding: 0.8rem 1.6rem;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	background-color: var(--btn-secondary-bg);
+	color: var(--btn-secondary-text);
+	transition: background 0.2s;
+}
+.profile-card-btn-secondary:hover {
+	background-color: var(--btn-secondary-hover-bg);
+}
+.profile-card-btn-danger {
+	padding: 0.8rem 1.6rem;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	background-color: #dc2626;
+	color: #fff;
+	transition: background 0.2s;
+}
+.profile-card-btn-danger:hover {
+	background-color: #b91c1c;
+}
+.profile-card-checkbox {
+	height: 2rem;
+	width: 2rem;
+	border-radius: 0.5rem;
+	background-color: var(--input-bg);
+	border: 1px solid var(--input-border);
+	color: #a855f7;
+}

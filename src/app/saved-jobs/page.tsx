@@ -111,7 +111,7 @@ export default function SavedJobsPage() {
 					<div className={styles.errorText}>{error}</div>
 				) : jobs.length === 0 ? (
 					<div className={styles.emptyText}>
-						You haven't saved any jobs yet. When you find interesting
+						You haven&rsquo;t saved any jobs yet. When you find interesting
 						opportunities, save them here to keep track of them.
 					</div>
 				) : (

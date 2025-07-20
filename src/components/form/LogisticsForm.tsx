@@ -1,15 +1,8 @@
 'use client';
 
 import React from 'react';
-import {
-	FormSectionProps,
-	CurrentResidence,
-	WorkAuthorization,
-	cardClasses,
-	inputClasses,
-	removeButtonClasses,
-	secondaryButtonClasses,
-} from './types';
+import {FormSectionProps, CurrentResidence, WorkAuthorization} from './types';
+import styles from './FormStyles.module.css';
 
 export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 	const handleResidenceChange = (
@@ -50,7 +43,7 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 	};
 
 	return (
-		<div className={cardClasses}>
+		<div className={styles.card}>
 			<h3 className="text-xl font-bold mb-4 text-white">Logistics</h3>
 			<div className="space-y-6">
 				<div>
@@ -63,14 +56,14 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 							placeholder="City"
 							value={logistics.currentResidence.city}
 							onChange={e => handleResidenceChange('city', e.target.value)}
-							className={inputClasses}
+							className={styles.input}
 						/>
 						<input
 							type="text"
 							placeholder="Country"
 							value={logistics.currentResidence.country}
 							onChange={e => handleResidenceChange('country', e.target.value)}
-							className={inputClasses}
+							className={styles.input}
 						/>
 						<input
 							type="text"
@@ -79,14 +72,14 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 							onChange={e =>
 								handleResidenceChange('countryCode', e.target.value)
 							}
-							className={inputClasses}
+							className={styles.input}
 						/>
 						<input
 							type="text"
 							placeholder="Timezone (e.g., Europe/Amsterdam)"
 							value={logistics.currentResidence.timezone}
 							onChange={e => handleResidenceChange('timezone', e.target.value)}
-							className={inputClasses}
+							className={styles.input}
 						/>
 					</div>
 				</div>
@@ -124,7 +117,7 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 									onChange={e =>
 										handleAuthorizationChange(index, 'region', e.target.value)
 									}
-									className={inputClasses}
+									className={styles.input}
 								/>
 								<input
 									type="text"
@@ -137,7 +130,7 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 											e.target.value,
 										)
 									}
-									className={inputClasses}
+									className={styles.input}
 								/>
 								<input
 									type="text"
@@ -146,12 +139,12 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 									onChange={e =>
 										handleAuthorizationChange(index, 'status', e.target.value)
 									}
-									className={inputClasses}
+									className={styles.input}
 								/>
 								<button
 									type="button"
 									onClick={() => removeAuthorization(index)}
-									className={removeButtonClasses + ' h-10'}
+									className={`${styles.removeButton} h-10`}
 								>
 									Remove
 								</button>
@@ -161,7 +154,7 @@ export function LogisticsForm({logistics, setLogistics}: FormSectionProps) {
 					<button
 						type="button"
 						onClick={addAuthorization}
-						className={secondaryButtonClasses + ' mt-3'}
+						className={`${styles.secondaryButton} mt-3`}
 					>
 						Add Authorization
 					</button>

@@ -4,13 +4,8 @@ import React, {useState} from 'react';
 import {LogisticsForm} from './LogisticsForm';
 import {LanguagesForm} from './LanguagesForm';
 import {PreferencesForm} from './PreferencesForm';
-import {
-	CandidateFormProps,
-	cardClasses,
-	labelClasses,
-	inputClasses,
-	primaryButtonClasses,
-} from './types';
+import {CandidateFormProps} from './types';
+import styles from './FormStyles.module.css';
 
 export function CandidateForm({initialData, onFormSubmit}: CandidateFormProps) {
 	const [cvUrl, setCvUrl] = useState(initialData.cvUrl || '');
@@ -36,8 +31,8 @@ export function CandidateForm({initialData, onFormSubmit}: CandidateFormProps) {
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-6">
-			<div className={cardClasses}>
-				<label htmlFor="cvUrl" className={labelClasses}>
+			<div className={styles.card}>
+				<label htmlFor="cvUrl" className={styles.label}>
 					CV URL
 				</label>
 				<input
@@ -45,7 +40,7 @@ export function CandidateForm({initialData, onFormSubmit}: CandidateFormProps) {
 					type="url"
 					value={cvUrl}
 					onChange={e => setCvUrl(e.target.value)}
-					className={inputClasses}
+					className={styles.input}
 					placeholder="https://drive.google.com/..."
 					required
 				/>
@@ -61,7 +56,7 @@ export function CandidateForm({initialData, onFormSubmit}: CandidateFormProps) {
 			<div className="pt-4 flex justify-end">
 				<button
 					type="submit"
-					className={primaryButtonClasses + ' py-3 px-6 text-base'}
+					className={`${styles.primaryButton} py-3 px-6 text-base`}
 				>
 					Generate Profile & Find Jobs
 				</button>

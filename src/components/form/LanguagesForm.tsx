@@ -1,14 +1,8 @@
 'use client';
 
 import React from 'react';
-import {
-	LanguagesFormProps,
-	Language,
-	cardClasses,
-	inputClasses,
-	removeButtonClasses,
-	secondaryButtonClasses,
-} from './types';
+import {LanguagesFormProps, Language} from './types';
+import styles from './FormStyles.module.css';
 
 export function LanguagesForm({languages, setLanguages}: LanguagesFormProps) {
 	const handleLanguageChange = (
@@ -30,7 +24,7 @@ export function LanguagesForm({languages, setLanguages}: LanguagesFormProps) {
 	};
 
 	return (
-		<div className={cardClasses}>
+		<div className={styles.card}>
 			<h3 className="text-xl font-bold mb-4 text-white">Languages</h3>
 			<div className="space-y-3">
 				{languages.map((lang, index) => (
@@ -45,7 +39,7 @@ export function LanguagesForm({languages, setLanguages}: LanguagesFormProps) {
 							onChange={e =>
 								handleLanguageChange(index, 'language', e.target.value)
 							}
-							className={inputClasses}
+							className={styles.input}
 						/>
 						<input
 							type="text"
@@ -54,12 +48,12 @@ export function LanguagesForm({languages, setLanguages}: LanguagesFormProps) {
 							onChange={e =>
 								handleLanguageChange(index, 'level', e.target.value)
 							}
-							className={inputClasses}
+							className={styles.input}
 						/>
 						<button
 							type="button"
 							onClick={() => removeLanguage(index)}
-							className={removeButtonClasses + ' h-10'}
+							className={`${styles.removeButton} h-10`}
 						>
 							Remove
 						</button>
@@ -69,7 +63,7 @@ export function LanguagesForm({languages, setLanguages}: LanguagesFormProps) {
 			<button
 				type="button"
 				onClick={addLanguage}
-				className={secondaryButtonClasses + ' mt-3'}
+				className={`${styles.secondaryButton} mt-3`}
 			>
 				Add Language
 			</button>

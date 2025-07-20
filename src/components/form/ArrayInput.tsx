@@ -1,13 +1,8 @@
 'use client';
 
 import React, {useState} from 'react';
-import {
-	ArrayInputProps,
-	labelClasses,
-	inputClasses,
-	secondaryButtonClasses,
-	removeButtonClasses,
-} from './types';
+import {ArrayInputProps} from './types';
+import styles from './FormStyles.module.css';
 import {AddIcon, TrashIcon} from './Icons';
 
 export function ArrayInput({
@@ -38,7 +33,7 @@ export function ArrayInput({
 
 	return (
 		<div>
-			<label className={labelClasses}>{label}</label>
+			<label className={styles.label}>{label}</label>
 			<div className="space-y-2">
 				{items.map((item, index) => (
 					<div
@@ -49,7 +44,7 @@ export function ArrayInput({
 						<button
 							type="button"
 							onClick={() => handleRemoveItem(index)}
-							className={removeButtonClasses}
+							className={styles.removeButton}
 						>
 							<TrashIcon />
 						</button>
@@ -62,13 +57,13 @@ export function ArrayInput({
 					value={newItem}
 					onChange={e => setNewItem(e.target.value)}
 					onKeyDown={handleKeyDown}
-					className={inputClasses}
+					className={styles.input}
 					placeholder={placeholder}
 				/>
 				<button
 					type="button"
 					onClick={handleAddItem}
-					className={secondaryButtonClasses}
+					className={styles.secondaryButton}
 					disabled={!newItem.trim()}
 				>
 					<AddIcon />
